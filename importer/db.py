@@ -15,7 +15,7 @@ create table books(book integer primary key, abbr text, name text, chapters text
 create table modules(
     id integer primary key,
     source text not null,           -- 'esword' | 'theword'
-    kind text not null,             -- 'bible' | 'commentary' | 'dictionary' | 'book'
+    kind text not null,             -- 'bible' | 'commentary' | 'dictionary' | 'book' | 'xrefs' | 'headings'
     abbr text, title text, author text, lang text,
     has_strongs integer default 0,
     items integer default 0,
@@ -54,6 +54,22 @@ create table strong_terms(
     primary key (strong, lang, term)
 ) without rowid;
 create index strong_terms_by_term on strong_terms(lang, term);
+
+-- Referências cruzadas: do versículo (book, chapter, verse) para o trecho que
+-- começa em (to_book, to_chapter, to_verse) e segue por mais to_span versículos.
+create table xrefs(
+    module_id integer not null references modules(id),
+    book integer, chapter integer, verse integer,
+    to_book integer, to_chapter integer, to_verse integer, to_span integer default 0
+);
+create index xrefs_by_ref on xrefs(book, chapter, verse);
+
+-- Títulos de seção avulsos (módulos de títulos do theWord), fora de uma Bíblia.
+create table headings(
+    module_id integer not null references modules(id),
+    book integer, chapter integer, verse integer, level integer, text text
+);
+create index headings_by_ref on headings(book, chapter, verse);
 
 -- ref_start / ref_end = capítulo * 1000 + versículo.
 -- Versículo 0 = introdução do capítulo; capítulo 0 = introdução do livro.

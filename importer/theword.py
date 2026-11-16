@@ -13,6 +13,7 @@ from tokens import from_marked, from_wt, tagged_of, text_of
 _NOTE = re.compile(r"<RF[^>]*>.*?<Rf>", re.S)
 _HEADING = re.compile(r"<TS\d?>(.*?)<Ts>", re.S)
 _VARIANT = re.compile(r"<V[^<>]*>")  # variantes textuais do TR, embutidas em uma tag
+_XREF = re.compile(r"<RX (\d+)\.(\d+)\.(\d+)(?:\+(\d+))?>")  # referência cruzada embutida
 _STRONG = re.compile(r"<W([GH])(\d+)[a-z]?>")
 _BREAK = re.compile(r"<(?:BR|CM|CL|CI|PF\d?|PI\d?)>")
 _TAG = re.compile(r"<[^<>]{0,300}>")
@@ -87,8 +88,13 @@ def read_bible(path, add):
         "lang": config.get("lang") or "und",
         "has_strongs": 0,
     }
-    rows, words = [], []
+    rows, words, xrefs, odd_xrefs = [], [], [], 0
     for number, ((book, chapter, verse), line) in enumerate(zip(references(first, last), lines), start=1):
+        for to_book, to_chapter, to_verse, span in _XREF.findall(line):
+            if int(to_verse) == 0:
+                odd_xrefs += 1  # forma 'livro.n.0', de significado ainda não confirmado
+                continue
+            xrefs.append((book, chapter, verse, int(to_book), int(to_chapter), int(to_verse), int(span or 0)))
         heading, text, tagged, verse_words = _clean_verse(line)
         if tagged:
             meta["has_strongs"] = 1
@@ -99,6 +105,10 @@ def read_bible(path, add):
     add.verses(module_id, rows)
     if meta["has_strongs"]:
         add.tokens(module_id, words)
+    if xrefs:
+        add.xrefs(module_id, xrefs)
+    if odd_xrefs:
+        add.log("aviso", f"{odd_xrefs} referências cruzadas na forma 'livro.n.0' foram ignoradas (significado não confirmado)")
     return len(rows)
 
 
@@ -154,11 +164,56 @@ def _content_text(data):
     return rtf_to_text(decoded), "ok"
 
 
+def _verse_index(vi: int):
+    """Índice de versículo do theWord: livro<<24 | capítulo<<16 | versículo<<8 | extra."""
+    return vi >> 24, (vi >> 16) & 255, (vi >> 8) & 255, vi & 255
+
+
+def _read_xrefs(src, path, config, add):
+    """Módulo de referências cruzadas: xrefs(vi1, vi2); o byte baixo de vi2 é a extensão do trecho."""
+    rows = []
+    for vi1, vi2 in src.execute("select vi1, vi2 from xrefs order by id"):
+        book, chapter, verse, _ = _verse_index(vi1)
+        to_book, to_chapter, to_verse, span = _verse_index(vi2)
+        if 1 <= book <= 66 and 1 <= to_book <= 66:
+            rows.append((book, chapter, verse, to_book, to_chapter, to_verse, span))
+    src.close()
+    title = config.get("tables.xrefs.description") or path.stem
+    module_id = add.module({"kind": "xrefs", "abbr": "theWord xrefs", "title": title, "lang": "und"})
+    add.xrefs(module_id, rows, count_as_items=True)
+    return len(rows)
+
+
+def _read_headings(src, path, config, add):
+    """Módulo de títulos de seção: headings(vi, pos, level, content)."""
+    rows = []
+    for vi, level, content in src.execute("select vi, level, cast(content as blob) from headings order by id"):
+        book, chapter, verse, _ = _verse_index(vi)
+        text = tidy(_decode(content or b""))
+        if 1 <= book <= 66 and text:
+            rows.append((book, chapter, verse, level, text))
+    src.close()
+    title = config.get("tables.headings.description") or path.stem
+    lang = "eng" if "english" in path.name.lower() else "und"
+    module_id = add.module({"kind": "headings", "abbr": path.name.split(".")[1][:20] + " hdgs",
+                            "title": title, "lang": lang})
+    add.headings(module_id, rows)
+    return len(rows)
+
+
 def read_twm(path, add):
     src = open_readonly(path)
     tables = {r[0] for r in src.execute("select name from sqlite_master where type='table'")}
     config = {k: v for k, v in src.execute("select name, value from config")} if "config" in tables else {}
     module_type = str(config.get("type"))
+    if "xrefs" in tables:
+        return _read_xrefs(src, path, config, add)
+    if "headings" in tables:
+        return _read_headings(src, path, config, add)
+    if "paragraphs" in tables:
+        src.close()
+        add.log("ignorado", "marcas de parágrafo: o significado do campo 'typ' ainda não foi confirmado")
+        return 0
     kind = _KINDS.get(module_type)
     if kind is None or "content" not in tables:
         src.close()

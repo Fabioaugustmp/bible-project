@@ -71,7 +71,7 @@ check(not few, f"Bíblias com Strong: {strongs}; marcadas com Strong em menos da
 print("Itens gravados = itens declarados no módulo:")
 mismatched = []
 for mid, abbr, kind, items in con.execute("select id, abbr, kind, items from modules"):
-    table = {"bible": "verses", "commentary": "comments"}.get(kind, "entries")
+    table = {"bible": "verses", "commentary": "comments", "xrefs": "xrefs", "headings": "headings"}.get(kind, "entries")
     real = one(f"select count(*) from {table} where module_id = ?", (mid,))
     if real != items:
         mismatched.append((abbr, items, real))
@@ -117,6 +117,21 @@ for strong, lang, expected in (("G5485", "por", "graça"), ("G5485", "eng", "gra
         (strong, lang)).fetchone()
     if top:
         check(top[0] == expected, f"{strong} em {lang}: '{top[0]}' ({top[1]} ocorrências), esperado '{expected}'")
+
+print("Referências cruzadas:")
+for abbr, count in con.execute(
+    "select m.abbr, count(*) from xrefs x join modules m on m.id = x.module_id group by m.id"
+):
+    print(f"  [info] {abbr}: {count} referências")
+if one("select count(*) from modules where kind = 'xrefs'"):
+    targets = {tuple(row) for row in con.execute(
+        "select x.to_book, x.to_chapter, x.to_verse from xrefs x join modules m on m.id = x.module_id"
+        " where m.kind = 'xrefs' and x.book = 1 and x.chapter = 1 and x.verse = 1")}
+    check({(18, 38, 4), (19, 33, 6), (19, 89, 11)} <= targets, "Gn 1:1 aponta para Jó 38:4, Sl 33:6 e Sl 89:11")
+out_of_range = one(
+    "select count(*) from xrefs x where not exists (select 1 from books b where b.book = x.to_book)"
+    " or x.to_chapter < 1 or x.to_verse < 1")
+check(out_of_range == 0, f"referências para fora do cânon: {out_of_range}")
 
 print("Procedência:")
 check(one("select count(*) from modules where origin_sha256 is null or length(origin_sha256) <> 64") == 0,

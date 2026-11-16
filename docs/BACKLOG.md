@@ -108,7 +108,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T06 | concluída: verify.py com tolerâncias e verificações de T02–T04; passa na base de amostras (resultado na base completa: ver T07) |
 | T07 | concluída: 71 módulos, 0 erros, 479 s, base de 1,16 GB promovida; verify.py passa; interface testada |
 | T08 | pendente |
-| T09 | pendente |
+| T09 | concluída em parte: referências cruzadas (theWord e BSB) e títulos em inglês importados; parágrafos não, por falta de confirmação do campo `typ` |
 | T10 | pendente |
 | T11 | pendente |
 | T21 | concluída (EC1): `strong_terms` com 137 mil termos; 16 de 18 traduções esperadas conferem, as 2 restantes são diferenças legítimas |

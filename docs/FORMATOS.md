@@ -150,3 +150,16 @@ aspas duplicadas; ver D011.
 - `<XWG…>` na KJV: código repetido de uma expressão dividida; ignorado.
 - `<FR>` palavras de Jesus, `<FI>` itálico (palavras acrescentadas), `<FO>`
   citação do AT, `<RF>…<Rf>` nota: a marcação é removida e a nota, descartada.
+
+### Detalhes confirmados dos auxiliares do theWord (2026-11-16)
+
+- `xrefs.vi2`: o byte baixo é a extensão do trecho de destino, em versículos a
+  mais (0 em 18.898 pares, 1 em 594, até 31). Em `vi1` é sempre 0. São 19.671
+  pares a partir de 8.471 versículos.
+- `<RX …>` nos interlineares BSB: 1.935 na forma `livro.cap.vers+n` e 83 sem
+  o `+n`. Cerca de 70 têm a forma `livro.n.0` (por exemplo `4.1.0`, `12.2.0`),
+  de significado não confirmado; são ignorados e contados em `import_log`.
+- `paragraphs(vi, typ)`: `typ` vale 1 ou 2, em proporções opostas nos dois
+  módulos (`default.prgs`: 2.980 e 11.094; `default2.prgs`: 11.213 e 240). O
+  significado não foi confirmado, então os parágrafos não são importados.
+- `headings`: todos com `pos = 1` e `level = 1`; os 5.289 títulos são em inglês.

@@ -82,6 +82,22 @@ class Adder:
             [(module_id, *row) for row in rows],
         )
 
+    def xrefs(self, module_id, rows, count_as_items=False):
+        self.con.executemany(
+            "insert into xrefs(module_id, book, chapter, verse, to_book, to_chapter, to_verse, to_span)"
+            " values (?, ?, ?, ?, ?, ?, ?, ?)",
+            [(module_id, *row) for row in rows],
+        )
+        if count_as_items:
+            self.items += len(rows)
+
+    def headings(self, module_id, rows):
+        self.con.executemany(
+            "insert into headings(module_id, book, chapter, verse, level, text) values (?, ?, ?, ?, ?, ?)",
+            [(module_id, *row) for row in rows],
+        )
+        self.items += len(rows)
+
     def _with_links(self, sql, kind, module_id, rows, links):
         for index, row in enumerate(rows):
             item_id = self.con.execute(sql, (module_id, *row)).lastrowid

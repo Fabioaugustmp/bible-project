@@ -1,0 +1,6 @@
+# Módulos de terceiros (vários protegidos por direito autoral) e base gerada
+modules-sample/
+data/
+
+__pycache__/
+*.pyc

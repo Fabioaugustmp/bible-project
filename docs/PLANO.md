@@ -48,7 +48,7 @@ pendentes" no backlog).
 | Marco | Entrega | Estado |
 |---|---|---|
 | M0 | Reconhecimento dos formatos, importador com procedência, leitor, painel do versículo e busca por palavra, sobre 8 módulos de amostra | concluído (commits `50ee3e7`, `b4e419e`, `19d7d3c`) |
-| M1 | Importação completa e confiável das duas instalações; interface utilizável com a biblioteca inteira | em andamento: importação roda (72 módulos), 6 módulos com erro e defeitos listados nas tarefas T01–T08 |
+| M1 | Importação completa e confiável das duas instalações; interface utilizável com a biblioteca inteira | em andamento: base completa importada, verificada e promovida (71 módulos, 0 erros; T01–T04, T06, T07 concluídas); faltam T05, T08 e T09 |
 | M2 | Ponte português ↔ inglês sem IA: Strong clicável, tabela de correspondência, busca bilíngue, citações clicáveis, referências cruzadas | pendente |
 | M3 | Busca semântica com embeddings locais, medida por um conjunto de avaliação próprio | pendente |
 | M4 | Notas e marcações em base separada; importação das notas do e-Sword; exportação de estudo | pendente |

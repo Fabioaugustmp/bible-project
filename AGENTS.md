@@ -20,8 +20,16 @@ dependências estejam prontas. Se ela depender de uma pergunta da tabela
 
 ## Comandos
 
+Importação completa (cerca de 8 minutos; gravar em arquivo separado, D009):
+
 ```bash
-python importer/build.py --out data/library.db modules-sample
+python -u importer/build.py --out data/library-full.db "C:\Program Files (x86)\e-Sword" "C:\ProgramData\The Word" "%APPDATA%\The Word"
+```
+
+Importação rápida só das amostras, para testar mudanças no importador:
+
+```bash
+python importer/build.py --out data/test.db modules-sample
 ```
 
 ```bash

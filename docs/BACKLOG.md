@@ -33,17 +33,24 @@ este projeto pode ter que aquele não tem:
 Limite: módulos protegidos por direito autoral não podem ser distribuídos com
 o aplicativo; cada usuário importa os seus.
 
-## Estado atual (2026-11-16)
+## Estado atual (2026-11-16, após a Onda 1)
 
 - Funciona: importador (`importer/build.py`), verificação
   (`importer/verify.py`), servidor (`app/server.py`, porta 8377) e interface
   (leitura, painel do versículo, busca por palavra, ir para referência).
-- `data/library.db`: base de **amostras** (8 módulos), a que o aplicativo abre.
-- `data/library-full.db`: importação completa (72 módulos, 569 s, 1,15 GB),
-  **com defeitos conhecidos e ainda não promovida**. Log em
-  `data/import-full.log`.
-- Importado na base completa: 18 Bíblias, 24 comentários, 24 dicionários,
-  6 livros; cerca de 3 milhões de citações na tabela `links`.
+- `data/library.db` é a **base completa**: 71 módulos (16 Bíblias, 24
+  comentários, 25 dicionários, 6 livros), 1,16 GB, importada em 479 s, sem
+  nenhum módulo com erro. `python importer/verify.py data/library.db` passa.
+- 49 arquivos ficaram de fora e estão em `import_log`: cerca de 20 `.twm`
+  criptografados, 5 Bíblias `.ontx`/`.ntx` criptografadas, 1 Bíblia cifrada do
+  e-Sword, 6 cópias "com cabeçalhos" unidas às originais (D011), planos de
+  leitura, mapa e módulos auxiliares ainda não importados (T09).
+- Medido na base completa: `/api/verse` responde em cerca de 0,25 s, mas com
+  315 KB em Jo 3:16 e 346 KB em Rm 8:28 (texto integral de 19 comentários);
+  Jo 3:16 tem 15 versões, 19 comentários e mais de 200 citações. A interface
+  ainda não foi adaptada a esse volume (T08).
+- Defeito conhecido que segue aberto: os dois interlineares BSB aparecem com
+  texto misturado (T05).
 - Módulos de origem: `C:\Program Files (x86)\e-Sword`,
   `C:\ProgramData\The Word`, `%APPDATA%\The Word`.
 - Ambiente: Windows, Python 3.14 (só biblioteca padrão, D003), Node instalado,
@@ -99,7 +106,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T04 | concluída: idiomas normalizados, títulos de Bíblia do theWord com até 90 caracteres, católica sem marca indevida de Strong |
 | T05 | pendente |
 | T06 | concluída: verify.py com tolerâncias e verificações de T02–T04; passa na base de amostras (resultado na base completa: ver T07) |
-| T07 | pendente |
+| T07 | concluída: 71 módulos, 0 erros, 479 s, base de 1,16 GB promovida; verify.py passa; interface testada |
 | T08 | pendente |
 | T09 | pendente |
 | T10 | pendente |
@@ -108,9 +115,6 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T30–T34 (M3) | pendente |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |
-
-Uma tentativa de aplicar T01–T04 de uma vez falhou antes de rodar (erro de
-shell) e **não deixou nenhuma alteração**; recomeçar do zero, uma tarefa por vez.
 
 ## M1 — Fechar a importação completa
 

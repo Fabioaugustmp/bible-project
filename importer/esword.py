@@ -45,7 +45,7 @@ def _split_heading(scripture: str):
 def read_bible(path, add):
     src = open_readonly(path)
     meta = _details(src) | {"kind": "bible", "has_strongs": 0}
-    rows, skipped = [], 0
+    rows, skipped, unreadable = [], 0, 0
     for book, chapter, verse, scripture in src.execute(
         "select Book, Chapter, Verse, Scripture from Bible order by rowid"
     ):
@@ -54,6 +54,9 @@ def read_bible(path, add):
         if not 1 <= book <= 66:
             skipped += 1
             continue
+        if isinstance(scripture, bytes):
+            unreadable += 1  # módulo protegido do e-Sword: o texto vem cifrado
+            continue
         heading, body = _split_heading(scripture or "")
         marked = rtf_to_text(_STRONG_GROUP.sub(_mark_strongs, body)).replace("¶", "")
         text, tagged = split_strongs(marked)
@@ -61,6 +64,12 @@ def read_bible(path, add):
             meta["has_strongs"] = 1
         rows.append((book, chapter, verse, text, tagged, heading, f"{book}.{chapter}.{verse}"))
     src.close()
+    if not rows:
+        add.log("ignorado", f"texto cifrado em {unreadable} versículos (módulo protegido do e-Sword); não é possível ler"
+                if unreadable else "módulo sem versículos")
+        return 0
+    if unreadable:
+        add.log("aviso", f"{unreadable} versículos com texto cifrado foram ignorados")
     rows.sort(key=lambda row: row[:3])
     meta["lang"] = guess_lang(_sample([r[3] for r in rows[23145:23300] or rows]))
     module_id = add.module(meta)

@@ -121,3 +121,18 @@ baixo e o campo `typ` ainda não foram examinados.
 
 Planos de leitura (`.rdp.twm`): `sessions(id, sid, itemorder, URL)` com
 intervalos como `1.1.1-1.3.24`.
+
+### Bíblia do e-Sword com texto cifrado (verificado em 2026-11-16)
+
+`gnt-tr_.bblx` (Textus Receptus com Strong, módulo oficial protegido) tem a
+coluna `Scripture` como blob cifrado em todos os 7.957 versículos. O importador
+registra o módulo como ignorado. O mesmo texto existe aberto no theWord (`tr.nt`).
+
+### Bíblias "com cabeçalhos" do e-Sword
+
+A tabela `Bible` traz uma linha de cabeçalho com textos no lugar dos números
+('Livro', 'Cap', 'Verso'). Os títulos de seção vêm no início do versículo, em
+um grupo de negrito centralizado (controles `b` e `qc`), e vão para
+`verses.heading`. Títulos de salmo usam itálico centralizado (`i` e `qc`) e
+ficam no texto. Essas cópias perdem Apocalipse 22:21 em três versões e têm
+aspas duplicadas; ver D011.

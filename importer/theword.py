@@ -148,7 +148,7 @@ def read_twm(path, add):
         query = ("select r.topic_id, r.bi, r.ci, r.fvi, r.tvi, cast(c.data as blob)"
                  " from bible_refs r join content c on c.topic_id = r.topic_id")
     else:
-        query = ("select t.id, t.subject, cast(c.data as blob)"
+        query = ("select t.id, cast(t.subject as blob), cast(c.data as blob)"
                  " from topics t join content c on c.topic_id = t.id order by t.id")
 
     rows, topic_ids, states = [], [], {"ok": 0, "parcial": 0, "ilegivel": 0}
@@ -166,7 +166,7 @@ def read_twm(path, add):
             start = ci * 1000 + fvi
             rows.append((bi, start, max(start, ci * 1000 + (tvi or fvi)), text, f"topic:{topic_id}"))
         else:
-            subject = str(record[1] or "").strip()
+            subject = _decode(record[1] or b"").strip()  # há títulos que não são UTF-8
             if not subject:
                 continue
             rows.append((subject, text, f"topic:{topic_id}"))

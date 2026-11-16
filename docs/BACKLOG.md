@@ -95,7 +95,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 |---|---|
 | T01 | concluída: 6 módulos com cabeçalhos importam, 1.923 títulos cada (1.915 na católica), texto sem o título |
 | T02 | concluída: 6 pares unidos, nenhuma sigla repetida; critério revisto na D011 |
-| T03 | pendente |
+| T03 | concluída: gnt-tr_.bblx registrado como ignorado (cifrado); Webster importa 61.200 verbetes; resíduo do AmTrac aceito |
 | T04 | pendente |
 | T05 | pendente |
 | T06 | pendente |

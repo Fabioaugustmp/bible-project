@@ -51,7 +51,7 @@ Critérios de aceite:
 - Nenhum resíduo de marcação RTF no texto (verificação automática).
 - Módulos ilegíveis aparecem no relatório com o motivo, sem interromper os demais.
 
-### Fase 2 — Leitor e painel do versículo · em andamento
+### Fase 2 — Leitor e painel do versículo · concluída
 
 Entregas:
 - Servidor local (`app/server.py`) com API de leitura, painel e busca.

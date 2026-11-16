@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Biblioteca Bíblica</title>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Aplica o tema salvo antes da primeira pintura.
+    try {
+      const theme = localStorage.getItem("theme");
+      if (theme) document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
+</head>
+<body>
+  <header class="bar">
+    <nav class="nav" aria-label="Passagem">
+      <select id="version" aria-label="Versão"></select>
+      <button id="prev" class="icon" aria-label="Capítulo anterior" title="Capítulo anterior">‹</button>
+      <select id="book" aria-label="Livro"></select>
+      <select id="chapter" aria-label="Capítulo"></select>
+      <button id="next" class="icon" aria-label="Próximo capítulo" title="Próximo capítulo">›</button>
+    </nav>
+    <form id="search" class="search" role="search">
+      <input id="q" type="search" placeholder="Buscar palavra ou ir para Jo 3:16" autocomplete="off"
+             aria-label="Buscar ou ir para referência">
+    </form>
+    <div class="tools">
+      <button id="smaller" class="icon" aria-label="Diminuir fonte" title="Diminuir fonte">A−</button>
+      <button id="larger" class="icon" aria-label="Aumentar fonte" title="Aumentar fonte">A+</button>
+      <button id="theme" class="icon" aria-label="Alternar tema claro e escuro" title="Tema">◐</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main id="reader" class="reader" tabindex="-1">
+      <p class="kicker" id="kicker"></p>
+      <h1 id="title"></h1>
+      <div id="text" class="text"></div>
+      <p id="hint" class="hint">Clique em um versículo para ver versões, comentários e citações.</p>
+    </main>
+
+    <aside id="panel" class="panel" aria-label="Estudo" hidden>
+      <div class="panel-head">
+        <h2 id="panel-title"></h2>
+        <button id="panel-close" class="icon" aria-label="Fechar painel">×</button>
+      </div>
+      <div id="panel-body" class="panel-body"></div>
+    </aside>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

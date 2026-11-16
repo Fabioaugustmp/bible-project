@@ -136,3 +136,17 @@ um grupo de negrito centralizado (controles `b` e `qc`), e vão para
 `verses.heading`. Títulos de salmo usam itálico centralizado (`i` e `qc`) e
 ficam no texto. Essas cópias perdem Apocalipse 22:21 em três versões e têm
 aspas duplicadas; ver D011.
+
+### Outras tags das Bíblias do theWord (verificado em 2026-11-16)
+
+- `<TS>título<Ts>`: título de seção antes do versículo. O interlinear reverso
+  BSB tem 3.082; vão para `verses.heading`.
+- `<RX 43.1.1+4>`: referência cruzada embutida (livro.capítulo.versículo e
+  quantidade de versículos seguintes), presente no interlinear reverso BSB.
+  Hoje é descartada; é uma fonte a mais para a tarefa T25.
+- `<V1{><V1}><V2«wt»…«WG…»>` no TR: variante textual de Scrivener, embutida
+  em uma tag com `«»` no lugar de `<>`. É descartada. Lucas 17:36 só existe
+  como variante, por isso o TR importado tem 7.956 versículos.
+- `<XWG…>` na KJV: código repetido de uma expressão dividida; ignorado.
+- `<FR>` palavras de Jesus, `<FI>` itálico (palavras acrescentadas), `<FO>`
+  citação do AT, `<RF>…<Rf>` nota: a marcação é removida e a nota, descartada.

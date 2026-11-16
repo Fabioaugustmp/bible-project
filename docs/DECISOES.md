@@ -112,3 +112,35 @@ são piores: ARA, ARC e Viva perdem Apocalipse 22:21, e a católica e a Viva
 trazem aspas duplicadas (`""dia""`) em milhares de versículos. Os títulos são
 os mesmos 1.923 nas seis versões (1.915 na católica), ou seja, foram
 aplicados em lote por quem montou os módulos, não vêm de cada tradução.
+
+## D012 — Modelo de palavras (`tokens`) e termos por Strong · 2026-11-16
+
+**Decisão:** as Bíblias com Strong gravam uma linha por palavra na tabela
+`tokens` (expressão do módulo, Strong, lema, morfologia e, nos interlineares,
+original, transliteração e glosa). O texto e o texto marcado do versículo
+(`verses.text`, `verses.tagged`) passam a ser montados a partir dessas
+palavras; `tagged` foi mantido. A tabela `strong_terms`, derivada de `tokens`,
+conta como cada idioma traduz cada Strong. Código em `importer/tokens.py`.
+
+Regras adotadas:
+- Código acima de H8674 ou G5624 é análise verbal (tempo, voz, modo), não
+  verbete: vai para `morph`, nunca para `strong`.
+- Expressão com vários códigos lexicais: a primeira linha leva a expressão, as
+  demais ficam com `surface` vazio. `surface` vazio também marca palavra
+  original sem tradução (o "-" dos interlineares, a partícula hebraica H853).
+- No formato `<wt>`, o campo que aparece primeiro (`<E>` ou `<O>`) é a linha
+  principal do módulo; o outro vira original ou glosa.
+- Termo = expressão em minúsculas, sem pontuação e sem as palavras de apoio do
+  começo (artigos, preposições, conjunções, possessivos). O lema grego perde
+  os acentos, para unir a grafia do TR com a do BSB.
+- Fica de fora o termo que aparece uma única vez e responde por menos de 5%
+  das ocorrências do Strong.
+
+**Motivo:** consultar por Strong ("todas as palavras com G25") e montar a
+ponte português ↔ inglês exigem as palavras como linhas, não um texto marcado.
+
+**Limites conhecidos:** verbos aparecem flexionados (G25 em português dá
+"ama", "amou", "amam", cada um com cerca de 10%); traduções diferentes
+dividem a contagem (H2617 em inglês: "loving devotion" na BSB, "mercy" na
+KJV). A segmentação da ARA e da KJV usa o texto entre um código e o seguinte,
+o que às vezes inclui palavras a mais.

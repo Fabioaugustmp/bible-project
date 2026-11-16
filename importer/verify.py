@@ -91,6 +91,33 @@ check(control == 0, f"versículos com caractere de controle: {control}")
 leaked = one("select count(*) from verses where heading is not null and text like heading || ' ' || heading || '%'")
 check(leaked == 0, f"versículos com o título repetido dentro do texto: {leaked}")
 
+print("Palavras e termos por Strong:")
+without_words = [row[0] for row in con.execute(
+    "select m.abbr from modules m where m.has_strongs = 1"
+    " and not exists (select 1 from tokens t where t.module_id = m.id)")]
+check(not without_words, f"Bíblias com Strong sem palavras em tokens: {without_words or 'nenhuma'}")
+for abbr, words, coded, untranslated in con.execute(
+    "select m.abbr, count(*), sum(t.strong is not null), sum(t.surface = '') from tokens t"
+    " join modules m on m.id = t.module_id group by m.id order by m.id"
+):
+    print(f"  [info] {abbr}: {words} palavras, {coded} com Strong, {untranslated} sem tradução na linha principal")
+beyond = one(
+    "select count(*) from tokens where (strong like 'G%' and cast(substr(strong, 2) as integer) > 5624)"
+    " or (strong like 'H%' and cast(substr(strong, 2) as integer) > 8674)")
+check(beyond == 0, f"códigos de análise verbal gravados como Strong: {beyond}")
+mixed = one(
+    "select count(*) from verses v join modules m on m.id = v.module_id"
+    " where m.lang = 'eng' and m.kind = 'bible' and v.text glob '*[α-ωא-ת]*'")
+check(mixed == 0, f"versículos de Bíblia em inglês com grego ou hebraico no texto: {mixed}")
+# Traduções que têm de aparecer em primeiro lugar quando há Bíblia com Strong no idioma.
+for strong, lang, expected in (("G5485", "por", "graça"), ("G5485", "eng", "grace"), ("G4102", "por", "fé"),
+                               ("G4102", "eng", "faith"), ("H7965", "por", "paz"), ("H7965", "eng", "peace")):
+    top = con.execute(
+        "select term, count from strong_terms where strong = ? and lang = ? order by count desc limit 1",
+        (strong, lang)).fetchone()
+    if top:
+        check(top[0] == expected, f"{strong} em {lang}: '{top[0]}' ({top[1]} ocorrências), esperado '{expected}'")
+
 print("Procedência:")
 check(one("select count(*) from modules where origin_sha256 is null or length(origin_sha256) <> 64") == 0,
       "todo módulo tem SHA-256 do arquivo de origem")

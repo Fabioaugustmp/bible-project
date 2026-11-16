@@ -11,6 +11,7 @@ import hashlib
 import json
 import sys
 import time
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -19,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import db  # noqa: E402
 import esword  # noqa: E402
 import theword  # noqa: E402
+from tokens import normalize_term, strip_accents  # noqa: E402
 
 READERS = {**{ext: ("esword", fn) for ext, fn in esword.READERS.items()},
            **{ext: ("theword", fn) for ext, fn in theword.READERS.items()}}
@@ -72,6 +74,13 @@ class Adder:
             [(module_id, *row) for row in rows],
         )
         self.items += len(rows)
+
+    def tokens(self, module_id, rows):
+        self.con.executemany(
+            "insert into tokens(module_id, book, chapter, verse, pos, surface, strong, lemma, morph,"
+            " original, translit, gloss) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(module_id, *row) for row in rows],
+        )
 
     def _with_links(self, sql, kind, module_id, rows, links):
         for index, row in enumerate(rows):
@@ -136,6 +145,7 @@ def merge_duplicate_bibles(con):
                     (donor_id, keeper_id, donor_id),
                 ).rowcount
             con.execute("delete from verses where module_id = ?", (donor_id,))
+            con.execute("delete from tokens where module_id = ?", (donor_id,))
             con.execute("delete from modules where id = ?", (donor_id,))
             message = (f"mesma Bíblia ({abbr}) que {Path(keeper_path).name}; mantida aquela, "
                        f"com {copied} de {headings} títulos de seção copiados desta")
@@ -144,6 +154,36 @@ def merge_duplicate_bibles(con):
                 (now(), donor_path, message),
             )
             print(f"  unido    {Path(donor_path).name} -> {Path(keeper_path).name} ({copied} títulos)")
+
+
+def build_strong_terms(con):
+    """Índices de `tokens` e a tabela `strong_terms`: como cada idioma traduz cada Strong."""
+    con.execute("create index tokens_by_strong on tokens(strong)")
+    con.execute("create index tokens_by_ref on tokens(module_id, book, chapter, verse, pos)")
+    counts = Counter()
+    for lang, surface, strong, lemma in con.execute(
+        "select m.lang, t.surface, t.strong, t.lemma from tokens t join modules m on m.id = t.module_id"
+        " where t.strong is not null"
+    ):
+        if surface and lang in ("por", "eng"):
+            term = normalize_term(surface, lang)
+            if term:
+                counts[(strong, lang, term)] += 1
+        if lemma:  # o lema está sempre na língua original
+            if strong[0] == "G":
+                counts[(strong, "grc", strip_accents(lemma.lower()))] += 1
+            else:
+                counts[(strong, "heb", lemma)] += 1
+    totals = Counter()
+    for (strong, lang, _), count in counts.items():
+        totals[(strong, lang)] += count
+    rows = [
+        (strong, lang, term, count, round(count / totals[(strong, lang)], 4))
+        for (strong, lang, term), count in counts.items()
+        if count >= 2 or count / totals[(strong, lang)] >= 0.05  # descarta traduções isoladas
+    ]
+    con.executemany("insert into strong_terms values (?, ?, ?, ?, ?)", rows)
+    return len(rows)
 
 
 def check_residue(con):
@@ -199,6 +239,11 @@ def main():
         con.commit()
 
     merge_duplicate_bibles(con)
+    con.commit()
+    print("montando termos por Strong...")
+    terms = build_strong_terms(con)
+    words = con.execute("select count(*) from tokens").fetchone()[0]
+    print(f"  {words} palavras, {terms} termos")
     con.commit()
     print("montando índice de busca...")
     db.rebuild_search(con)

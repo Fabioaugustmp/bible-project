@@ -6,11 +6,13 @@ from canon import NT_VERSES, OT_BOOKS, OT_VERSES, references
 from db import MARK_CLOSE, MARK_OPEN, open_readonly, split_strongs, strip_controls
 from rtf import rtf_to_text, tidy
 from rvf import is_rvf, rvf_to_text
+from tokens import from_marked, from_wt, tagged_of, text_of
 
 # --- Bíblias ----------------------------------------------------------------
 
 _NOTE = re.compile(r"<RF[^>]*>.*?<Rf>", re.S)
-_HEADING = re.compile(r"<TS\d?>.*?<Ts>", re.S)
+_HEADING = re.compile(r"<TS\d?>(.*?)<Ts>", re.S)
+_VARIANT = re.compile(r"<V[^<>]*>")  # variantes textuais do TR, embutidas em uma tag
 _STRONG = re.compile(r"<W([GH])(\d+)[a-z]?>")
 _BREAK = re.compile(r"<(?:BR|CM|CL|CI|PF\d?|PI\d?)>")
 _TAG = re.compile(r"<[^<>]{0,300}>")
@@ -31,12 +33,22 @@ def _decode(raw: bytes) -> str:
 
 
 def _clean_verse(line: str):
-    line = _HEADING.sub(" ", _NOTE.sub("", strip_controls(line)))
+    """Uma linha de versículo -> (título de seção, texto, texto marcado, palavras)."""
+    line = strip_controls(line)
+    titles = [tidy(_TAG.sub("", title)) for title in _HEADING.findall(line)]
+    heading = " · ".join(title for title in titles if title) or None
+    line = _VARIANT.sub("", _HEADING.sub(" ", _NOTE.sub("", line)))
+    if "<wt>" in line:  # uma palavra por <wt>: TR e interlineares
+        words = from_wt(_BREAK.sub(" ", line))
+        return heading, text_of(words), tagged_of(words), words
     line = _STRONG.sub(lambda m: f"{MARK_OPEN}{m.group(1)}{m.group(2)}{MARK_CLOSE}", line)
     line = _TAG.sub("", _BREAK.sub(" ", line))
-    # Códigos seguidos da mesma palavra viram um só marcador: {G1|G2}.
+    # Códigos seguidos da mesma expressão viram um só marcador.
     line = line.replace(f"{MARK_CLOSE}{MARK_OPEN}", "|")
-    return split_strongs(line)
+    if MARK_OPEN not in line:
+        return heading, split_strongs(line)[0], None, []
+    words = from_marked(line)
+    return heading, text_of(words), tagged_of(words), words
 
 
 def _trailer(lines):
@@ -75,15 +87,18 @@ def read_bible(path, add):
         "lang": config.get("lang") or "und",
         "has_strongs": 0,
     }
-    rows = []
+    rows, words = [], []
     for number, ((book, chapter, verse), line) in enumerate(zip(references(first, last), lines), start=1):
-        text, tagged = _clean_verse(line)
+        heading, text, tagged, verse_words = _clean_verse(line)
         if tagged:
             meta["has_strongs"] = 1
         if text:
-            rows.append((book, chapter, verse, text, tagged, None, f"L{number}"))
+            rows.append((book, chapter, verse, text, tagged, heading, f"L{number}"))
+            words.extend((book, chapter, verse, pos, *word) for pos, word in enumerate(verse_words, start=1))
     module_id = add.module(meta)
     add.verses(module_id, rows)
+    if meta["has_strongs"]:
+        add.tokens(module_id, words)
     return len(rows)
 
 

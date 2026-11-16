@@ -35,6 +35,26 @@ create table verses(
 create index verses_by_ref on verses(book, chapter, verse);
 create index verses_by_module on verses(module_id, book, chapter, verse);
 
+-- Uma linha por palavra das Bíblias com Strong (ver importer/tokens.py).
+create table tokens(
+    module_id integer not null references modules(id),
+    book integer, chapter integer, verse integer,
+    pos integer,                    -- ordem da palavra no versículo, a partir de 1
+    surface text,                   -- como aparece no módulo; vazio = original sem tradução
+    strong text,                    -- 'G25' / 'H7225'; nulo = texto sem código
+    lemma text, morph text,
+    original text, translit text, gloss text   -- só nos interlineares
+);
+
+-- Como cada idioma traduz cada Strong, com contagem (derivada de tokens).
+create table strong_terms(
+    strong text not null, lang text not null, term text not null,
+    count integer not null,
+    share real not null,            -- fração das ocorrências do Strong nesse idioma
+    primary key (strong, lang, term)
+) without rowid;
+create index strong_terms_by_term on strong_terms(lang, term);
+
 -- ref_start / ref_end = capítulo * 1000 + versículo.
 -- Versículo 0 = introdução do capítulo; capítulo 0 = introdução do livro.
 create table comments(

@@ -3,6 +3,7 @@ import re
 
 from db import MARK_CLOSE, MARK_OPEN, guess_lang, open_readonly, split_strongs, strip_controls
 from rtf import rtf_to_text
+from tokens import from_marked, tagged_of, text_of
 
 # {\cf11\super H1254 [H8804]} -> código Strong e, entre colchetes, análise do verbo.
 _STRONG_GROUP = re.compile(r"\{\\cf\d+\\super\s+([^{}]*)\}")
@@ -45,7 +46,7 @@ def _split_heading(scripture: str):
 def read_bible(path, add):
     src = open_readonly(path)
     meta = _details(src) | {"kind": "bible", "has_strongs": 0}
-    rows, skipped, unreadable = [], 0, 0
+    rows, words, skipped, unreadable = [], [], 0, 0
     for book, chapter, verse, scripture in src.execute(
         "select Book, Chapter, Verse, Scripture from Bible order by rowid"
     ):
@@ -59,7 +60,12 @@ def read_bible(path, add):
             continue
         heading, body = _split_heading(strip_controls(scripture or ""))
         marked = rtf_to_text(_STRONG_GROUP.sub(_mark_strongs, body)).replace("¶", "")
-        text, tagged = split_strongs(marked)
+        if MARK_OPEN in marked:
+            verse_words = from_marked(marked)
+            text, tagged = text_of(verse_words), tagged_of(verse_words)
+            words.extend((book, chapter, verse, pos, *word) for pos, word in enumerate(verse_words, start=1))
+        else:
+            text, tagged = split_strongs(marked)
         if tagged:
             meta["has_strongs"] = 1
         rows.append((book, chapter, verse, text, tagged, heading, f"{book}.{chapter}.{verse}"))
@@ -74,6 +80,8 @@ def read_bible(path, add):
     meta["lang"] = guess_lang(_sample([r[3] for r in rows[23145:23300] or rows]))
     module_id = add.module(meta)
     add.verses(module_id, rows)
+    if meta["has_strongs"]:
+        add.tokens(module_id, words)
     if skipped:
         add.log("aviso", f"{skipped} versículos de livros fora do cânon de 66 foram ignorados")
     return len(rows)

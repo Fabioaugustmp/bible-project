@@ -1,70 +1,255 @@
-# Backlog
+# Backlog de execução
 
-Ideias de funcionalidade ainda não comprometidas em nenhuma fase do
-[PLANO.md](PLANO.md). Um item sai daqui quando entra em uma fase do plano (e
-então é marcado como `planejado`, com a fase) ou quando é descartado (com o
-motivo).
+Tarefas que precisam ser executadas, na ordem. Escrito em 2026-11-16 para que
+qualquer pessoa ou modelo continue o trabalho a partir daqui.
 
-- **Origem:** `pesquisa` = [PESQUISA-FEATURES.md](PESQUISA-FEATURES.md)
-  (2026-11-16, feita por um agente; as fontes externas e licenças **não foram
-  conferidas** por nós); `importação` = achado durante a Fase 3; `uso` =
-  limitação notada ao testar o aplicativo.
-- **Prioridade:** sugestão inicial, ainda não validada pelo usuário.
-- **Estado:** `ideia`, `planejado`, `feito`, `descartado`.
+Ler antes de começar: [PLANO.md](PLANO.md) (princípios e fases),
+[DECISOES.md](DECISOES.md), [FORMATOS.md](FORMATOS.md). Ideias ainda não
+transformadas em tarefa estão em [IDEIAS.md](IDEIAS.md).
 
-Antes de adotar qualquer dado externo, conferir a licença na origem e
-registrar a decisão em [DECISOES.md](DECISOES.md).
+## Objetivo
 
-## Prioridade 1 — alto valor, só com dados que já existem
+Aplicativo local e offline de estudo bíblico que importa os módulos que o
+usuário já tem do e-Sword e do theWord, com leitura bem tipografada e busca
+unificada. O problema central a resolver: o usuário lê em português, mas quase
+todo o material de estudo profundo que ele tem está em inglês.
 
-| ID | Funcionalidade | O que o usuário ganha | Depende de | Esforço | IA | Origem | Estado |
-|---|---|---|---|---|---|---|---|
-| B01 | Citações bíblicas clicáveis dentro de comentários e verbetes | Passar o mouse em "Rom 8:28" mostra o versículo em português; clicar navega | Tabela `links`; guardar a posição da citação no texto | Baixo | Não | pesquisa #1 | ideia |
-| B02 | Busca bilíngue por ponte Strong | Buscar "graça" acha também "grace" e χάρις nos comentários em inglês | ARA com Strong, TR com Strong, KJV | Médio | Não | pesquisa #2 | ideia |
-| B03 | Referências cruzadas ranqueadas | Lista curta das passagens mais ligadas, com texto em português e a origem de cada ligação | TSK, `default.xrefs.twm` do theWord, co-citação na tabela `links`; opcional: OpenBible (CC BY) | Baixo | Não | pesquisa #3 + importação | ideia |
-| B07 | Mapa de cobertura no leitor | Marca discreta por versículo indicando quanto material existe; painel agrupado | Contagens de `comments` e `links` | Baixo | Não | pesquisa #7 | ideia |
-| B22 | Títulos de seção e parágrafos na leitura | Capítulo dividido em perícopes com título, em vez de bloco contínuo | `default.english.hdgs.twm` e `default.prgs.twm` do theWord; versões "com cabeçalhos" do e-Sword | Baixo | Não | importação | ideia |
-| B23 | Voltar aos resultados da busca | Abrir um resultado não perde a lista | Nenhum | Baixo | Não | uso | ideia |
+**Posicionamento proposto (aguarda confirmação do usuário).** O usuário quer
+que o projeto se destaque, citando o Bíblia Raízes. Pelo site dele (lido em
+2026-11-16): assinatura anual, hebraico e grego dentro da leitura, assistente
+de IA com citações, biblioteca fechada de obras em português, notas
+sincronizadas. Competir nisso é fazer o mesmo produto com menos conteúdo. O que
+este projeto pode ter que aquele não tem:
 
-## Prioridade 2 — alto valor, exige modelo local ou dado externo
+1. **Biblioteca própria:** importa qualquer módulo e-Sword/theWord; não é
+   catálogo fechado.
+2. **Local, privado, sem assinatura.**
+3. **Ponte português ↔ inglês sem IA** (marco M2): torna utilizável em
+   português o acervo em inglês.
+4. **Tudo verificável:** cada resultado mostra de que módulo e arquivo veio;
+   comparar comentaristas lado a lado em vez de uma resposta única de IA.
 
-| ID | Funcionalidade | O que o usuário ganha | Depende de | Esforço | IA | Origem | Estado |
-|---|---|---|---|---|---|---|---|
-| B11 | Avaliação automática da busca semântica | Escolher o modelo de embeddings por medida, não por impressão | TSK e pares versículo ↔ comentário já na base | Baixo | Embeddings locais | pesquisa #11 | ideia (fazer junto com a Fase 4) |
-| B04 | Tradução local de comentários, sob demanda | Ler Gill, Henry, ISBE em português, com o original ao lado e cache | Modelo OPUS-MT en→pt (CC BY 4.0, a conferir); quebra a D003 | Médio | Modelo de tradução local | pesquisa #4 | ideia |
-| B05 | Léxico breve em português | Clique no Strong responde primeiro em português, com as traduções reais da ARA | STEPBible TBESG/TBESH (CC BY 4.0, a conferir) + tradução única | Médio | Modelo de tradução local, uma vez | pesquisa #5 | ideia (junto com a Fase 5) |
-| B06 | Planos de leitura com progresso | Uso diário; "continuar de onde parei" | Módulos `.rdp` e devocionais já instalados | Baixo | Não | pesquisa #6 | ideia |
-| B10 | Versificação correta entre tradições | Bíblia católica, Salmos com título e deuterocanônicos alinhados; resolve o limite da D005 | STEPBible TVTMS (CC BY 4.0, a conferir) | Médio | Não | pesquisa #10 | ideia |
-| B09 | Aviso de variante textual no comparador | Explica por que ACF/ARC têm trechos que NVI/NTLH omitem | STEPBible TAGNT (CC BY 4.0, a conferir); módulos de variantes já instalados | Médio | Não | pesquisa #9 | ideia (junto com a Fase 5) |
-| B08 | Página de tópico em português | Um lugar só para "Arca da Aliança": verbetes de todos os dicionários e versículos | Nave's, Torrey, Thompson, ISBE, Easton; ACAI (CC BY-SA 4.0, a conferir) | Médio/alto | Não (embeddings ajudam) | pesquisa #8 | ideia |
+Limite: módulos protegidos por direito autoral não podem ser distribuídos com
+o aplicativo; cada usuário importa os seus.
 
-## Prioridade 3 — bom, mas pode esperar
+## Estado atual (commit `899c25e`)
 
-| ID | Funcionalidade | O que o usuário ganha | Depende de | Esforço | IA | Origem | Estado |
-|---|---|---|---|---|---|---|---|
-| B20 | Busca por morfologia | "Todos os imperativos aoristos em Romanos" | TR com morfologia | Médio | Não | pesquisa #20 | ideia |
-| B13 | Interlinear do AT e morfologia por extenso | Hebraico com Strong, glosa e análise explicada | STEPBible TAHOT, TEHMC, TEGMC (a conferir) | Médio | Não | pesquisa #13 | ideia |
-| B12 | Mapa dos lugares do capítulo | Ver onde ficam os lugares citados | OpenBible Geocoding (CC BY 4.0, a conferir); atlas instalado | Médio | Não | pesquisa #12 | ideia |
-| B15 | Cadernos de estudo e etiquetas nas notas | Notas agrupadas por tema; exportação em Markdown | Base de dados do usuário (Fase 6) | Médio | Não | pesquisa #15 | ideia (junto com a Fase 6) |
-| B16 | Áreas de trabalho e painéis lado a lado | Guardar arranjos ("devocional", "grego") | Nenhum | Médio | Não | pesquisa #16 | ideia |
-| B14 | Leitura em voz alta | Ouvir o capítulo em português | Voz do sistema pelo navegador | Baixo | Não | pesquisa #14 | ideia |
-| B18 | Passagens paralelas e AT citado no NT | Sinopse dos evangelhos, Reis/Crônicas lado a lado | Fonte aberta de paralelos não confirmada; aproximação por embeddings | Médio/alto | Embeddings locais | pesquisa #18 | ideia |
-| B17 | Resumo "o que dizem os comentaristas" | Três ou quatro linhas em português por versículo, com fonte por frase | Comentários importados | Médio | LLM | pesquisa #17 | ideia |
-| B19 | Pergunte à biblioteca, com resposta citada | Pergunta e resposta em português, com citações clicáveis | Índice da Fase 4 | Alto | LLM; ameaça o "tudo offline" | pesquisa #19 | ideia (opcional, por último) |
-| B21 | Linha do tempo e pessoas | Eventos e genealogias ligados aos versículos | Theographic (licença com divergência, a conferir) | Alto | Não | pesquisa #21 | ideia |
+- Funciona: importador (`importer/build.py`), verificação
+  (`importer/verify.py`), servidor (`app/server.py`, porta 8377) e interface
+  (leitura, painel do versículo, busca por palavra, ir para referência).
+- `data/library.db`: base de **amostras** (8 módulos), a que o aplicativo abre.
+- `data/library-full.db`: importação completa (72 módulos, 569 s, 1,15 GB),
+  **com defeitos conhecidos e ainda não promovida**. Log em
+  `data/import-full.log`.
+- Importado na base completa: 18 Bíblias, 24 comentários, 24 dicionários,
+  6 livros; cerca de 3 milhões de citações na tabela `links`.
+- Módulos de origem: `C:\Program Files (x86)\e-Sword`,
+  `C:\ProgramData\The Word`, `%APPDATA%\The Word`.
+- Ambiente: Windows, Python 3.14 (só biblioteca padrão, D003), Node instalado,
+  Rust não instalado.
 
-## Descartado
+## Como trabalhar
 
-| Ideia | Motivo |
-|---|---|
-| Traduzir a biblioteca inteira de antemão | Muito texto para CPU e a maior parte nunca seria lida; tradução sob demanda com cache (B04) cobre o que importa |
-| Chat genérico sem citações | Não dá para conferir; só faz sentido no formato do B19 |
-| Treinar ou ajustar modelo próprio | Custo não se paga para biblioteca pessoal |
-| Banco de grafos | As relações cabem em tabelas SQLite |
-| Árvores sintáticas MACULA na interface | Baseadas em Nestle1904/SBLGNT, não no TR instalado |
-| Visualizações decorativas (arcos, nuvem 3D) | Pouco usadas no estudo |
-| Recursos sociais, nuvem, sequências de dias | Contrariam "local e offline" |
-| Abrir módulos criptografados | Contorna proteção de conteúdo licenciado (D008) |
-| Loja ou baixador de módulos de terceiros | Situação de direito autoral incerta |
-| NLLB-200 como tradutor | Licença não comercial trava distribuição futura |
-| Montador de sermões | Fora do objetivo; a exportação da Fase 6 cobre o essencial |
+- Uma tarefa por commit; mensagem diz o que foi verificado.
+- Concluída = critérios de aceite conferidos + `python importer/verify.py`
+  passa + documentos atualizados (este arquivo, PLANO, FORMATOS se o formato
+  foi descoberto, DECISOES se houve escolha).
+- Nunca escrever nos módulos de origem. Nunca tentar abrir módulos
+  criptografados (D008).
+- A importação completa leva cerca de 10 minutos: rodar em segundo plano e
+  gravar em arquivo separado antes de promover (D009).
+- Scripts com barras invertidas (RTF, regex) devem ir em arquivo `.py`, não em
+  heredoc de shell: o heredoc já corrompeu `\r` e `\x` duas vezes.
+- Ler colunas de módulos com `cast(coluna as blob)`: há texto que não é UTF-8.
+
+## Decisões pendentes do usuário
+
+| # | Pergunta | Recomendação |
+|---|---|---|
+| P1 | Confirma o posicionamento acima? O projeto será público? | Sim; público muda M5 (assistente de importação, créditos, licença) |
+| P2 | Ponte português↔inglês (M2) antes dos embeddings (M3)? | Sim: usa só dados existentes e sem dependências |
+| P3 | Dependências além da biblioteca padrão são aceitas (necessárias em M3)? | Sim, isoladas no indexador; registrar nova decisão que revê a D003 |
+| P4 | Uso de modelo de linguagem (local ou por API) é aceito? | Só opcional e por último (M6) |
+| P5 | Manter a página do Notion sincronizada? | Não: hoje ela espelha IDEIAS.md e está desatualizada em relação a este arquivo |
+
+## M1 — Fechar a importação completa (Fase 3)
+
+### T01 — Bíblias do e-Sword com linha de cabeçalho e títulos de seção
+- **Por quê:** 4 módulos `*_com_cabecalhos.bblx` falham com
+  `TypeError: '<=' not supported between 'int' and 'str'`: a tabela `Bible`
+  tem uma linha `('Livro','Cap','Verso','TítuloConfigTexto')`. Nos que
+  importam (NVI, NTLH), o título vaza para o texto: Gn 1:1 ficou
+  "O começo No princípio Deus criou…". No arquivo o título vem como
+  `\par\par {\b\qc O começo}\par\par No princípio…`.
+- **Fazer:** em `importer/esword.py::read_bible`, pular linhas em que
+  Book/Chapter/Verse não são inteiros; extrair grupos `{\b\qc …}` para uma
+  coluna nova `verses.heading` (esquema em `importer/db.py`); título no fim de
+  um versículo pertence ao seguinte. Ajustar `Adder.verses` em `build.py` e o
+  leitor do theWord (passa `None`).
+- **Aceite:** os 6 `*_com_cabecalhos` importam; NVI Gn 1:1 tem texto
+  "No princípio Deus criou os céus e a terra." e heading "O começo"; mais de
+  1.000 títulos por módulo; nenhum texto de versículo começa com o título.
+- **Tamanho:** M.
+
+### T02 — Uma só cópia de cada Bíblia
+- **Por quê:** a mesma versão existe com e sem títulos (hoje NVI e NTLH
+  aparecem duas vezes no seletor; depois de T01, também ARA, ARC, Viva e
+  católica).
+- **Fazer:** após importar, para Bíblias com mesma `source` e `abbr`, manter a
+  que tem mais `heading` e apagar a outra, registrando `ignorado` em
+  `import_log` com o nome do arquivo mantido.
+- **Aceite:** `select abbr from modules where kind='bible' group by source, abbr having count(*)>1` vazio.
+- **Depende de:** T01. **Tamanho:** P.
+
+### T03 — Erros restantes de leitura
+- **Fazer:** (a) `gnt-tr_.bblx` tem `Scripture` em blob cifrado: registrar
+  `ignorado` em vez de `erro`. (b) Webster 1828: `topics.subject` não é UTF-8
+  ("Vis-à-vis"): ler com `cast(t.subject as blob)` e decodificar com
+  `_decode`. (c) AmTrac, verbete "Cockle", tem `\par` literal na origem: aceitar.
+- **Aceite:** nenhuma linha `erro` em `import_log`; Webster com mais de 60 mil verbetes.
+- **Tamanho:** P.
+
+### T04 — Metadados limpos
+- **Fazer:** (a) normalizar idioma em `Adder.module`: hoje há `eng`,
+  `English`, `Eng - English`, `grk`, `grc`; resultado só em
+  {por, eng, grc, heb, spa, lat, und}. (b) Título de Bíblia do theWord com até
+  90 caracteres (hoje a BSB traz o aviso de licença inteiro). (c) `CATOLICA`
+  está com `has_strongs = 1` indevidamente: investigar o que os grupos
+  `{\cfN\super …}` contêm nela e só marcar Strong com códigos `[HG]\d+` em
+  volume.
+- **Aceite:** consultas correspondentes em `verify.py` passam.
+- **Tamanho:** P.
+
+### T05 — Interlineares BSB legíveis
+- **Por quê:** `BSB Reverse Interlinear.ont` e `BSB Interlinear NT-Grk.nt`
+  viram texto misturado: "For γὰρ gar{G1063} - ὁ ho{G3588} God Θεὸς…".
+- **Fazer:** examinar as tags brutas desses dois arquivos, documentar em
+  FORMATOS.md, e fazer `text` conter só a língua principal (inglês no
+  reverso, grego no outro), mantendo Strong em `tagged`. Guardar grego,
+  transliteração e glosa por palavra para a T20 (definir tabela `tokens`).
+- **Aceite:** Jo 3:16 do reverso é prosa inglesa sem caracteres gregos.
+- **Tamanho:** M.
+
+### T06 — Verificação para a base completa
+- **Fazer:** em `verify.py`: tolerar até 1% de diferença na contagem de
+  versículos (NVI 31.105, NTLH 31.101, Viva 31.103, católica 31.271 têm
+  versificação própria) e até 0,01% de linhas com sobra de marcação; acrescentar
+  verificações de T02, T03 e T04.
+- **Aceite:** `python importer/verify.py data/library-full.db` sai com 0.
+- **Tamanho:** P.
+
+### T07 — Reimportar, verificar e promover
+- **Fazer:** `python -u importer/build.py --out data/library-full.db "C:\Program Files (x86)\e-Sword" "C:\ProgramData\The Word" "%APPDATA%\The Word"`;
+  rodar T06; parar o servidor; substituir `data/library.db`; testar na
+  interface: Jo 3:16 (versões, comentários, citações), busca "graça",
+  referência "sl 23.1", console sem erros, painel respondendo em menos de 1 s.
+  Marcar Fase 3 concluída no PLANO.
+- **Depende de:** T01–T06. **Tamanho:** P.
+
+### T08 — Interface na escala da biblioteca completa
+- **Fazer:** (a) mostrar `heading` como título de perícope na leitura
+  (`/api/chapter` devolve o campo). (b) Painel do versículo com 24
+  comentários: agrupar por módulo, português primeiro, recolhido por padrão,
+  filtro por idioma. (c) "Citado em" pode ter centenas de itens: agrupar por
+  módulo com contagem. (d) Abrir um resultado de busca não deve perder a lista
+  (botão de voltar).
+- **Aceite:** Jo 3:16 na base completa é navegável sem rolagem excessiva;
+  voltar à busca funciona.
+- **Depende de:** T07. **Tamanho:** M.
+
+### T09 — Auxiliares do theWord
+- **Fazer:** importar `default.xrefs.twm` (tabela `xrefs(vi1, vi2)`, 19.671
+  pares), `default.english.hdgs.twm` (`headings(vi, pos, level, content)`,
+  5.289) e `default.prgs.twm` (`paragraphs(vi, typ)`, 14.074). O campo `vi`
+  parece ser `livro<<24 | capítulo<<16 | versículo<<8` (16843008 = Gn 1:1;
+  **confirmar** com mais pares antes de usar). Criar tabelas `xrefs` e
+  `paragraphs`; usar parágrafos na leitura.
+- **Aceite:** Gn 1:1 tem referências cruzadas coerentes (por exemplo Jo 1:1).
+- **Tamanho:** M.
+
+### T10 — Importação incremental (opcional)
+- **Fazer:** pular arquivos cujo SHA-256 e versão do importador não mudaram.
+- **Aceite:** segunda execução sem mudanças em menos de 60 s, mesmas contagens.
+- **Tamanho:** M.
+
+### T11 — Testes automatizados
+- **Fazer:** testes para `rtf.py`, `rvf.py` e os limpadores de versículo, com
+  amostras sintéticas (sem texto protegido), usando `unittest`.
+- **Aceite:** `python -m unittest` passa; cada defeito de T01–T05 tem um teste.
+- **Tamanho:** M.
+
+## M2 — Ponte português ↔ inglês sem IA
+
+### T20 — Strong clicável na leitura
+- **Fazer:** `/api/chapter` devolve `tagged`; a interface mostra os códigos
+  (com liga/desliga) e, ao clicar, abre o painel "Palavra" com os verbetes cujo
+  `topic` é o código. Léxicos legíveis por Strong na base: Dodson (grego),
+  AHLB (hebraico), LSJ, MLSJ, KJC, LXXHebGreek. Não há dicionário Strong
+  hebraico legível (o de Mickelson é criptografado): avaliar fonte aberta e
+  conferir a licença.
+- **Aceite:** em Jo 3:16 da ARA com Strong, clicar em "amou" abre G25.
+- **Tamanho:** M.
+
+### T21 — Tabela de correspondência por Strong
+- **Fazer:** na importação, montar `strong_terms(strong, lang, term, count)`
+  a partir de `tagged` da ARA1993+ (por), KJV (eng) e TR (grc). O TR traz o
+  lema em `l="…"`, hoje descartado em `theword.py::_clean_verse`: preservar.
+- **Aceite:** G5485 dá "graça" (por) e "grace" (eng) como termos mais frequentes.
+- **Depende de:** T07. **Tamanho:** M.
+
+### T22 — Ocorrências e traduções de um termo
+- **Fazer:** no painel "Palavra", listar versículos com o código e como cada
+  versão o traduz, com contagem.
+- **Depende de:** T20, T21. **Tamanho:** M.
+
+### T23 — Busca bilíngue
+- **Fazer:** expandir a busca em português com os termos ingleses e gregos
+  mais frequentes do mesmo Strong (limitar aos dois ou três principais);
+  mostrar o que foi incluído e permitir desligar.
+- **Aceite:** buscar "graça" traz comentários em inglês com "grace", marcados
+  "incluído por G5485".
+- **Depende de:** T21. **Tamanho:** M.
+
+### T24 — Citações clicáveis nos comentários
+- **Fazer:** preservar a posição das referências no texto. theWord: campo
+  `HYPERLINK "tw://bible.*?id=L.C.V"` (hoje descartado em `rtf.py`); e-Sword:
+  padrões como `Mat_22:30` e `1Sa_16:10-11`. Decidir o formato de marcação
+  no texto e registrar em DECISOES.md. Passar o mouse mostra o versículo em
+  português; clicar navega.
+- **Tamanho:** G.
+
+### T25 — Referências cruzadas ranqueadas
+- **Fazer:** combinar TSK/TSKe (já em `links`), `xrefs` (T09) e co-citação
+  entre comentários; mostrar as dez melhores com o texto em português e a
+  origem de cada uma.
+- **Depende de:** T09. **Tamanho:** M.
+
+## M3 — Busca semântica (embeddings)
+
+- **T30** Verificar se as bibliotecas de embeddings funcionam em Python 3.14;
+  escolher o ambiente e registrar decisão que revê a D003. (depende de P3)
+- **T31** Conjunto de avaliação com dados da própria base: pares de referência
+  cruzada e versículo ↔ comentário do mesmo versículo; medir recall@10.
+- **T32** Indexar versículos e parágrafos de comentário, guardando modelo e
+  versão junto dos vetores.
+- **T33** Busca híbrida (palavra + significado) na interface.
+- **T34** "Passagens parecidas" no painel do versículo.
+
+## M4 — Dados do usuário
+
+- **T40** Base separada `user.db` com notas e marcações.
+- **T41** Importar notas do e-Sword (`Documentos\e-Sword`, arquivos `.notx`,
+  `.jnlx`, `.topx`; formatos ainda não examinados).
+- **T42** Exportar estudo em Markdown e Word.
+
+## M5 — Produto distribuível
+
+- **T50** Assistente de importação na interface (hoje é linha de comando).
+- **T51** Casca desktop; decidir entre Tauri e Electron.
+- **T52** Tela de créditos e licenças; revisão do que pode ser distribuído.
+  (depende de P1)
+
+## M6 — Opcional
+
+Tradução local sob demanda, léxico breve em português, perguntas com resposta
+citada: ver [IDEIAS.md](IDEIAS.md) (B04, B05, B19). Dependem de P3 e P4.

@@ -93,7 +93,17 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 
 | Tarefa | Estado |
 |---|---|
-| T01–T11 (M1) | pendente |
+| T01 | concluída: 6 módulos com cabeçalhos importam, 1.923 títulos cada (1.915 na católica), texto sem o título |
+| T02 | pendente |
+| T03 | pendente |
+| T04 | pendente |
+| T05 | pendente |
+| T06 | pendente |
+| T07 | pendente |
+| T08 | pendente |
+| T09 | pendente |
+| T10 | pendente |
+| T11 | pendente |
 | T20–T25 (M2) | pendente |
 | T30–T34 (M3) | pendente |
 | T40–T42 (M4) | pendente |

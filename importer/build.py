@@ -67,8 +67,8 @@ class Adder:
 
     def verses(self, module_id, rows):
         self.con.executemany(
-            "insert into verses(module_id, book, chapter, verse, text, tagged, origin_key)"
-            " values (?, ?, ?, ?, ?, ?, ?)",
+            "insert into verses(module_id, book, chapter, verse, text, tagged, heading, origin_key)"
+            " values (?, ?, ?, ?, ?, ?, ?, ?)",
             [(module_id, *row) for row in rows],
         )
         self.items += len(rows)

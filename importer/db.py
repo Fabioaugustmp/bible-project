@@ -4,7 +4,7 @@ import sqlite3
 
 from canon import BOOKS, VERSES
 
-IMPORTER_VERSION = "0.1.0"
+IMPORTER_VERSION = "0.2.0"
 
 SCHEMA = """
 create table meta(key text primary key, value text);
@@ -29,6 +29,7 @@ create table verses(
     book integer, chapter integer, verse integer,
     text text,                      -- texto limpo
     tagged text,                    -- texto com Strong entre chaves, quando houver
+    heading text,                   -- título de seção que antecede o versículo, quando houver
     origin_key text                 -- chave no arquivo de origem
 );
 create index verses_by_ref on verses(book, chapter, verse);

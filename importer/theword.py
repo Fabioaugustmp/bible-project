@@ -72,7 +72,7 @@ def read_bible(path, add):
         if tagged:
             meta["has_strongs"] = 1
         if text:
-            rows.append((book, chapter, verse, text, tagged, f"L{number}"))
+            rows.append((book, chapter, verse, text, tagged, None, f"L{number}"))
     module_id = add.module(meta)
     add.verses(module_id, rows)
     return len(rows)

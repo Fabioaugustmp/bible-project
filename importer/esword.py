@@ -28,22 +28,40 @@ def _sample(texts, limit=40):
     return " ".join(t for t in texts[:limit] if t)
 
 
+# {\b\qc O começo} -> título de seção embutido no início do texto do versículo.
+# ({\i\qc ...} é o título de um salmo, que faz parte do texto e fica nele.)
+_HEADING_GROUP = re.compile(r"\{\\b\\qc\s*([^{}]*)\}")
+
+
+def _split_heading(scripture: str):
+    """Separa os títulos de seção do texto do versículo: (título ou None, texto)."""
+    titles = [rtf_to_text(title) for title in _HEADING_GROUP.findall(scripture)]
+    titles = [title for title in titles if title]
+    if not titles:
+        return None, scripture
+    return " · ".join(titles), _HEADING_GROUP.sub(" ", scripture)
+
+
 def read_bible(path, add):
     src = open_readonly(path)
     meta = _details(src) | {"kind": "bible", "has_strongs": 0}
     rows, skipped = [], 0
     for book, chapter, verse, scripture in src.execute(
-        "select Book, Chapter, Verse, Scripture from Bible order by Book, Chapter, Verse"
+        "select Book, Chapter, Verse, Scripture from Bible order by rowid"
     ):
+        if not all(isinstance(number, int) for number in (book, chapter, verse)):
+            continue  # linha de cabeçalho da tabela: ('Livro', 'Cap', 'Verso', ...)
         if not 1 <= book <= 66:
             skipped += 1
             continue
-        marked = rtf_to_text(_STRONG_GROUP.sub(_mark_strongs, scripture or "")).replace("¶", "")
+        heading, body = _split_heading(scripture or "")
+        marked = rtf_to_text(_STRONG_GROUP.sub(_mark_strongs, body)).replace("¶", "")
         text, tagged = split_strongs(marked)
         if tagged:
             meta["has_strongs"] = 1
-        rows.append((book, chapter, verse, text, tagged, f"{book}.{chapter}.{verse}"))
+        rows.append((book, chapter, verse, text, tagged, heading, f"{book}.{chapter}.{verse}"))
     src.close()
+    rows.sort(key=lambda row: row[:3])
     meta["lang"] = guess_lang(_sample([r[3] for r in rows[23145:23300] or rows]))
     module_id = add.module(meta)
     add.verses(module_id, rows)

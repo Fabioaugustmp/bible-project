@@ -107,6 +107,45 @@ def find_modules(folders):
     return found
 
 
+def merge_duplicate_bibles(con):
+    """Mesma Bíblia em mais de um arquivo (com e sem títulos de seção): fica uma só.
+
+    Mantém a cópia sem títulos (nos módulos examinados é a completa e a de
+    texto mais limpo), copia para ela os títulos da outra e remove a outra.
+    """
+    groups = con.execute(
+        "select source, abbr from modules where kind = 'bible' group by source, abbr having count(*) > 1"
+    ).fetchall()
+    for source, abbr in groups:
+        ranked = con.execute(
+            "select m.id, m.origin_path, (select count(*) from verses v where v.module_id = m.id"
+            " and v.heading is not null) as headings from modules m"
+            " where m.kind = 'bible' and m.source = ? and m.abbr = ? order by headings, m.items desc, m.id",
+            (source, abbr),
+        ).fetchall()
+        keeper_id, keeper_path, _ = ranked[0]
+        for donor_id, donor_path, headings in ranked[1:]:
+            copied = 0
+            if headings:
+                copied = con.execute(
+                    "update verses set heading = (select d.heading from verses d where d.module_id = ?"
+                    " and d.book = verses.book and d.chapter = verses.chapter and d.verse = verses.verse)"
+                    " where module_id = ? and heading is null and exists (select 1 from verses d"
+                    " where d.module_id = ? and d.book = verses.book and d.chapter = verses.chapter"
+                    " and d.verse = verses.verse and d.heading is not null)",
+                    (donor_id, keeper_id, donor_id),
+                ).rowcount
+            con.execute("delete from verses where module_id = ?", (donor_id,))
+            con.execute("delete from modules where id = ?", (donor_id,))
+            message = (f"mesma Bíblia ({abbr}) que {Path(keeper_path).name}; mantida aquela, "
+                       f"com {copied} de {headings} títulos de seção copiados desta")
+            con.execute(
+                "insert into import_log(at, level, origin_path, message) values (?, 'ignorado', ?, ?)",
+                (now(), donor_path, message),
+            )
+            print(f"  unido    {Path(donor_path).name} -> {Path(keeper_path).name} ({copied} títulos)")
+
+
 def check_residue(con):
     """Procura sobras de marcação no texto importado."""
     problems = []
@@ -159,6 +198,8 @@ def main():
             print(f"  {reason[0]:<8} {path.name}: {reason[1]}")
         con.commit()
 
+    merge_duplicate_bibles(con)
+    con.commit()
     print("montando índice de busca...")
     db.rebuild_search(con)
     for problem in check_residue(con):

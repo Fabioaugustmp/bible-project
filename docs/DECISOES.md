@@ -98,3 +98,17 @@ outros modelos possam continuar o projeto.
 **Em aberto (não decidido):** posicionamento do produto, ordem entre M2 e M3,
 uso de dependências externas e de modelo de linguagem. São as perguntas P1–P5
 do backlog e cabem ao usuário.
+
+## D011 — Bíblia duplicada: fica a cópia sem títulos, com os títulos copiados · 2026-11-16
+
+**Decisão:** quando a mesma Bíblia existe em dois arquivos do e-Sword (por
+exemplo `ara.bblx` e `ara_com_cabecalhos.bblx`), a base mantém a cópia sem
+títulos e copia para ela os títulos de seção da outra, por livro, capítulo e
+versículo. A outra é removida e registrada como `ignorado` em `import_log`.
+Revê o critério escrito na tarefa T02 ("manter a que tem títulos").
+
+**Motivo:** comparação verso a verso mostrou que as cópias "com cabeçalhos"
+são piores: ARA, ARC e Viva perdem Apocalipse 22:21, e a católica e a Viva
+trazem aspas duplicadas (`""dia""`) em milhares de versículos. Os títulos são
+os mesmos 1.923 nas seis versões (1.915 na católica), ou seja, foram
+aplicados em lote por quem montou os módulos, não vêm de cada tradução.

@@ -67,3 +67,20 @@ palavras (Fase 5) precisa dos códigos na posição certa.
 **Motivo:** vários módulos são textos protegidos por direito autoral (NVI,
 ARA, NTLH) e os arquivos são grandes. A procedência fica registrada na base
 por caminho e SHA-256, o que permite conferir qual arquivo gerou o quê.
+
+## D008 — Módulos criptografados não são lidos · 2026-11-16
+
+**Decisão:** módulos protegidos por criptografia (`.ontx`/`.ntx` e `.twm` com
+`secure = 1`) são registrados no relatório como ignorados. O importador não
+tenta quebrar a proteção.
+
+**Motivo:** a criptografia é a proteção de direito autoral escolhida pelos
+editores desses módulos. Os módulos continuam utilizáveis no próprio theWord.
+
+## D009 — Base completa substitui a de amostras · 2026-11-16
+
+**Decisão:** a importação completa é gerada em `data/library-full.db` e, depois
+de verificada, passa a ser `data/library.db`, a base que o aplicativo abre.
+
+**Motivo:** gerar em arquivo separado mantém o aplicativo funcionando durante
+a importação e permite conferir antes de trocar.

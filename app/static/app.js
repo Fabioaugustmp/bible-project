@@ -265,10 +265,12 @@ async function showSearch(query) {
       el("span", {}, rangeLabel(c.book, c.ref_start, c.ref_end)), badge(c.lang)),
     el("div", { class: "t" }, highlighted(c.hit))));
 
-  const entries = data.entries.map((e) => el("button", {
+  const entryResult = (e) => el("button", {
     class: "result", onclick: () => showItem("entry", e.id),
   }, el("div", { class: "source" }, el("b", {}, e.topic), el("span", {}, e.abbr), badge(e.lang)),
-    el("div", { class: "t" }, highlighted(e.hit))));
+    el("div", { class: "t" }, highlighted(e.hit)));
+  const entries = data.entries.filter((e) => e.kind !== "book").map(entryResult);
+  const books = data.entries.filter((e) => e.kind === "book").map(entryResult);
 
   const shown = (list, total) => (total > list.length ? `${list.length} de ${total}` : String(total ?? 0));
   const total = (data.totals.verses || 0) + (data.totals.comments || 0) + (data.totals.entries || 0);
@@ -276,7 +278,8 @@ async function showSearch(query) {
     ...(total ? [] : [el("p", { class: "empty" }, "Nada encontrado.")]),
     ...(verses.length ? section(`Bíblia · ${module.abbr}`, shown(verses, data.totals.verses), ...verses) : []),
     ...(comments.length ? section("Comentários", shown(comments, data.totals.comments), ...comments) : []),
-    ...(entries.length ? section("Dicionários", shown(entries, data.totals.entries), ...entries) : []));
+    ...(entries.length ? section("Dicionários", books.length ? entries.length : shown(entries, data.totals.entries), ...entries) : []),
+    ...(books.length ? section("Livros", books.length, ...books) : []));
 }
 
 // --- Aparência ------------------------------------------------------------------

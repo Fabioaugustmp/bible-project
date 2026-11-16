@@ -137,7 +137,7 @@ def api_search(con, q):
     )
     entries = rows(
         con,
-        f"select e.id, m.abbr, m.lang, e.topic, {snippet.format(t='entries_fts', col=1)} as hit"
+        f"select e.id, m.abbr, m.lang, m.kind, e.topic, {snippet.format(t='entries_fts', col=1)} as hit"
         " from entries_fts join entries e on e.id = entries_fts.rowid join modules m on m.id = e.module_id"
         " where entries_fts match ? order by bm25(entries_fts, 8.0, 1.0) limit 40",
         (query,),

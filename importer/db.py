@@ -15,7 +15,7 @@ create table books(book integer primary key, abbr text, name text, chapters text
 create table modules(
     id integer primary key,
     source text not null,           -- 'esword' | 'theword'
-    kind text not null,             -- 'bible' | 'commentary' | 'dictionary'
+    kind text not null,             -- 'bible' | 'commentary' | 'dictionary' | 'book'
     abbr text, title text, author text, lang text,
     has_strongs integer default 0,
     items integer default 0,

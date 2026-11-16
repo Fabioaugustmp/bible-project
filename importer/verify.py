@@ -36,7 +36,7 @@ for mid, abbr, count, first in con.execute(
 
 print("Itens gravados = itens declarados no módulo:")
 for mid, abbr, kind, items in con.execute("select id, abbr, kind, items from modules"):
-    table = {"bible": "verses", "commentary": "comments", "dictionary": "entries"}[kind]
+    table = {"bible": "verses", "commentary": "comments"}.get(kind, "entries")
     real = con.execute(f"select count(*) from {table} where module_id = ?", (mid,)).fetchone()[0]
     check(real == items, f"{abbr}: {real}")
 

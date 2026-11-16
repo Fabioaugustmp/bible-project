@@ -67,7 +67,7 @@ Critérios de aceite:
 - Buscar "graça" e navegar até um resultado.
 - Sem erros no console do navegador.
 
-### Fase 3 — Importação da biblioteca completa · pendente
+### Fase 3 — Importação da biblioteca completa · em andamento
 
 - Rodar o importador sobre as duas instalações (cerca de 2,5 GB).
 - Tratar os tipos de módulo restantes: livros (`.gbk`), devocionais (`.dev`),

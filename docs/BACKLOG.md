@@ -3,7 +3,8 @@
 Tarefas que precisam ser executadas, na ordem. Escrito em 2026-11-16 para que
 qualquer pessoa ou modelo continue o trabalho a partir daqui.
 
-Ler antes de começar: [PLANO.md](PLANO.md) (princípios e fases),
+Ler antes de começar: [AGENTS.md](../AGENTS.md) (regras e armadilhas),
+[PLANO.md](PLANO.md) (princípios e marcos),
 [DECISOES.md](DECISOES.md), [FORMATOS.md](FORMATOS.md). Ideias ainda não
 transformadas em tarefa estão em [IDEIAS.md](IDEIAS.md).
 
@@ -32,7 +33,7 @@ este projeto pode ter que aquele não tem:
 Limite: módulos protegidos por direito autoral não podem ser distribuídos com
 o aplicativo; cada usuário importa os seus.
 
-## Estado atual (commit `899c25e`)
+## Estado atual (2026-11-16)
 
 - Funciona: importador (`importer/build.py`), verificação
   (`importer/verify.py`), servidor (`app/server.py`, porta 8377) e interface
@@ -72,7 +73,22 @@ o aplicativo; cada usuário importa os seus.
 | P4 | Uso de modelo de linguagem (local ou por API) é aceito? | Só opcional e por último (M6) |
 | P5 | Manter a página do Notion sincronizada? | Não: hoje ela espelha IDEIAS.md e está desatualizada em relação a este arquivo |
 
-## M1 — Fechar a importação completa (Fase 3)
+## Estado das tarefas
+
+Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (abc1234)`.
+
+| Tarefa | Estado |
+|---|---|
+| T01–T11 (M1) | pendente |
+| T20–T25 (M2) | pendente |
+| T30–T34 (M3) | pendente |
+| T40–T42 (M4) | pendente |
+| T50–T52 (M5) | pendente |
+
+Uma tentativa de aplicar T01–T04 de uma vez falhou antes de rodar (erro de
+shell) e **não deixou nenhuma alteração**; recomeçar do zero, uma tarefa por vez.
+
+## M1 — Fechar a importação completa
 
 ### T01 — Bíblias do e-Sword com linha de cabeçalho e títulos de seção
 - **Por quê:** 4 módulos `*_com_cabecalhos.bblx` falham com
@@ -143,7 +159,7 @@ o aplicativo; cada usuário importa os seus.
   rodar T06; parar o servidor; substituir `data/library.db`; testar na
   interface: Jo 3:16 (versões, comentários, citações), busca "graça",
   referência "sl 23.1", console sem erros, painel respondendo em menos de 1 s.
-  Marcar Fase 3 concluída no PLANO.
+  Marcar M1 no PLANO conforme o critério de conclusão.
 - **Depende de:** T01–T06. **Tamanho:** P.
 
 ### T08 — Interface na escala da biblioteca completa
@@ -161,10 +177,11 @@ o aplicativo; cada usuário importa os seus.
 - **Fazer:** importar `default.xrefs.twm` (tabela `xrefs(vi1, vi2)`, 19.671
   pares), `default.english.hdgs.twm` (`headings(vi, pos, level, content)`,
   5.289) e `default.prgs.twm` (`paragraphs(vi, typ)`, 14.074). O campo `vi`
-  parece ser `livro<<24 | capítulo<<16 | versículo<<8` (16843008 = Gn 1:1;
-  **confirmar** com mais pares antes de usar). Criar tabelas `xrefs` e
-  `paragraphs`; usar parágrafos na leitura.
-- **Aceite:** Gn 1:1 tem referências cruzadas coerentes (por exemplo Jo 1:1).
+  é `livro<<24 | capítulo<<16 | versículo<<8`: 16843008 = Gn 1:1, e os três
+  primeiros pares de Gn 1:1 decodificam para Jó 38:4, Sl 33:6 e Sl 89:11. O
+  significado do byte baixo e de `typ` ainda não foi examinado. Criar tabelas
+  `xrefs` e `paragraphs`; usar parágrafos na leitura.
+- **Aceite:** 19.671 pares importados; Gn 1:1 lista Jó 38:4, Sl 33:6 e Sl 89:11.
 - **Tamanho:** M.
 
 ### T10 — Importação incremental (opcional)

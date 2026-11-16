@@ -1,10 +1,17 @@
-# Plano de execução
+# Plano
 
-Aplicativo de estudo bíblico que lê os módulos já instalados do e-Sword e do
-theWord, com interface nova e busca moderna (por palavra e por significado).
+Aplicativo local e offline de estudo bíblico que lê os módulos já instalados
+do e-Sword e do theWord, com interface nova e busca moderna.
 
-Estado de cada fase: `pendente`, `em andamento`, `concluída`. Este arquivo é
-atualizado no mesmo commit que conclui a fase.
+Este arquivo guarda os princípios e os marcos. As tarefas de cada marco, com
+critérios de aceite, estão em [BACKLOG.md](BACKLOG.md), que é a fonte única do
+que executar. Quem continua o trabalho começa por [AGENTS.md](../AGENTS.md).
+
+## Problema que o projeto resolve
+
+O usuário lê em português, mas quase todo o material de estudo profundo que
+ele tem (comentários, dicionários, léxicos) está em inglês e preso a dois
+programas de interface antiga e busca por palavra exata.
 
 ## Princípios
 
@@ -15,84 +22,48 @@ atualizado no mesmo commit que conclui a fase.
 - **Dados do usuário (notas, marcações) ficam em base separada**, para que
   reimportar a biblioteca nunca os apague.
 - **Tudo roda local e offline.**
+- **Tudo é verificável:** cada texto exibido aponta para o módulo e a chave de
+  origem.
 
 ## Rastreabilidade
 
 | O quê | Onde fica |
 |---|---|
-| Histórico de mudanças do código | commits git, um por etapa concluída |
+| Histórico de mudanças do código | commits git, um por tarefa concluída |
+| Tarefas, critérios de aceite e estado | [BACKLOG.md](BACKLOG.md) |
 | Decisões e seus motivos | [DECISOES.md](DECISOES.md), numeradas e datadas |
 | O que foi descoberto sobre cada formato | [FORMATOS.md](FORMATOS.md) |
+| Ideias ainda não transformadas em tarefa | [IDEIAS.md](IDEIAS.md) |
+| Pesquisa que originou as ideias | [PESQUISA-FEATURES.md](PESQUISA-FEATURES.md) |
 | Procedência de cada módulo importado | tabela `modules` na base: caminho de origem, SHA-256, tamanho, data do arquivo, versão do importador, contagens |
 | O que foi ignorado e por quê | tabela `import_log` na base e `data/import-report.json` |
-| Procedência de cada texto exibido | cada versículo, comentário e verbete aponta para o módulo de origem e a chave original (linha ou id) |
-| Estado de cada fase | este arquivo |
+| Procedência de cada texto exibido | cada versículo, comentário e verbete aponta para o módulo de origem e a chave original |
 
-## Fases
+## Marcos
 
-### Fase 0 — Reconhecimento · concluída
+Estado: `concluído`, `em andamento`, `pendente`. A ordem de M2 e M3 e o
+alcance de M5 e M6 dependem de respostas do usuário (tabela "Decisões
+pendentes" no backlog).
 
-- Inventário das instalações (e-Sword: 23 módulos; theWord: cerca de 110).
-- Nove módulos de amostra copiados para `modules-sample/`.
-- Formatos validados; resultado em [FORMATOS.md](FORMATOS.md).
+| Marco | Entrega | Estado |
+|---|---|---|
+| M0 | Reconhecimento dos formatos, importador com procedência, leitor, painel do versículo e busca por palavra, sobre 8 módulos de amostra | concluído (commits `50ee3e7`, `b4e419e`, `19d7d3c`) |
+| M1 | Importação completa e confiável das duas instalações; interface utilizável com a biblioteca inteira | em andamento: importação roda (72 módulos), 6 módulos com erro e defeitos listados nas tarefas T01–T08 |
+| M2 | Ponte português ↔ inglês sem IA: Strong clicável, tabela de correspondência, busca bilíngue, citações clicáveis, referências cruzadas | pendente |
+| M3 | Busca semântica com embeddings locais, medida por um conjunto de avaliação próprio | pendente |
+| M4 | Notas e marcações em base separada; importação das notas do e-Sword; exportação de estudo | pendente |
+| M5 | Produto distribuível: assistente de importação, casca desktop, créditos e licenças | pendente |
+| M6 | Opcional: tradução local sob demanda, léxico breve em português, perguntas com resposta citada | pendente |
 
-### Fase 1 — Importador e base única · concluída (amostras)
+### Critério de conclusão de cada marco
 
-Entregas:
-- `importer/`: leitura de `.bblx`, `.cmtx`, `.dctx` (e-Sword) e `.ont`, `.ot`,
-  `.nt`, `.cmt.twm`, `.dct.twm` (theWord).
-- Base SQLite com Bíblias, comentários, verbetes, citações de versículos e
-  índice de busca por palavra (FTS5, ignorando acentos).
-- Registro de procedência e relatório de importação.
-
-Critérios de aceite:
-- Cada Bíblia completa importada tem 31.102 versículos (7.957 se só NT).
-- João 3:16 e Gênesis 1:1 conferem com o texto do módulo original.
-- Nenhum resíduo de marcação RTF no texto (verificação automática).
-- Módulos ilegíveis aparecem no relatório com o motivo, sem interromper os demais.
-
-### Fase 2 — Leitor e painel do versículo · concluída
-
-Entregas:
-- Servidor local (`app/server.py`) com API de leitura, painel e busca.
-- Interface web: leitura por capítulo com tipografia de livro, tema claro e
-  escuro, tamanho de fonte ajustável.
-- Painel do versículo: todas as versões, comentários que cobrem o versículo e
-  verbetes que o citam, de todos os módulos.
-- Busca por palavra em Bíblias, comentários e dicionários; campo aceita
-  referência ("Jo 3:16").
-
-Critérios de aceite:
-- Abrir João 3, clicar no versículo 16 e ver versões e comentários.
-- Buscar "graça" e navegar até um resultado.
-- Sem erros no console do navegador.
-
-### Fase 3 — Importação da biblioteca completa · em andamento
-
-- Rodar o importador sobre as duas instalações (cerca de 2,5 GB).
-- Tratar os tipos de módulo restantes: livros (`.gbk`), devocionais (`.dev`),
-  planos de leitura (`.rdp`).
-- Revisar o relatório e corrigir os formatos que falharem.
-
-### Fase 4 — Busca semântica com embeddings · pendente
-
-- Gerar vetores por versículo e por parágrafo de comentário, com modelo
-  multilíngue local.
-- Busca híbrida: palavra (FTS5) combinada com significado (vetores).
-- "Passagens parecidas" no painel do versículo.
-- Busca em português sobre comentários em inglês.
-
-### Fase 5 — Estudo de palavras · pendente
-
-- Strong clicável na ARA e no grego TR, ligado aos léxicos.
-- Ocorrências de um termo original e como cada versão o traduz.
-- Comparador de versões com diferenças destacadas.
-
-### Fase 6 — Notas e exportação · pendente
-
-- Notas e marcações próprias; importação das notas existentes do e-Sword.
-- Montagem de estudo exportável.
-
-### Fase 7 — Empacotamento desktop · pendente
-
-- Casca desktop (Tauri ou Electron) sobre a mesma interface.
+- **M1:** `python importer/verify.py data/library.db` passa sobre a base
+  completa, sem linhas `erro` no log de importação; na interface, Jo 3:16
+  mostra versões, comentários e citações de toda a biblioteca em menos de 1 s.
+- **M2:** buscar "graça" traz também o material em inglês sobre "grace", com
+  a indicação de por que foi incluído; clicar em uma palavra da ARA com Strong
+  abre o termo original e os léxicos.
+- **M3:** a busca por significado supera a busca por palavra no conjunto de
+  avaliação, com os números registrados.
+- **M4:** reimportar a biblioteca não altera nenhuma nota.
+- **M5:** uma pessoa sem linha de comando instala, importa seus módulos e lê.

@@ -8,7 +8,7 @@ motivo).
 
 - **Origem:** `pesquisa` = [PESQUISA-FEATURES.md](PESQUISA-FEATURES.md)
   (2026-11-16, feita por um agente; as fontes externas e licenças **não foram
-  conferidas** por nós); `importação` = achado durante a Fase 3; `uso` =
+  conferidas** por nós); `importação` = achado durante a importação completa (M1); `uso` =
   limitação notada ao testar o aplicativo.
 - **Prioridade:** sugestão inicial, ainda não validada pelo usuário.
 - **Estado:** `ideia`, `planejado`, `feito`, `descartado`.
@@ -31,12 +31,12 @@ registrar a decisão em [DECISOES.md](DECISOES.md).
 
 | ID | Funcionalidade | O que o usuário ganha | Depende de | Esforço | IA | Origem | Estado |
 |---|---|---|---|---|---|---|---|
-| B11 | Avaliação automática da busca semântica | Escolher o modelo de embeddings por medida, não por impressão | TSK e pares versículo ↔ comentário já na base | Baixo | Embeddings locais | pesquisa #11 | ideia (fazer junto com a Fase 4) |
+| B11 | Avaliação automática da busca semântica | Escolher o modelo de embeddings por medida, não por impressão | TSK e pares versículo ↔ comentário já na base | Baixo | Embeddings locais | pesquisa #11 | ideia (fazer junto com M3) |
 | B04 | Tradução local de comentários, sob demanda | Ler Gill, Henry, ISBE em português, com o original ao lado e cache | Modelo OPUS-MT en→pt (CC BY 4.0, a conferir); quebra a D003 | Médio | Modelo de tradução local | pesquisa #4 | ideia |
-| B05 | Léxico breve em português | Clique no Strong responde primeiro em português, com as traduções reais da ARA | STEPBible TBESG/TBESH (CC BY 4.0, a conferir) + tradução única | Médio | Modelo de tradução local, uma vez | pesquisa #5 | ideia (junto com a Fase 5) |
+| B05 | Léxico breve em português | Clique no Strong responde primeiro em português, com as traduções reais da ARA | STEPBible TBESG/TBESH (CC BY 4.0, a conferir) + tradução única | Médio | Modelo de tradução local, uma vez | pesquisa #5 | ideia (junto com M2) |
 | B06 | Planos de leitura com progresso | Uso diário; "continuar de onde parei" | Módulos `.rdp` e devocionais já instalados | Baixo | Não | pesquisa #6 | ideia |
 | B10 | Versificação correta entre tradições | Bíblia católica, Salmos com título e deuterocanônicos alinhados; resolve o limite da D005 | STEPBible TVTMS (CC BY 4.0, a conferir) | Médio | Não | pesquisa #10 | ideia |
-| B09 | Aviso de variante textual no comparador | Explica por que ACF/ARC têm trechos que NVI/NTLH omitem | STEPBible TAGNT (CC BY 4.0, a conferir); módulos de variantes já instalados | Médio | Não | pesquisa #9 | ideia (junto com a Fase 5) |
+| B09 | Aviso de variante textual no comparador | Explica por que ACF/ARC têm trechos que NVI/NTLH omitem | STEPBible TAGNT (CC BY 4.0, a conferir); módulos de variantes já instalados | Médio | Não | pesquisa #9 | ideia (junto com M2) |
 | B08 | Página de tópico em português | Um lugar só para "Arca da Aliança": verbetes de todos os dicionários e versículos | Nave's, Torrey, Thompson, ISBE, Easton; ACAI (CC BY-SA 4.0, a conferir) | Médio/alto | Não (embeddings ajudam) | pesquisa #8 | ideia |
 
 ## Prioridade 3 — bom, mas pode esperar
@@ -46,12 +46,12 @@ registrar a decisão em [DECISOES.md](DECISOES.md).
 | B20 | Busca por morfologia | "Todos os imperativos aoristos em Romanos" | TR com morfologia | Médio | Não | pesquisa #20 | ideia |
 | B13 | Interlinear do AT e morfologia por extenso | Hebraico com Strong, glosa e análise explicada | STEPBible TAHOT, TEHMC, TEGMC (a conferir) | Médio | Não | pesquisa #13 | ideia |
 | B12 | Mapa dos lugares do capítulo | Ver onde ficam os lugares citados | OpenBible Geocoding (CC BY 4.0, a conferir); atlas instalado | Médio | Não | pesquisa #12 | ideia |
-| B15 | Cadernos de estudo e etiquetas nas notas | Notas agrupadas por tema; exportação em Markdown | Base de dados do usuário (Fase 6) | Médio | Não | pesquisa #15 | ideia (junto com a Fase 6) |
+| B15 | Cadernos de estudo e etiquetas nas notas | Notas agrupadas por tema; exportação em Markdown | Base de dados do usuário (M4) | Médio | Não | pesquisa #15 | ideia (junto com M4) |
 | B16 | Áreas de trabalho e painéis lado a lado | Guardar arranjos ("devocional", "grego") | Nenhum | Médio | Não | pesquisa #16 | ideia |
 | B14 | Leitura em voz alta | Ouvir o capítulo em português | Voz do sistema pelo navegador | Baixo | Não | pesquisa #14 | ideia |
 | B18 | Passagens paralelas e AT citado no NT | Sinopse dos evangelhos, Reis/Crônicas lado a lado | Fonte aberta de paralelos não confirmada; aproximação por embeddings | Médio/alto | Embeddings locais | pesquisa #18 | ideia |
 | B17 | Resumo "o que dizem os comentaristas" | Três ou quatro linhas em português por versículo, com fonte por frase | Comentários importados | Médio | LLM | pesquisa #17 | ideia |
-| B19 | Pergunte à biblioteca, com resposta citada | Pergunta e resposta em português, com citações clicáveis | Índice da Fase 4 | Alto | LLM; ameaça o "tudo offline" | pesquisa #19 | ideia (opcional, por último) |
+| B19 | Pergunte à biblioteca, com resposta citada | Pergunta e resposta em português, com citações clicáveis | Índice de M3 | Alto | LLM; ameaça o "tudo offline" | pesquisa #19 | ideia (opcional, por último) |
 | B21 | Linha do tempo e pessoas | Eventos e genealogias ligados aos versículos | Theographic (licença com divergência, a conferir) | Alto | Não | pesquisa #21 | ideia |
 
 ## Descartado
@@ -68,4 +68,4 @@ registrar a decisão em [DECISOES.md](DECISOES.md).
 | Abrir módulos criptografados | Contorna proteção de conteúdo licenciado (D008) |
 | Loja ou baixador de módulos de terceiros | Situação de direito autoral incerta |
 | NLLB-200 como tradutor | Licença não comercial trava distribuição futura |
-| Montador de sermões | Fora do objetivo; a exportação da Fase 6 cobre o essencial |
+| Montador de sermões | Fora do objetivo; a exportação de M4 cobre o essencial |

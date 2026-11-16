@@ -31,6 +31,6 @@ python app/server.py
 |---|---|
 | `importer/` | leitura dos formatos e gravação da base única |
 | `app/` | servidor local e interface web |
-| `docs/` | [plano](docs/PLANO.md), [decisões](docs/DECISOES.md), [formatos](docs/FORMATOS.md) |
+| `docs/` | [backlog](docs/BACKLOG.md), [plano](docs/PLANO.md), [decisões](docs/DECISOES.md), [formatos](docs/FORMATOS.md) |
 | `data/` | base gerada e relatório de importação (fora do git) |
 | `modules-sample/` | módulos de amostra (fora do git) |

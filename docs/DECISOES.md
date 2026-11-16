@@ -84,3 +84,17 @@ de verificada, passa a ser `data/library.db`, a base que o aplicativo abre.
 
 **Motivo:** gerar em arquivo separado mantém o aplicativo funcionando durante
 a importação e permite conferir antes de trocar.
+
+## D010 — Backlog como fonte única de tarefas; marcos no lugar de fases · 2026-11-16
+
+**Decisão:** o que executar fica em `docs/BACKLOG.md`, com critérios de aceite
+por tarefa; `docs/PLANO.md` guarda só princípios e marcos (M0–M6), que
+substituem a numeração anterior de fases (Fases 0–2 = M0; Fase 3 = M1).
+`AGENTS.md` na raiz traz as regras de trabalho. Pedido do usuário, para que
+outros modelos possam continuar o projeto.
+
+**Motivo:** um único lugar para saber o que fazer e quando está pronto.
+
+**Em aberto (não decidido):** posicionamento do produto, ordem entre M2 e M3,
+uso de dependências externas e de modelo de linguagem. São as perguntas P1–P5
+do backlog e cabem ao usuário.

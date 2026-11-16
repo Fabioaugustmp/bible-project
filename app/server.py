@@ -48,6 +48,14 @@ def fts_query(text: str) -> str:
 
 # --- Endpoints ----------------------------------------------------------------
 
+EXCERPT = 420       # caracteres de cada comentário enviados no painel
+PAGE = {"verses": 60, "comments": 30, "entries": 30}
+
+
+def has_table(con, name):
+    return con.execute("select 1 from sqlite_master where name = ?", (name,)).fetchone() is not None
+
+
 def api_library(con, q):
     return {
         "modules": rows(con, f"select {MODULE_COLUMNS} from modules order by kind, lang <> 'por', abbr"),
@@ -61,24 +69,27 @@ def api_library(con, q):
 def api_chapter(con, q):
     return {"verses": rows(
         con,
-        "select verse, text from verses where module_id = ? and book = ? and chapter = ? order by verse",
+        "select verse, text, heading from verses where module_id = ? and book = ? and chapter = ? order by verse",
         (int(q["module"]), int(q["book"]), int(q["chapter"])),
     )}
 
 
 def api_verse(con, q):
+    """Tudo sobre um versículo, em formato enxuto: os textos longos vêm de /api/item."""
     book, chapter, verse = int(q["book"]), int(q["chapter"]), int(q["verse"])
+    module = int(q["module"]) if q.get("module") else None
     ref = chapter * 1000 + verse
     versions = rows(
         con,
-        "select m.id as module_id, m.abbr, m.lang, v.text, v.tagged from verses v"
+        "select m.id as module_id, m.abbr, m.lang, v.text from verses v"
         " join modules m on m.id = v.module_id"
         " where v.book = ? and v.chapter = ? and v.verse = ? order by m.lang <> 'por', m.abbr",
         (book, chapter, verse),
     )
     comments = rows(
         con,
-        "select c.id, m.abbr, m.title, m.lang, c.ref_start, c.ref_end, c.text from comments c"
+        "select c.id, m.id as module_id, m.abbr, m.title, m.lang, c.ref_start, c.ref_end,"
+        f" substr(c.text, 1, {EXCERPT}) as excerpt, length(c.text) as length from comments c"
         " join modules m on m.id = c.module_id"
         " where c.book = ? and c.ref_start <= ? and c.ref_end >= ? and c.ref_start > ?"
         " order by m.lang <> 'por', (c.ref_end - c.ref_start), m.abbr",
@@ -86,17 +97,50 @@ def api_verse(con, q):
     )
     cited = rows(
         con,
-        "select 'entry' as kind, e.id, m.abbr, m.lang, e.topic as label from links l"
+        "select * from ("
+        "select l.kind, m.id as module_id, m.abbr, m.title, m.lang, count(*) as count from links l"
         " join entries e on e.id = l.item_id join modules m on m.id = e.module_id"
-        " where l.kind = 'entry' and l.book = ? and l.chapter = ? and l.verse = ?"
+        " where l.kind = 'entry' and l.book = ? and l.chapter = ? and l.verse = ? group by m.id"
         " union all"
-        " select 'comment', c.id, m.abbr, m.lang, c.book || '.' || c.ref_start from links l"
+        " select l.kind, m.id, m.abbr, m.title, m.lang, count(*) from links l"
         " join comments c on c.id = l.item_id join modules m on m.id = c.module_id"
-        " where l.kind = 'comment' and l.book = ? and l.chapter = ? and l.verse = ?"
-        " limit 200",
+        " where l.kind = 'comment' and l.book = ? and l.chapter = ? and l.verse = ? group by m.id"
+        ") order by lang <> 'por', count desc",
         (book, chapter, verse) * 2,
     )
-    return {"versions": versions, "comments": comments, "cited": cited}
+    xrefs = []
+    if has_table(con, "xrefs"):
+        # Uma linha por destino; as fontes que o citam ficam agrupadas.
+        xrefs = rows(
+            con,
+            "select x.to_book as book, x.to_chapter as chapter, x.to_verse as verse, max(x.to_span) as span,"
+            " group_concat(distinct m.abbr) as sources, count(distinct m.id) as weight,"
+            " (select v.text from verses v where v.module_id = ? and v.book = x.to_book"
+            "  and v.chapter = x.to_chapter and v.verse = x.to_verse) as text"
+            " from xrefs x join modules m on m.id = x.module_id"
+            " where x.book = ? and x.chapter = ? and x.verse = ?"
+            " group by x.to_book, x.to_chapter, x.to_verse order by weight desc, min(x.rowid)",
+            (module, book, chapter, verse),
+        )
+    return {"versions": versions, "comments": comments, "cited": cited, "xrefs": xrefs}
+
+
+def api_cited(con, q):
+    """Itens de um módulo que citam o versículo (aberto sob demanda no painel)."""
+    book, chapter, verse = int(q["book"]), int(q["chapter"]), int(q["verse"])
+    module = int(q["module"])
+    if q["kind"] == "entry":
+        return {"items": rows(
+            con,
+            "select 'entry' as kind, e.id, e.topic as label from links l join entries e on e.id = l.item_id"
+            " where l.kind = 'entry' and l.book = ? and l.chapter = ? and l.verse = ? and e.module_id = ?"
+            " order by e.topic limit 300", (book, chapter, verse, module))}
+    return {"items": rows(
+        con,
+        "select 'comment' as kind, c.id, c.book, c.ref_start, c.ref_end from links l"
+        " join comments c on c.id = l.item_id"
+        " where l.kind = 'comment' and l.book = ? and l.chapter = ? and l.verse = ? and c.module_id = ?"
+        " order by c.book, c.ref_start limit 300", (book, chapter, verse, module))}
 
 
 def api_item(con, q):
@@ -113,48 +157,59 @@ def api_item(con, q):
 
 
 def api_search(con, q):
+    """Busca por palavra. Com `kind` e `offset`, devolve só mais uma página daquele tipo."""
     query = fts_query(q.get("q", ""))
+    empty = {"query": "", "verses": [], "comments": [], "entries": [], "totals": {}}
     if not query:
-        return {"query": "", "verses": [], "comments": [], "entries": [], "totals": {}}
+        return empty
     module = int(q["module"]) if q.get("module") else None
+    only = q.get("kind")
+    offset = max(0, int(q.get("offset", 0)))
     snippet = "snippet({t}, {col}, '[[', ']]', '…', 26)"
-
     verse_filter = "and v.module_id = ?" if module else ""
     verse_params = (query, module) if module else (query,)
-    verses = rows(
-        con,
-        f"select v.module_id, m.abbr, v.book, v.chapter, v.verse, {snippet.format(t='verses_fts', col=0)} as hit"
-        " from verses_fts join verses v on v.id = verses_fts.rowid join modules m on m.id = v.module_id"
-        f" where verses_fts match ? {verse_filter} order by bm25(verses_fts), v.book, v.chapter, v.verse limit 80",
-        verse_params,
-    )
-    comments = rows(
-        con,
-        f"select c.id, m.abbr, m.lang, c.book, c.ref_start, c.ref_end, {snippet.format(t='comments_fts', col=0)} as hit"
-        " from comments_fts join comments c on c.id = comments_fts.rowid join modules m on m.id = c.module_id"
-        " where comments_fts match ? order by bm25(comments_fts) limit 40",
-        (query,),
-    )
-    entries = rows(
-        con,
-        f"select e.id, m.abbr, m.lang, m.kind, e.topic, {snippet.format(t='entries_fts', col=1)} as hit"
-        " from entries_fts join entries e on e.id = entries_fts.rowid join modules m on m.id = e.module_id"
-        " where entries_fts match ? order by bm25(entries_fts, 8.0, 1.0) limit 40",
-        (query,),
-    )
-    totals = {
-        "verses": con.execute(
-            f"select count(*) from verses_fts join verses v on v.id = verses_fts.rowid"
-            f" where verses_fts match ? {verse_filter}", verse_params).fetchone()[0],
-        "comments": con.execute(
-            "select count(*) from comments_fts where comments_fts match ?", (query,)).fetchone()[0],
-        "entries": con.execute(
-            "select count(*) from entries_fts where entries_fts match ?", (query,)).fetchone()[0],
-    }
-    return {"query": query, "verses": verses, "comments": comments, "entries": entries, "totals": totals}
+    result = {"query": query, "verses": [], "comments": [], "entries": [], "totals": {}}
+
+    if only in (None, "verses"):
+        result["verses"] = rows(
+            con,
+            f"select v.module_id, m.abbr, v.book, v.chapter, v.verse, {snippet.format(t='verses_fts', col=0)} as hit"
+            " from verses_fts join verses v on v.id = verses_fts.rowid join modules m on m.id = v.module_id"
+            f" where verses_fts match ? {verse_filter} order by bm25(verses_fts), v.book, v.chapter, v.verse"
+            " limit ? offset ?",
+            (*verse_params, PAGE["verses"], offset),
+        )
+    if only in (None, "comments"):
+        result["comments"] = rows(
+            con,
+            f"select c.id, m.abbr, m.lang, c.book, c.ref_start, c.ref_end,"
+            f" {snippet.format(t='comments_fts', col=0)} as hit"
+            " from comments_fts join comments c on c.id = comments_fts.rowid join modules m on m.id = c.module_id"
+            " where comments_fts match ? order by m.lang <> 'por', bm25(comments_fts) limit ? offset ?",
+            (query, PAGE["comments"], offset),
+        )
+    if only in (None, "entries"):
+        result["entries"] = rows(
+            con,
+            f"select e.id, m.abbr, m.lang, m.kind, e.topic, {snippet.format(t='entries_fts', col=1)} as hit"
+            " from entries_fts join entries e on e.id = entries_fts.rowid join modules m on m.id = e.module_id"
+            " where entries_fts match ? order by m.lang <> 'por', bm25(entries_fts, 8.0, 1.0) limit ? offset ?",
+            (query, PAGE["entries"], offset),
+        )
+    if only is None:
+        result["totals"] = {
+            "verses": con.execute(
+                f"select count(*) from verses_fts join verses v on v.id = verses_fts.rowid"
+                f" where verses_fts match ? {verse_filter}", verse_params).fetchone()[0],
+            "comments": con.execute(
+                "select count(*) from comments_fts where comments_fts match ?", (query,)).fetchone()[0],
+            "entries": con.execute(
+                "select count(*) from entries_fts where entries_fts match ?", (query,)).fetchone()[0],
+        }
+    return result
 
 
-API = {"library": api_library, "chapter": api_chapter, "verse": api_verse,
+API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
        "item": api_item, "search": api_search}
 
 

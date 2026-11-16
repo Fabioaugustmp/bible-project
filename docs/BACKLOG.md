@@ -107,7 +107,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T05 | concluída (EC1): interlineares BSB com texto limpo e títulos de seção; palavras em `tokens` |
 | T06 | concluída: verify.py com tolerâncias e verificações de T02–T04; passa na base de amostras (resultado na base completa: ver T07) |
 | T07 | concluída: 71 módulos, 0 erros, 479 s, base de 1,16 GB promovida; verify.py passa; interface testada |
-| T08 | pendente |
+| T08 | em andamento (EC4): API enxuta, painel recolhido, filtro de idioma, citações sob demanda, paginação e voltar à busca testados; faltam conferir títulos de perícope e referências cruzadas na interface (dependem da base nova), tela estreita e tema claro |
 | T09 | concluída em parte: referências cruzadas (theWord e BSB) e títulos em inglês importados; parágrafos não, por falta de confirmação do campo `typ` |
 | T10 | pendente |
 | T11 | pendente |

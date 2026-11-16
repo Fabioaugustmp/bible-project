@@ -36,7 +36,7 @@ atualizado no mesmo commit que conclui a fase.
 - Nove módulos de amostra copiados para `modules-sample/`.
 - Formatos validados; resultado em [FORMATOS.md](FORMATOS.md).
 
-### Fase 1 — Importador e base única · em andamento
+### Fase 1 — Importador e base única · concluída (amostras)
 
 Entregas:
 - `importer/`: leitura de `.bblx`, `.cmtx`, `.dctx` (e-Sword) e `.ont`, `.ot`,
@@ -51,7 +51,7 @@ Critérios de aceite:
 - Nenhum resíduo de marcação RTF no texto (verificação automática).
 - Módulos ilegíveis aparecem no relatório com o motivo, sem interromper os demais.
 
-### Fase 2 — Leitor e painel do versículo · pendente
+### Fase 2 — Leitor e painel do versículo · em andamento
 
 Entregas:
 - Servidor local (`app/server.py`) com API de leitura, painel e busca.

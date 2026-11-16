@@ -98,7 +98,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T03 | concluída: gnt-tr_.bblx registrado como ignorado (cifrado); Webster importa 61.200 verbetes; resíduo do AmTrac aceito |
 | T04 | concluída: idiomas normalizados, títulos de Bíblia do theWord com até 90 caracteres, católica sem marca indevida de Strong |
 | T05 | pendente |
-| T06 | pendente |
+| T06 | concluída: verify.py com tolerâncias e verificações de T02–T04; passa na base de amostras (resultado na base completa: ver T07) |
 | T07 | pendente |
 | T08 | pendente |
 | T09 | pendente |

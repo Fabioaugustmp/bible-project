@@ -1,7 +1,7 @@
 """Leitura dos módulos do e-Sword (.bblx, .cmtx, .dctx), todos SQLite."""
 import re
 
-from db import MARK_CLOSE, MARK_OPEN, guess_lang, open_readonly, split_strongs
+from db import MARK_CLOSE, MARK_OPEN, guess_lang, open_readonly, split_strongs, strip_controls
 from rtf import rtf_to_text
 
 # {\cf11\super H1254 [H8804]} -> código Strong e, entre colchetes, análise do verbo.
@@ -57,7 +57,7 @@ def read_bible(path, add):
         if isinstance(scripture, bytes):
             unreadable += 1  # módulo protegido do e-Sword: o texto vem cifrado
             continue
-        heading, body = _split_heading(scripture or "")
+        heading, body = _split_heading(strip_controls(scripture or ""))
         marked = rtf_to_text(_STRONG_GROUP.sub(_mark_strongs, body)).replace("¶", "")
         text, tagged = split_strongs(marked)
         if tagged:

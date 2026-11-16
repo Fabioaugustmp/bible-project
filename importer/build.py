@@ -57,7 +57,7 @@ class Adder:
             " origin_path, origin_sha256, origin_size, origin_mtime, importer_version, imported_at)"
             " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (self.source, meta["kind"], meta.get("abbr") or self.path.stem,
-             meta.get("title") or self.path.stem, meta.get("author"), meta.get("lang") or "und",
+             meta.get("title") or self.path.stem, meta.get("author"), db.normalize_lang(meta.get("lang")),
              meta.get("has_strongs", 0), str(self.path), sha256(self.path), stat.st_size,
              datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(timespec="seconds"),
              db.IMPORTER_VERSION, now()),

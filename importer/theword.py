@@ -3,7 +3,7 @@ import re
 import zlib
 
 from canon import NT_VERSES, OT_BOOKS, OT_VERSES, references
-from db import MARK_CLOSE, MARK_OPEN, open_readonly, split_strongs
+from db import MARK_CLOSE, MARK_OPEN, open_readonly, split_strongs, strip_controls
 from rtf import rtf_to_text, tidy
 from rvf import is_rvf, rvf_to_text
 
@@ -31,7 +31,7 @@ def _decode(raw: bytes) -> str:
 
 
 def _clean_verse(line: str):
-    line = _HEADING.sub(" ", _NOTE.sub("", line))
+    line = _HEADING.sub(" ", _NOTE.sub("", strip_controls(line)))
     line = _STRONG.sub(lambda m: f"{MARK_OPEN}{m.group(1)}{m.group(2)}{MARK_CLOSE}", line)
     line = _TAG.sub("", _BREAK.sub(" ", line))
     # Códigos seguidos da mesma palavra viram um só marcador: {G1|G2}.
@@ -52,6 +52,15 @@ def _trailer(lines):
     return config
 
 
+_TITLE_END = re.compile(r"[.;] |, Copyright| Copyright| Toggles| With ")
+
+
+def _short_title(text: str) -> str:
+    """As descrições de Bíblia do theWord trazem licença e instruções; fica o começo."""
+    title = _TITLE_END.split(tidy(text).replace("\n", " "), maxsplit=1)[0]
+    return title[:90].strip(" .,;")
+
+
 def read_bible(path, add):
     first, last, count = _RANGES[path.suffix.lower()]
     lines = _decode(path.read_bytes()).replace("\r\n", "\n").split("\n")
@@ -61,7 +70,7 @@ def read_bible(path, add):
     meta = {
         "kind": "bible",
         "abbr": config.get("short.title") or path.stem,
-        "title": tidy(config.get("description") or config.get("title") or path.stem)[:200],
+        "title": _short_title(config.get("description") or config.get("title") or path.stem),
         "author": config.get("author"),
         "lang": config.get("lang") or "und",
         "has_strongs": 0,

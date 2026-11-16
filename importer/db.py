@@ -100,6 +100,18 @@ _SPACES = re.compile(r"\s+")
 _SPACE_BEFORE_PUNCT = re.compile(r"\s+([,.;:!?])")
 
 
+_CONTROLS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def strip_controls(text: str) -> str:
+    """Remove caracteres de controle do texto de origem.
+
+    Há módulos com lixo binário em alguns versículos; sem isto, um \\x01 da
+    origem seria confundido com o marcador de Strong.
+    """
+    return _CONTROLS.sub("", text)
+
+
 def split_strongs(marked: str):
     """Devolve (texto limpo, texto marcado ou None)."""
     if MARK_OPEN not in marked:
@@ -110,6 +122,16 @@ def split_strongs(marked: str):
 
 
 # --- Idioma -----------------------------------------------------------------
+
+_LANG_CODES = {"eng": "eng", "por": "por", "grc": "grc", "grk": "grc", "gre": "grc", "ell": "grc",
+               "heb": "heb", "hbo": "heb", "spa": "spa", "esp": "spa", "lat": "lat"}
+
+
+def normalize_lang(value) -> str:
+    """'eng', 'English', 'Eng - English', 'grk' -> um código de três letras por idioma."""
+    code = str(value or "").strip().lower()[:3]
+    return _LANG_CODES.get(code, "und")
+
 
 _STOPWORDS = {
     "por": set("que não uma para com os as dos das seu sua também são mas ele ao pelo".split()),

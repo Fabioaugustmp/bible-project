@@ -73,6 +73,20 @@ o aplicativo; cada usuário importa os seus.
 | P4 | Uso de modelo de linguagem (local ou por API) é aceito? | Só opcional e por último (M6) |
 | P5 | Manter a página do Notion sincronizada? | Não: hoje ela espelha IDEIAS.md e está desatualizada em relação a este arquivo |
 
+## Prioridade e ordem
+
+A classificação de cada tarefa por relevância e complexidade, a ordem em ondas
+e o desenho detalhado das sete execuções mais difíceis e importantes estão em
+[EXECUCOES-CRITICAS.md](EXECUCOES-CRITICAS.md). Resumo da ordem:
+
+1. **Base confiável:** T01 → T02 → T03 → T04 → T06 → T07.
+2. **Em paralelo:** modelo de palavras (T05 + T21) e T09 no importador;
+   interface em escala (T08).
+3. **A ponte para o usuário:** busca bilíngue (T23), Strong clicável (T20 + T22), T25.
+4. **Citações clicáveis:** T24.
+5. **Embeddings:** T30–T34.
+6. **Notas** (T40–T42) e **produto** (T50–T52).
+
 ## Estado das tarefas
 
 Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (abc1234)`.

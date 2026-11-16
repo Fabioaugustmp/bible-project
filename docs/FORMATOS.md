@@ -92,3 +92,32 @@ leitor pula até o próximo cabeçalho e marca o tópico como lido parcialmente.
 | sem type | títulos de seção (`hdgs`) e parágrafos (`prgs`) | não; úteis para a leitura |
 
 Os bancos `.twdb` (bases de grego e hebraico) têm `secure = 1` e não são lidos.
+
+### Marcação por palavra nas Bíblias do theWord (verificado em 2026-11-16)
+
+Cada palavra começa em `<wt>`. Conforme o módulo:
+
+| Módulo | Uma palavra |
+|---|---|
+| `tr.nt` | `<wt>ηγαπησεν<WG25><WTV-AAI-3S l="αγαπαω">` |
+| `BSB Interlinear NT-Grk.nt` | `<wt><O> ἠγάπησεν<o><T> ēgapēsen<t><E> loved<e><WG25><WTV-AIA-3S l="ἀγαπάω">` |
+| `BSB Reverse Interlinear.ont` | `<wt><E> loved<e><OG> ἠγάπησεν<og><T> ēgapēsen<t><WG25><WT… l="…">` (NT); no AT o original vem em `<O>…<o>` com `<WH…>` |
+| `kjv.ont` | `<FR> loved<Fr><WG25>` (sem `<wt>`; `<FR>` = palavras de Jesus, `<FI>` = itálico) |
+
+`<E>` inglês, `<O>`/`<OG>` original, `<T>` transliteração, `<WG>`/`<WH>`
+Strong, `<WT…>` morfologia com o lema em `l="…"`. O interlinear reverso tem
+443.627 palavras (305.496 hebraicas, 138.131 gregas). O importador atual
+remove as tags e concatena o conteúdo, o que mistura as três linhas no texto
+(defeito tratado em EC1, `docs/EXECUCOES-CRITICAS.md`).
+
+### Referências cruzadas, títulos e parágrafos do theWord
+
+`default.xrefs.twm`: `xrefs(id, vi1, vi2)`, 19.671 pares.
+`default.english.hdgs.twm`: `headings(id, vi, pos, level, content)`, 5.289.
+`default.prgs.twm`: `paragraphs(vi, typ)`, 14.074.
+`vi = livro<<24 | capítulo<<16 | versículo<<8` (16843008 = Gn 1:1; os três
+primeiros pares de Gn 1:1 apontam para Jó 38:4, Sl 33:6 e Sl 89:11). O byte
+baixo e o campo `typ` ainda não foram examinados.
+
+Planos de leitura (`.rdp.twm`): `sessions(id, sid, itemorder, URL)` com
+intervalos como `1.1.1-1.3.24`.

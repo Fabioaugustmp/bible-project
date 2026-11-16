@@ -6,10 +6,12 @@ Vale para pessoas e para modelos. Responda e documente em português.
 
 1. [docs/BACKLOG.md](docs/BACKLOG.md): objetivo, estado atual, decisões
    pendentes do usuário e as tarefas, na ordem. **É a fonte única do que fazer.**
-2. [docs/PLANO.md](docs/PLANO.md): princípios e marcos.
-3. [docs/DECISOES.md](docs/DECISOES.md): o que já foi decidido e por quê. Não
+2. [docs/EXECUCOES-CRITICAS.md](docs/EXECUCOES-CRITICAS.md): ordem em ondas e
+   desenho das tarefas mais difíceis. Leia a seção da tarefa antes de codificar.
+3. [docs/PLANO.md](docs/PLANO.md): princípios e marcos.
+4. [docs/DECISOES.md](docs/DECISOES.md): o que já foi decidido e por quê. Não
    contrarie uma decisão sem registrar uma nova que a revê.
-4. [docs/FORMATOS.md](docs/FORMATOS.md): o que se sabe sobre os arquivos do
+5. [docs/FORMATOS.md](docs/FORMATOS.md): o que se sabe sobre os arquivos do
    e-Sword e do theWord. Tudo ali foi verificado nos arquivos reais.
 
 Pegue a primeira tarefa do backlog que não esteja concluída e cujas

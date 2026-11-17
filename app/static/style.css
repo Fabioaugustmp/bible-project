@@ -245,3 +245,10 @@ i.kind {
   text-transform: uppercase; line-height: 1.5; color: var(--kind);
   border: 1px solid var(--kind); border-radius: 4px; padding: 0 4px;
 }
+
+/* Título de seção com o tipo: barra na cor do tipo (T60, revisão) */
+.panel h3.typed { display: flex; align-items: center; gap: 8px; }
+.panel h3.typed::before {
+  content: ""; flex: none; width: 3px; height: 1.1em; border-radius: 2px; background: var(--kind, var(--line));
+}
+.panel h3.kind-mixed::before { background: linear-gradient(var(--type-commentary), var(--type-dictionary), var(--type-book)); }

@@ -342,11 +342,12 @@ function itemType(kind, abbr, moduleId = null) {
   return module ? typeOf(module.kind, module.abbr) : null;
 }
 
-// Como section, com as etiquetas de tipo antes do título (T60).
+// Como section, com uma barra na cor do tipo antes do título (T60). O título já diz o
+// tipo; a etiqueta escrita fica só nos itens de seções que misturam tipos.
 function typedSection(types, title, count, ...content) {
   const [heading, ...rest] = section(title, count, ...content);
-  const tags = [...new Set(types)].filter(Boolean).flatMap((type) => [kindTag(type), " "]);
-  heading.prepend(...tags);
+  const distinct = [...new Set(types)].filter(Boolean);
+  heading.classList.add("typed", distinct.length === 1 ? `kind-${distinct[0]}` : "kind-mixed");
   return [heading, ...rest];
 }
 
@@ -387,7 +388,7 @@ function commentRow(book, comment) {
     },
   },
     el("summary", {},
-      kindTag("commentary"), el("b", {}, comment.abbr), el("span", { class: "range" }, rangeLabel(book, comment.ref_start, comment.ref_end)),
+      el("b", {}, comment.abbr), el("span", { class: "range" }, rangeLabel(book, comment.ref_start, comment.ref_end)),
       badge(comment.lang),
       el("span", { class: "peek", lang: LANG[comment.lang] || null }, comment.excerpt.slice(0, 110))),
     body,
@@ -427,7 +428,6 @@ async function showVerse() {
 
   const versionItem = (v) => el("div", { class: "item", lang: LANG[v.lang] || null, dir: v.lang === "heb" ? "rtl" : null },
     el("div", { class: "source", dir: "ltr" },
-      kindTag("bible"),
       v.module_id === state.module
         ? el("b", {}, v.abbr)
         : el("button", { class: "link", title: "Ler nesta versão", onclick: () => go({ module: v.module_id }) }, v.abbr),
@@ -445,7 +445,6 @@ async function showVerse() {
     class: "result", onclick: () => go({ book: x.book, chapter: x.chapter, verse: x.verse }),
     title: "Listas curadas: theWord, BSB e TSK. Citados juntos: comentários e verbetes que citam os dois versículos.",
   }, el("div", { class: "source" },
-      kindTag("xref"),
       el("b", {}, refLabel(x.book, x.chapter, x.verse) + (x.span ? `–${x.verse + x.span}` : "")),
       el("span", {}, why(x))),
     x.text ? el("div", { class: "t clamp2" }, x.text) : null));
@@ -575,11 +574,11 @@ async function showWord(strong, source = null, offset = 0, previous = null) {
 const resultBuilders = {
   verses: (v) => el("button", {
     class: "result", onclick: () => go({ book: v.book, chapter: v.chapter, verse: v.verse }),
-  }, el("div", { class: "source" }, kindTag("bible"), el("b", {}, refLabel(v.book, v.chapter, v.verse))),
+  }, el("div", { class: "source" }, el("b", {}, refLabel(v.book, v.chapter, v.verse))),
     el("div", { class: "t" }, highlighted(v.hit))),
   comments: (c) => el("button", {
     class: "result", onclick: () => showItem("comment", c.id),
-  }, el("div", { class: "source" }, kindTag("commentary"), el("b", {}, c.abbr),
+  }, el("div", { class: "source" }, el("b", {}, c.abbr),
       el("span", {}, rangeLabel(c.book, c.ref_start, c.ref_end)), badge(c.lang)),
     el("div", { class: "t" }, highlighted(c.hit))),
   entries: (e) => el("button", {

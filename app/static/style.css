@@ -336,3 +336,15 @@ i.kind {
 .bk-bar.on, .bk-bar:hover:not(.zero) { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
 .bk-chips { margin-top: 8px; }
 .bk-chips .chip { height: 26px; font-size: 12px; }
+
+/* Versões em paralelo (T62) */
+.pbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.prow { display: grid; gap: 14px; padding: 8px 6px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 6px; }
+.prow.phead { cursor: default; border-bottom-width: 2px; padding: 4px 6px; }
+.prow:not(.phead):hover, .prow.selected { background: var(--accent-soft); }
+.pcol-head { font: 600 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.pcell { font: 1rem/1.6 var(--serif); min-width: 0; overflow-wrap: anywhere; }
+.pcell[dir="rtl"] { text-align: right; }
+.pcell sup { font: 600 .6em var(--sans); color: var(--accent); margin-right: .25em; }
+.pempty { color: var(--muted); }
+@media (max-width: 560px) { .prow { grid-template-columns: 1fr !important; } }

@@ -9,6 +9,8 @@ const state = {
   lastSearch: null,    // { query, data }: permite voltar aos resultados
   bilingual: true,     // ponte por Strong na busca (T23)
   words: false,        // modo palavras: clicar abre o termo original (T20)
+  parallel: false,     // versões em paralelo (T62)
+  parallelIds: [],     // versões escolhidas para o paralelo
 };
 
 // --- Utilitários --------------------------------------------------------------
@@ -155,7 +157,9 @@ async function render() {
   $("#text").classList.toggle("words-on", state.words && hasWords);
   const sameChapter = shown.module === state.module && shown.book === state.book
     && shown.chapter === state.chapter && shown.words === state.words;
-  if (!sameChapter) {
+  $("#parallel").setAttribute("aria-pressed", String(state.parallel));
+  if (state.parallel) await renderParallel(token);
+  else if (!sameChapter) {
     const { verses } = await api("chapter", { module: state.module, book: state.book, chapter: state.chapter });
     if (token !== renderToken) return; // navegação mais nova já em andamento
     shown = { module: state.module, book: state.book, chapter: state.chapter, words: state.words };
@@ -190,8 +194,8 @@ async function render() {
   }
 
   // Seleção: só troca a marca, sem redesenhar o capítulo.
-  text.querySelector(".v.selected")?.classList.remove("selected");
-  const selected = state.verse ? text.querySelector(`.v[data-verse="${state.verse}"]`) : null;
+  text.querySelector(".selected")?.classList.remove("selected");
+  const selected = state.verse ? text.querySelector(`.v[data-verse="${state.verse}"], .prow[data-verse="${state.verse}"]`) : null;
   if (selected) {
     selected.classList.add("selected");
     if (!sameChapter) selected.scrollIntoView({ block: "center" });
@@ -200,6 +204,66 @@ async function render() {
   } else if (panelMode === "verse") {
     closePanel();
   }
+}
+
+// --- Versões em paralelo (T62) -----------------------------------------------------
+
+const MAX_COLUMNS = 4;
+
+// Versões escolhidas para o paralelo: as guardadas (só as que existem) ou, por padrão, a aberta.
+function parallelChoice() {
+  const ids = state.parallelIds.filter((id) => state.bibles.some((m) => m.id === id)).slice(0, MAX_COLUMNS);
+  return ids.length ? ids : [state.module];
+}
+
+async function renderParallel(token) {
+  const ids = parallelChoice();
+  const { book, chapter } = state;
+  const results = await Promise.all(ids.map((id) => api("chapter", { module: id, book, chapter })));
+  if (token !== renderToken) return;
+  const columns = ids.map((id, i) => {
+    const module = state.bibles.find((m) => m.id === id);
+    return { module, verses: new Map(results[i].verses.map((v) => [v.verse, v.text])) };
+  });
+  const numbers = [...new Set(columns.flatMap((c) => [...c.verses.keys()]))].sort((a, b) => a - b);
+  shown = { module: null, book: null, chapter: null, words: null };   // o modo normal redesenha ao voltar
+  const text = $("#text");
+  $("#kicker").textContent = "Versões em paralelo";
+  $("#title").textContent = refLabel(book, chapter);
+  document.title = `${refLabel(book, chapter)} · paralelo`;
+  text.lang = ""; text.dir = "ltr";
+  $("#hint").hidden = true;
+
+  const picker = el("div", { class: "pbar", role: "group", "aria-label": "Versões mostradas" },
+    state.bibles.map((m) => {
+      const on = ids.includes(m.id);
+      return el("button", {
+        class: "chip" + (on ? " on" : ""), "aria-pressed": String(on),
+        title: m.title || m.abbr,
+        onclick: () => {
+          let next = on ? ids.filter((id) => id !== m.id) : [...ids, m.id];
+          if (next.length === 0) next = [m.id];
+          if (next.length > MAX_COLUMNS) return;
+          state.parallelIds = next;
+          store.set("parallelIds", JSON.stringify(next));
+          render();
+        },
+      }, m.abbr);
+    }));
+  const grid = `grid-template-columns: repeat(${columns.length}, minmax(0, 1fr))`;
+  const head = el("div", { class: "prow phead", style: grid },
+    columns.map((c) => el("div", { class: "pcol-head", lang: LANG[c.module.lang] || null }, c.module.abbr)));
+  const rows = numbers.map((n) => el("div", {
+    class: "prow" + (n === state.verse ? " selected" : ""), "data-verse": n, style: grid,
+    role: "button", tabindex: "0",
+    onclick: () => go({ verse: n }),
+    onkeydown: (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); go({ verse: n }); } },
+  }, columns.map((c, index) => el("div", {
+    class: "pcell", lang: LANG[c.module.lang] || null, dir: c.module.lang === "heb" ? "rtl" : null,
+  }, index === 0 ? el("sup", {}, String(n)) : null,
+     c.verses.has(n) ? c.verses.get(n) : el("span", { class: "pempty" }, "—")))));
+  text.replaceChildren(picker, head, ...rows);
+  followReading();
 }
 
 // Versículo palavra por palavra: cada expressão com Strong vira um elemento clicável.
@@ -1089,6 +1153,8 @@ async function init() {
   if (["all", "por", "other"].includes(savedFilter)) state.langFilter = savedFilter;
   state.bilingual = store.get("bilingual") !== "0";
   state.words = store.get("words") === "1";
+  state.parallel = store.get("parallel") === "1";
+  try { state.parallelIds = JSON.parse(store.get("parallelIds") || "[]"); } catch { state.parallelIds = []; }
   let fontSize = setFontSize(Number(store.get("fontSize")) || 20);
   readHash();
 
@@ -1105,6 +1171,11 @@ async function init() {
   $("#theme").addEventListener("click", toggleTheme);
   $("#browse").addEventListener("click", () => {
     if (browseState.module) showBrowse(); else browseHome();
+  });
+  $("#parallel").addEventListener("click", () => {
+    state.parallel = !state.parallel;
+    store.set("parallel", state.parallel ? "1" : "0");
+    render();
   });
   $("#words").addEventListener("click", () => {
     state.words = !state.words;

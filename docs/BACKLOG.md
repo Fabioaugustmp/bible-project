@@ -103,7 +103,7 @@ julgamento, vai para o mais capaz. Para trocar de modelo, use `/model`.
 | 1 | T11 — testes automatizados — **concluída** | Haiku | especificação fechada, casos listados abaixo; não altera comportamento | pasta `tests/` passando, um commit |
 | 2 | T24 — citações clicáveis (EC5) — **concluída** | Opus | altera o conversor de RTF de todos os módulos; posições no texto; validação com julgamento; reimportação | tabela `refs`, interface, reimportação verificada |
 | 3 | T10 — importação incremental — **concluída** | Haiku (ou Sonnet, se o Haiku parar) | mudança contida em `build.py`, aceite numérico | opção `--incremental`, um commit |
-| 4 | M7 — organização da tela e grafo (T60–T66), se P7 = sim | Opus para T61 e T65 (EC9, EC8); Sonnet para T62; Haiku para T60, T63, T64 e T66 | desenho de interface e de visualização exige julgamento; as demais estão especificadas | ver M7 |
+| 4 | M7 — organização da tela e grafo (T60–T66), se P7 = sim | Opus para T61 e T65 (EC9, EC8); Haiku para T60, T62, T63, T64 e T66 (T62 foi feita no Haiku) | desenho de interface e de visualização exige julgamento; as demais estão especificadas | ver M7 |
 | 5 | M3 — busca semântica (T30–T34) | Opus | maior incerteza técnica; depende da resposta P3 | ver EC6 |
 | 6 | M4 — notas e exportação (T40–T42) | Sonnet | formatos de notas do e-Sword ainda não examinados | ver backlog |
 | 7 | M5 — produto distribuível (T50–T52) | Opus | decisões de arquitetura; depende de P1 | ver EC7 |
@@ -160,7 +160,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T64 | concluída: botão 'Dic.' abre as 26 obras de dicionário e livro; índice alfabético, filtro por texto e paginação (`/api/titles`); verificado com o Easton (382 títulos com A, 'abin' acha Abinadab, verbete abre). Dic Port (36 mil) não foi medido |
 | T66 | concluída (Haiku): faixa com 66 barras por livro, agrupadas em 8 grupos; clique filtra a lista; contagem pelo mesmo ranqueamento da lista (`/api/xref-books`); Sl 23:1 mostra Ez 29, Jo 34, Is 19, 1Pe 3; Gn 1:1 mostra Sl 43, Pv 13, Jo 19. Só no modo Lista |
 | T63 | concluída (Haiku): 'Acompanhar na leitura' em cada comentário do painel fixa um comentário que troca o trecho ao mudar de versículo (85 a 265 ms, critério 0,3 s) e ao rolar o texto (versículo do meio da tela); citações clicáveis; sobrevive a recarregar. `/api/commentary` (2 a 5 ms). JFB em Rm 8 |
-| T62 (M7) | pendente (Sonnet, pelo roteiro) |
+| T62 | concluída (Haiku; o roteiro previa Sonnet, mas não houve condição de parada): botão '‖' liga o modo paralelo; até 4 versões lado a lado, alinhadas por versículo (linhas com a mesma altura), hebraico com dir=rtl; escolha guardada. Testado com ARA + ACF + KJV (João 3:16), ARA + WLC (Sl 23:1) e limite de 4. Sem títulos de seção nem Strong nesse modo; em tela estreita, as colunas empilham |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |
 

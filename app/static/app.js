@@ -6,6 +6,7 @@ const state = {
   langFilter: "all",   // 'all' | 'por' | 'other': filtra comentários e citações no painel
   lastSearch: null,    // { query, data }: permite voltar aos resultados
   bilingual: true,     // ponte por Strong na busca (T23)
+  words: false,        // modo palavras: clicar abre o termo original (T20)
 };
 
 // --- Utilitários --------------------------------------------------------------
@@ -138,11 +139,16 @@ async function render() {
   $("#next").disabled = state.book === state.books.length && state.chapter === chapters;
 
   const text = $("#text");
-  const sameChapter = shown.module === state.module && shown.book === state.book && shown.chapter === state.chapter;
+  const hasWords = module.has_strongs === 1;
+  $("#words").hidden = !hasWords;
+  $("#words").setAttribute("aria-pressed", String(state.words && hasWords));
+  $("#text").classList.toggle("words-on", state.words && hasWords);
+  const sameChapter = shown.module === state.module && shown.book === state.book
+    && shown.chapter === state.chapter && shown.words === state.words;
   if (!sameChapter) {
     const { verses } = await api("chapter", { module: state.module, book: state.book, chapter: state.chapter });
     if (token !== renderToken) return; // navegação mais nova já em andamento
-    shown = { module: state.module, book: state.book, chapter: state.chapter };
+    shown = { module: state.module, book: state.book, chapter: state.chapter, words: state.words };
     document.title = `${refLabel(state.book, state.chapter)} · ${module.abbr}`;
     $("#kicker").textContent = module.title || module.abbr;
     $("#title").textContent = refLabel(state.book, state.chapter);
@@ -155,8 +161,16 @@ async function render() {
         v.heading ? el("h2", { class: "pericope", dir: "ltr" }, v.heading) : null,
         el("span", {
           class: "v", "data-verse": v.verse, role: "button", tabindex: "0",
-          onclick: () => go({ verse: v.verse }),
-        }, el("sup", {}, String(v.verse)), v.text),
+          onclick: (event) => {
+            const word = event.target.closest(".w");
+            if (word && state.words) {
+              event.stopPropagation();
+              showWord(word.dataset.strong.split(" ")[0], word);
+            } else {
+              go({ verse: v.verse });
+            }
+          },
+        }, el("sup", {}, String(v.verse)), state.words && v.words ? wordsOf(v.words) : v.text),
         " ",
       ]).filter(Boolean));
     }
@@ -175,6 +189,18 @@ async function render() {
   } else if (panelMode === "verse") {
     closePanel();
   }
+}
+
+// Versículo palavra por palavra: cada expressão com Strong vira um elemento clicável.
+function wordsOf(words) {
+  const nodes = [];
+  words.forEach(([surface, codes], index) => {
+    if (index && surface && !/^[,.;:!?”’)\]]/.test(surface)) nodes.push(" ");
+    if (!codes.length) { nodes.push(surface); return; }
+    nodes.push(el("span", { class: "w", "data-strong": codes.join(" "), title: codes.join(" ") },
+      surface || "·", el("sub", {}, codes.join(" "))));
+  });
+  return nodes;
 }
 
 // --- Painel ---------------------------------------------------------------------
@@ -341,6 +367,66 @@ async function showItem(kind, id) {
       el("div", { class: "origin" }, `Origem: ${item.origin_path} · ${item.origin_key}`)));
 }
 
+// --- Palavra (Strong) --------------------------------------------------------------
+
+async function showWord(strong, source = null, offset = 0, previous = null) {
+  document.querySelectorAll(".w.picked").forEach((node) => node.classList.remove("picked"));
+  source?.classList.add("picked");
+  const data = await api("word", { strong, module: state.module, offset });
+  if (previous) data.occurrences = previous.concat(data.occurrences);
+  const original = data.original[0]?.term;
+  const langLabel = data.original_lang === "grc" ? "grego" : "hebraico";
+
+  const chips = (items, lang) => el("div", { class: "chips" }, items.map((item) => el("button", {
+    class: "chip", lang, title: `${Math.round(item.share * 100)}% das ocorrências · buscar este termo`,
+    onclick: () => { $("#q").value = item.term; showSearch(item.term); },
+  }, item.term, el("span", { class: "n" }, String(item.count)))));
+
+  const lexicon = (entry) => {
+    const body = el("div", { class: "t", lang: LANG[entry.lang] || null }, entry.excerpt);
+    let loaded = entry.length <= entry.excerpt.length;
+    return el("details", {
+      class: "fold", open: entry === data.lexicons[0],
+      ontoggle: async (event) => {
+        if (!event.target.open || loaded) return;
+        loaded = true;
+        body.textContent = (await api("item", { kind: "entry", id: entry.id })).text;
+      },
+    }, el("summary", {}, el("b", {}, entry.abbr), el("span", { class: "range" }, entry.title || ""), badge(entry.lang)),
+      body);
+  };
+  // O primeiro léxico já vem aberto: carrega o texto inteiro dele.
+  queueMicrotask(() => document.querySelector("#panel-body details.fold[open]")?.dispatchEvent(new Event("toggle")));
+
+  const occurrence = (item) => el("button", {
+    class: "result", onclick: () => go({ book: item.book, chapter: item.chapter, verse: item.verse }),
+  }, el("div", { class: "source" }, el("b", {}, refLabel(item.book, item.chapter, item.verse)),
+      item.used.length ? el("span", {}, "ARA: " + item.used.join(", ")) : null),
+    item.text ? el("div", { class: "t clamp2" }, item.text) : null);
+
+  const more = data.occurrences.length < data.total
+    ? el("button", {
+        class: "more",
+        onclick: () => showWord(strong, null, data.occurrences.length, data.occurrences).then(() => {
+          $("#panel-body").scrollTop = $("#panel-body").scrollHeight;
+        }),
+      }, `Mais ocorrências (${data.occurrences.length} de ${data.total})`)
+    : null;
+
+  const backVerse = state.verse
+    ? el("button", { class: "link back", onclick: showVerse }, `← ${refLabel(state.book, state.chapter, state.verse)}`)
+    : null;
+  openPanel("word", `${strong}${original ? " · " + original : ""}`,
+    backVerse, backToSearch(),
+    original ? el("p", { class: "lemma", lang: LANG[data.original_lang] }, original,
+      el("span", { lang: "pt-BR" }, ` ${langLabel} · ${data.total} versículos`)) : null,
+    data.translations.por.length ? section("Como a Bíblia em português traduz", null, chips(data.translations.por, "pt-BR")) : null,
+    data.translations.eng.length ? section("Em inglês", null, chips(data.translations.eng, "en")) : null,
+    section("Léxicos", data.lexicons.length,
+      data.lexicons.length ? data.lexicons.map(lexicon) : el("p", { class: "empty" }, "Nenhum léxico legível tem este número.")),
+    section("Ocorrências", data.total, data.occurrences.map(occurrence), more));
+}
+
 // --- Busca ----------------------------------------------------------------------
 
 const resultBuilders = {
@@ -463,6 +549,7 @@ async function init() {
   const savedFilter = store.get("langFilter");
   if (["all", "por", "other"].includes(savedFilter)) state.langFilter = savedFilter;
   state.bilingual = store.get("bilingual") !== "0";
+  state.words = store.get("words") === "1";
   let fontSize = setFontSize(Number(store.get("fontSize")) || 20);
   readHash();
 
@@ -477,6 +564,11 @@ async function init() {
   $("#smaller").addEventListener("click", () => { fontSize = setFontSize(fontSize - 1); });
   $("#larger").addEventListener("click", () => { fontSize = setFontSize(fontSize + 1); });
   $("#theme").addEventListener("click", toggleTheme);
+  $("#words").addEventListener("click", () => {
+    state.words = !state.words;
+    store.set("words", state.words ? "1" : "0");
+    render();
+  });
   $("#panel-close").addEventListener("click", () => {
     state.lastSearch = null;
     closePanel();

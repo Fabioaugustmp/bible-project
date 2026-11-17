@@ -97,12 +97,115 @@ def api_library(con, q):
     }
 
 
+def modules_with_tokens(con):
+    """Módulos que têm palavras em `tokens` (Bíblias com Strong)."""
+    if not has_table(con, "tokens"):
+        return set()
+    return {row[0] for row in con.execute("select id from modules where kind = 'bible' and has_strongs = 1")}
+
+
 def api_chapter(con, q):
-    return {"verses": rows(
+    module, book, chapter = int(q["module"]), int(q["book"]), int(q["chapter"])
+    verses = rows(
         con,
         "select verse, text, heading from verses where module_id = ? and book = ? and chapter = ? order by verse",
-        (int(q["module"]), int(q["book"]), int(q["chapter"])),
-    )}
+        (module, book, chapter),
+    )
+    if module in modules_with_tokens(con):
+        # Palavras do versículo: [[expressão, [códigos]], ...]. Palavra original sem
+        # tradução (expressão vazia) junta seu código à expressão anterior.
+        words = {}
+        for verse, surface, strong in con.execute(
+            "select verse, surface, strong from tokens where module_id = ? and book = ? and chapter = ?"
+            " order by verse, pos", (module, book, chapter),
+        ):
+            items = words.setdefault(verse, [])
+            if surface:
+                items.append([surface, [strong] if strong else []])
+            elif strong and items:
+                items[-1][1].append(strong)
+            elif strong:
+                items.append(["", [strong]])
+        for item in verses:
+            item["words"] = words.get(item["verse"])
+    return {"verses": verses}
+
+
+# Ordem de exibição dos léxicos no painel "Palavra" (os demais vêm depois, por sigla).
+LEXICON_ORDER = ["Dodson", "AHLB", "MLSJ", "LSJ", "KJC", "LXXHebGreek"]
+_LINK_STUB = re.compile(r"^meta=_twmgc_\s+type=link\s+id=(\d+)\s*$")
+_STRONG_CODE = re.compile(r"^[GH][1-9][0-9]{0,4}$")
+
+
+def api_word(con, q):
+    """Tudo sobre um número Strong: termo original, traduções, léxicos e ocorrências."""
+    strong = q["strong"].upper()
+    if not _STRONG_CODE.match(strong):
+        raise ValueError("código Strong inválido")
+    module = int(q["module"]) if q.get("module") else None
+    offset = max(0, int(q.get("offset", 0)))
+    original_lang = "grc" if strong[0] == "G" else "heb"
+
+    def terms(lang, limit):
+        return rows(con, "select term, count, share from strong_terms where strong = ? and lang = ?"
+                         " order by count desc limit ?", (strong, lang, limit))
+
+    # Léxicos: verbetes cujo título é o código; os verbetes-ligação (LSJ) apontam para outro tópico.
+    lexicons = []
+    for entry in rows(con, "select e.id, e.text, e.module_id, m.abbr, m.title, m.lang from entries e"
+                           " join modules m on m.id = e.module_id where e.topic = ? collate nocase", (strong,)):
+        link = _LINK_STUB.match(entry["text"])
+        if link:
+            target = con.execute("select id, text from entries where module_id = ? and origin_key = ?",
+                                 (entry["module_id"], f"topic:{link.group(1)}")).fetchone()
+            if not target:
+                continue
+            entry["id"], entry["text"] = target[0], target[1]
+        entry["excerpt"], entry["length"] = entry["text"][:EXCERPT], len(entry["text"])
+        del entry["text"]
+        lexicons.append(entry)
+    order = {abbr: index for index, abbr in enumerate(LEXICON_ORDER)}
+    lexicons.sort(key=lambda entry: (order.get(entry["abbr"], len(order)), entry["abbr"]))
+
+    # Ocorrências: versículos do interlinear BSB (Bíblia inteira) com o código; o texto vem da
+    # versão aberta e, quando houver, a expressão usada pela Bíblia portuguesa com Strong.
+    reference = con.execute("select id from modules where abbr = 'BSBRevINT'").fetchone()
+    portuguese = con.execute(
+        "select id from modules where kind = 'bible' and has_strongs = 1 and lang = 'por' order by id limit 1"
+    ).fetchone()
+    occurrences, total = [], 0
+    if reference:
+        total = con.execute("select count(*) from (select distinct book, chapter, verse from tokens"
+                            " where module_id = ? and strong = ?)", (reference[0], strong)).fetchone()[0]
+        for book, chapter, verse in con.execute(
+            "select distinct book, chapter, verse from tokens where module_id = ? and strong = ?"
+            " order by book, chapter, verse limit ? offset ?", (reference[0], strong, PAGE["verses"], offset),
+        ):
+            text = con.execute("select text from verses where module_id = ? and book = ? and chapter = ?"
+                               " and verse = ?", (module, book, chapter, verse)).fetchone() if module else None
+            used = [row[0] for row in con.execute(
+                "select surface from tokens where module_id = ? and book = ? and chapter = ? and verse = ?"
+                " and strong = ? and surface <> '' order by pos",
+                (portuguese[0], book, chapter, verse, strong))] if portuguese else []
+            occurrences.append({"book": book, "chapter": chapter, "verse": verse,
+                                "text": text[0] if text else None, "used": used})
+
+    # Forma original com acentos e transliteração, tirada do interlinear (strong_terms guarda o
+    # lema grego sem acentos, para unir as grafias do TR e do BSB).
+    original = rows(con, "select lemma as term, translit, count(*) as count from tokens"
+                         " where module_id = ? and strong = ? and lemma is not null"
+                         " group by lemma order by count desc limit 1",
+                    (reference[0], strong)) if reference else []
+    return {
+        "strong": strong,
+        "original": original or terms(original_lang, 2),
+        "original_lang": original_lang,
+        "translations": {"por": terms("por", 10), "eng": terms("eng", 10)},
+        "lexicons": lexicons,
+        "occurrences": occurrences,
+        "total": total,
+        "offset": offset,
+    }
 
 
 def api_verse(con, q):
@@ -245,7 +348,7 @@ def api_search(con, q):
 
 
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "search": api_search}
+       "item": api_item, "search": api_search, "word": api_word}
 
 
 class Handler(BaseHTTPRequestHandler):

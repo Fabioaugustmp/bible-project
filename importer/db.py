@@ -87,10 +87,12 @@ create table entries(
     topic text, text text, origin_key text
 );
 create index entries_by_topic on entries(topic collate nocase);
+create index entries_by_origin on entries(module_id, origin_key);  -- verbetes-ligação dos léxicos
 
 -- Versículos citados dentro de um comentário ('comment') ou verbete ('entry').
 create table links(kind text, item_id integer, book integer, chapter integer, verse integer);
 create index links_by_ref on links(book, chapter, verse);
+create index links_by_item on links(kind, item_id);  -- co-citação (T25)
 
 create table import_log(
     id integer primary key, at text, level text, origin_path text, message text

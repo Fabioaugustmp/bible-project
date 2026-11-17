@@ -170,3 +170,29 @@ explicável e baseada só em dados da própria biblioteca.
 
 **Limites:** falso positivo ocasional por tradução idiomática da BSB
 ("loving devotion"); verbos e conceitos sem Strong não são cobertos.
+
+## D014 — Painel "Palavra" e índices acrescentados à base em uso · 2026-11-17
+
+**Decisão:**
+- Nas Bíblias com Strong, um botão "Strong" liga o modo palavras: cada
+  expressão traduzida vira um elemento clicável com o código ao lado. Com o
+  modo desligado, clicar no versículo continua abrindo o painel do versículo.
+- O painel "Palavra" mostra: o termo original com acentos (o lema mais comum
+  no interlinear BSB), as traduções portuguesas e inglesas de `strong_terms`
+  (clicar busca o termo), os verbetes cujo título é o código (os
+  verbetes-ligação do LSJ e do MLSJ são seguidos até o verbete real) e as
+  ocorrências.
+- As ocorrências vêm do interlinear reverso BSB, a única Bíblia com Strong
+  nos dois testamentos; o texto mostrado é o da versão aberta e, ao lado, a
+  expressão que a ARA com Strong usou naquele versículo.
+- Dois índices novos (`entries_by_origin`, `links_by_item`) entraram no
+  esquema do importador e foram **criados também na base em uso**, sem
+  reimportar. A base continua reprodutível: a próxima importação já os cria.
+
+**Motivo:** sem o índice de origem, seguir o verbete-ligação lia 120 mil
+verbetes do LSJ (0,77 s por palavra grega; com o índice, 0,32 s).
+
+**Limites:** a contagem de ocorrências é por versículo, não por palavra; o
+léxico LXXHebGreek aparece com o grego e o hebraico em codificação antiga de
+fonte (ilegível) e fica por último; não há léxico Strong hebraico legível além
+do AHLB e da concordância KJC.

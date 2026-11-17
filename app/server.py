@@ -365,6 +365,31 @@ def api_xref_books(con, q):
     return {"books": [{"book": b, "count": counts.get(b, 0)} for b in range(1, 67)]}
 
 
+def api_commentary(con, q):
+    """O comentário de um módulo que cobre um versículo, com as citações (T63).
+
+    Entre os comentários que cobrem o versículo, vale o de intervalo mais curto:
+    é o mais específico, como o de um versículo isolado diante de um capítulo inteiro.
+    """
+    module, book, chapter, verse = int(q["module"]), int(q["book"]), int(q["chapter"]), int(q["verse"])
+    info = con.execute("select abbr, title, lang from modules where id = ? and kind = 'commentary'",
+                       (module,)).fetchone()
+    if not info:
+        raise ValueError("módulo não é um comentário")
+    ref = chapter * 1000 + verse
+    row = con.execute(
+        "select id, ref_start, ref_end, text from comments where module_id = ? and book = ?"
+        " and ref_start <= ? and ref_end >= ? and ref_start > ?"
+        " order by (ref_end - ref_start), id limit 1",
+        (module, book, ref, ref, chapter * 1000),
+    ).fetchone()
+    if not row:
+        return {"abbr": info[0], "title": info[1], "item": None}
+    refs = item_refs(con, "comment", [row[0]], lambda _: row[3]).get(row[0], [])
+    return {"abbr": info[0], "title": info[1], "item": {
+        "id": row[0], "ref_start": row[1], "ref_end": row[2], "text": row[3], "lang": info[2], "refs": refs}}
+
+
 def api_cited(con, q):
     """Itens de um módulo que citam o versículo (aberto sob demanda no painel)."""
     book, chapter, verse = int(q["book"]), int(q["chapter"]), int(q["verse"])
@@ -459,7 +484,7 @@ def api_search(con, q):
 
 
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "search": api_search, "word": api_word, "passage": api_passage,
+       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "word": api_word, "passage": api_passage,
        "xref-graph": api_xref_graph}
 
 

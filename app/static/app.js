@@ -185,6 +185,7 @@ async function render() {
       ]).filter(Boolean));
     }
     $("#hint").hidden = !verses.length;
+    followReading();
     if (!state.verse) $("#reader").scrollTop = 0;
   }
 
@@ -336,6 +337,62 @@ function closePanel() {
   layout.update();
 }
 
+// --- Comentário que acompanha a leitura (T63) ------------------------------------
+
+function currentWhere() {
+  return { book: state.book, chapter: state.chapter, verse: state.verse || 1 };
+}
+
+function commentaryNodes(data, where) {
+  const header = el("div", { class: "source" }, kindTag("commentary"), el("b", {}, data.abbr),
+    data.item ? el("span", { class: "range" }, rangeLabel(where.book, data.item.ref_start, data.item.ref_end)) : null);
+  if (!data.item) return [header, el("p", { class: "empty" }, "Nenhum comentário cobre este versículo neste módulo.")];
+  return [header, el("div", { class: "t", lang: LANG[data.item.lang] || null }, linked(data.item.text, data.item.refs))];
+}
+
+// Atualiza os comentários acompanhados para o versículo dado (sem mudar a seleção).
+async function refreshCommentaryPins(where) {
+  const pins = layout.pins.filter((pin) => pin.view.type === "commentary");
+  if (!pins.length) return;
+  const key = `${where.book}.${where.chapter}.${where.verse}`;
+  await Promise.all(pins.map(async (pin) => {
+    if (pin.key === key) return;
+    pin.key = key;
+    const token = pin.token = (pin.token || 0) + 1;
+    try {
+      const data = await api("commentary", { module: pin.view.module, book: where.book, chapter: where.chapter, verse: where.verse });
+      if (pin.token !== token) return;
+      pin.title = `${data.abbr} · ${bookOf(where.book).abbr} ${where.chapter}:${where.verse}`;
+      pin.body.replaceChildren(...commentaryNodes(data, where));
+      layout.save();
+      layout.renderTabs();
+    } catch {
+      if (pin.token === token) pin.key = null;
+    }
+  }));
+}
+
+function pinCommentary(moduleId) {
+  const body = el("div", { class: "pinned-content" }, el("p", { class: "empty" }, "Acompanhando a leitura…"));
+  layout.add({ type: "commentary", module: moduleId }, "Comentário", body);
+  refreshCommentaryPins(currentWhere());
+}
+
+// Quando o texto muda de posição, o versículo que está no meio da tela é o que vale.
+let readingObserver = null;
+
+function followReading() {
+  if (readingObserver) readingObserver.disconnect();
+  if (typeof IntersectionObserver === "undefined") return;
+  readingObserver = new IntersectionObserver((entries) => {
+    if (!layout.pins.some((pin) => pin.view.type === "commentary")) return;
+    const verse = entries.filter((entry) => entry.isIntersecting)
+      .map((entry) => Number(entry.target.dataset.verse)).sort((a, b) => a - b)[0];
+    if (verse) refreshCommentaryPins({ book: state.book, chapter: state.chapter, verse });
+  }, { root: $("#reader"), rootMargin: "-45% 0px -50% 0px" });
+  $("#text").querySelectorAll(".v").forEach((node) => readingObserver.observe(node));
+}
+
 // --- Colunas: painel, itens fixados e divisórias (T61) ----------------------------
 
 const MIN_READER = 448, MIN_COLUMN = 320, MAX_PINS = 6, WIDE = 1100;
@@ -466,6 +523,7 @@ async function renderView(view, target) {
     if (view.type === "verse") await showVerse(view);
     else if (view.type === "item") await showItem(view.kind, view.id);
     else if (view.type === "word") await showWord(view.strong);
+    else if (view.type === "commentary") target.body.replaceChildren(el("p", { class: "empty" }, "Acompanhando a leitura…"));
     else if (view.type === "search") {
       const saved = state.lastSearch;
       await showSearch(view.query);
@@ -488,6 +546,7 @@ async function restorePins() {
   layout.active = layout.pins[Math.max(0, saved.active)]?.id ?? layout.pins[0]?.id ?? null;
   layout.update();
   layout.applyWidths();
+  refreshCommentaryPins(currentWhere());
 }
 
 // Divisórias: arrastar com o mouse ou usar as setas do teclado.
@@ -605,7 +664,8 @@ function commentRow(book, comment) {
     el("div", { class: "origin fold-actions" },
       partial ? `${Math.round(comment.length / 1000)} mil caracteres · ` : null,
       el("button", { class: "link", onclick: () => pinView({ type: "item", kind: "comment", id: comment.id }) },
-        "Fixar ao lado")));
+        "Fixar ao lado"), " · ",
+      el("button", { class: "link", onclick: () => pinCommentary(comment.module_id) }, "Acompanhar na leitura")));
 }
 
 // Um módulo que cita o versículo: a lista de itens só é buscada ao abrir.
@@ -676,6 +736,7 @@ async function showVerse(ref = null) {
   const verseKey = `${book}.${chapter}.${verse}`;
   if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; xrefBook = null; }
   const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook });
+  refreshCommentaryPins({ book, chapter, verse });
   const bookCounts = data.xrefs_total || xrefBook ? (await api("xref-books", { book, chapter, verse })).books : null;
   if (!ref && (book !== state.book || chapter !== state.chapter || verse !== state.verse)) return;
   pendingView = { type: "verse", book, chapter, verse };

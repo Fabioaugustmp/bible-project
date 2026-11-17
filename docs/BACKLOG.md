@@ -159,7 +159,8 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T65 | concluída (EC8, D019): grafo no painel do versículo (Lista/Grafo), posicionamento próprio em `app/static/graph.js`; centros e isolado conferidos nos 5 versículos, 0 rótulos sobrepostos, recentrar 45 ms com cache; só lista abaixo de 760 px |
 | T64 | concluída: botão 'Dic.' abre as 26 obras de dicionário e livro; índice alfabético, filtro por texto e paginação (`/api/titles`); verificado com o Easton (382 títulos com A, 'abin' acha Abinadab, verbete abre). Dic Port (36 mil) não foi medido |
 | T66 | concluída (Haiku): faixa com 66 barras por livro, agrupadas em 8 grupos; clique filtra a lista; contagem pelo mesmo ranqueamento da lista (`/api/xref-books`); Sl 23:1 mostra Ez 29, Jo 34, Is 19, 1Pe 3; Gn 1:1 mostra Sl 43, Pv 13, Jo 19. Só no modo Lista |
-| T62, T63 (M7) | pendente (T62 Sonnet; T63 Haiku, pode seguir) |
+| T63 | concluída (Haiku): 'Acompanhar na leitura' em cada comentário do painel fixa um comentário que troca o trecho ao mudar de versículo (85 a 265 ms, critério 0,3 s) e ao rolar o texto (versículo do meio da tela); citações clicáveis; sobrevive a recarregar. `/api/commentary` (2 a 5 ms). JFB em Rm 8 |
+| T62 (M7) | pendente (Sonnet, pelo roteiro) |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |
 

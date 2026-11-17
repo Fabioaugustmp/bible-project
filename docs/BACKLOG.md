@@ -33,7 +33,7 @@ este projeto pode ter que aquele não tem:
 Limite: módulos protegidos por direito autoral não podem ser distribuídos com
 o aplicativo; cada usuário importa os seus.
 
-## Estado atual (2026-11-17, após a Onda 2)
+## Estado atual (2026-11-17, após a Onda 3)
 
 - `data/library.db` é a base completa: 73 módulos (16 Bíblias, 24
   comentários, 25 dicionários, 6 livros, 1 de referências cruzadas, 1 de
@@ -60,9 +60,8 @@ o aplicativo; cada usuário importa os seus.
 bilíngue (T23, D013), Strong clicável e painel "Palavra" (T20 + T22, D014) e
 referências ranqueadas (T25, D015).
 
-**Próximo passo:** Onda 4, citações clicáveis nos comentários (T24, EC5).
-Altera o conversor de RTF usado por todos os módulos: começar pelos testes
-de `rtf.py` (T11) e exige reimportação.
+**Próximo passo:** seguir o "Roteiro por modelo": primeiro a T11 (testes,
+Haiku), depois a T24 (citações clicáveis, Opus).
 
 ## Como trabalhar
 
@@ -87,6 +86,31 @@ de `rtf.py` (T11) e exige reimportação.
 | P3 | Dependências além da biblioteca padrão são aceitas (necessárias em M3)? | Sim, isoladas no indexador; registrar nova decisão que revê a D003 |
 | P4 | Uso de modelo de linguagem (local ou por API) é aceito? | Só opcional e por último (M6) |
 | P5 | Manter a página do Notion sincronizada? | Não: hoje ela espelha IDEIAS.md e está desatualizada em relação a este arquivo |
+
+## Roteiro por modelo
+
+Cada passo diz qual modelo usar, o que entregar e quando parar. O critério:
+tarefa bem especificada e de risco local vai para um modelo menor; tarefa que
+mexe em código usado por toda a biblioteca, ou que exige desenho ou
+julgamento, vai para o mais capaz. Para trocar de modelo, use `/model`.
+
+| Passo | Tarefa | Modelo | Por quê | Entrega |
+|---|---|---|---|---|
+| 1 | T11 — testes automatizados | Haiku | especificação fechada, casos listados abaixo; não altera comportamento | pasta `tests/` passando, um commit |
+| 2 | T24 — citações clicáveis (EC5) | Opus | altera o conversor de RTF de todos os módulos; posições no texto; validação com julgamento; reimportação | tabela `refs`, interface, reimportação verificada |
+| 3 | T10 — importação incremental | Haiku (ou Sonnet, se o Haiku parar) | mudança contida em `build.py`, aceite numérico | opção `--incremental`, um commit |
+| 4 | M3 — busca semântica (T30–T34) | Opus | maior incerteza técnica; depende da resposta P3 | ver EC6 |
+| 5 | M4 — notas e exportação (T40–T42) | Sonnet | formatos de notas do e-Sword ainda não examinados | ver backlog |
+| 6 | M5 — produto distribuível (T50–T52) | Opus | decisões de arquitetura; depende de P1 | ver EC7 |
+
+**Quando um modelo menor deve parar e devolver a tarefa** (anotando o motivo
+na tabela "Estado das tarefas" e sem commitar código pela metade):
+- um teste revela defeito no código existente: registrar o defeito como nova
+  linha no backlog, marcar o teste como `expectedFailure` com o motivo, e não
+  corrigir o código nesta tarefa;
+- a tarefa exige uma escolha que não está em `DECISOES.md`;
+- duas tentativas seguidas falharam no mesmo critério de aceite;
+- seria preciso mudar o esquema da base ou reimportar a biblioteca.
 
 ## Prioridade e ordem
 
@@ -117,13 +141,13 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T07 | concluída: 71 módulos, 0 erros, 479 s, base de 1,16 GB promovida; verify.py passa; interface testada |
 | T08 | concluída (EC4): painel enxuto (Jo 3:16 de 315 KB para 19 KB), recolhido e filtrável; busca paginada com volta; perícopes e referências cruzadas na tela; testado em 1280 px e 375 px, temas claro e escuro |
 | T09 | concluída em parte: referências cruzadas (theWord e BSB) e títulos em inglês importados; parágrafos não, por falta de confirmação do campo `typ` |
-| T10 | pendente |
-| T11 | pendente |
+| T10 | pendente (passo 3 do roteiro, Haiku) |
+| T11 | pendente (passo 1 do roteiro, Haiku) |
 | T21 | concluída (EC1): `strong_terms` com 137 mil termos; 16 de 18 traduções esperadas conferem, as 2 restantes são diferenças legítimas |
 | T23 | concluída (EC2): 'graça' passa de 565 para 18.245 comentários; 39 de 40 primeiros resultados em inglês pertinentes em 4 consultas; D013 |
 | T20 + T22 | concluídas (EC3): botão Strong nas 5 Bíblias com Strong; painel Palavra com termo original, traduções em português e inglês, léxicos e ocorrências; 0,17 a 0,32 s |
 | T25 | concluída: referências ranqueadas por listas curadas (theWord, BSB, TSK) e co-citação; 0,02 a 0,04 s; D015 |
-| T24 (M2) | pendente: é a Onda 4 |
+| T24 (M2) | pendente (passo 2 do roteiro, Opus): é a Onda 4 |
 | T30–T34 (M3) | pendente |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |
@@ -225,14 +249,68 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 - **Tamanho:** M.
 
 ### T10 — Importação incremental (opcional)
-- **Fazer:** pular arquivos cujo SHA-256 e versão do importador não mudaram.
-- **Aceite:** segunda execução sem mudanças em menos de 60 s, mesmas contagens.
+- **Modelo:** Haiku (passo 3 do roteiro). Fazer depois da T24.
+- **Fazer:** opção `--incremental` em `importer/build.py`:
+  1. copiar a base de saída anterior para um arquivo temporário e abri-lo;
+  2. para cada arquivo de módulo, se já existe linha em `modules` com o mesmo
+     `origin_path`, `origin_sha256` e `importer_version`, pular a leitura;
+  3. apagar da base os módulos cujo arquivo mudou ou sumiu (todas as tabelas
+     com `module_id`, mais `links` dos seus itens) e importar só esses;
+  4. refazer sempre as etapas derivadas: `merge_duplicate_bibles`,
+     `strong_terms` (apagar e recalcular), índice FTS (`rebuild`) e relatório.
+- **Testar só com cópias:** copiar `modules-sample/` para `data/test-inc/`;
+  importar; importar de novo com `--incremental`; depois apagar uma cópia e
+  rodar de novo. Nunca alterar os módulos de origem.
+- **Aceite:** na segunda execução, nenhum módulo é relido e as contagens de
+  `verify.py` são idênticas às da importação completa; apagar um módulo da
+  pasta o remove da base; sem mudanças, a biblioteca completa importa em
+  menos de 60 s.
 - **Tamanho:** M.
 
 ### T11 — Testes automatizados
-- **Fazer:** testes para `rtf.py`, `rvf.py` e os limpadores de versículo, com
-  amostras sintéticas (sem texto protegido), usando `unittest`.
-- **Aceite:** `python -m unittest` passa; cada defeito de T01–T05 tem um teste.
+- **Modelo:** Haiku (passo 1 do roteiro). Fazer antes da T24.
+- **Onde:** pasta `tests/`, um arquivo por módulo testado, só `unittest`
+  (D003). Cada arquivo acrescenta `importer/` ao `sys.path`. Comando:
+  `python -m unittest discover -s tests -v`.
+- **Regras:** amostras sintéticas escritas no próprio teste, nunca texto de
+  módulo protegido nem leitura das pastas dos programas. Strings com barra
+  invertida sempre como `r"..."` e o arquivo escrito com a ferramenta de
+  edição, não por heredoc de shell (ver armadilhas em AGENTS.md). Os testes
+  descrevem o comportamento atual; não alterar o código testado.
+- **Casos mínimos:**
+  - `test_rtf.py` (`rtf_to_text`): `\uN?` com o caractere de reserva pulado
+    (`a\u231?\u227?o` vira `ação`); byte hexadecimal `\'e7` vira `ç`; grupos
+    `fonttbl`, `colortbl` e `\*` somem; `\par` vira quebra de linha; campo
+    `HYPERLINK` mantém só o texto visível (`1 Sam. 7:1`); texto sem RTF passa
+    só por `tidy`.
+  - `test_rvf.py` (`rvf_to_text`): montar bytes RVF à mão — linha
+    `-8 1 3\r\n`, cabeçalho `0 1 0 0 0 0\r\n`, texto em UTF-16LE terminado por
+    `\x29\x20` — e conferir o texto e `resyncs == 0`; bloco de estilos
+    `-9 2 ...` com tamanho de 4 bytes é pulado; item de estilo negativo
+    desconhecido faz `resyncs > 0` sem perder o texto seguinte.
+  - `test_tokens.py`: `from_marked` (código de análise verbal como H8804 vai
+    para `morph`; código sem texto como H853 fica com expressão vazia;
+    pontuação sozinha junta à palavra anterior); `from_wt` no formato do
+    interlinear reverso (`<E>` primeiro: expressão em inglês, original e
+    transliteração preenchidos), do interlinear grego (`<O>` primeiro: glosa
+    inglesa) e do TR (lema e morfologia); `text_of` sem espaço antes da
+    pontuação; `tagged_of`; `normalize_term` ("No princípio," vira
+    "princípio"; "..." vira None); `strip_accents` une "χάρις" e "χαρις".
+  - `test_cleaners.py`: `esword._split_heading` separa `{\b\qc O começo}` e
+    mantém o título de salmo `{\i\qc ...}` no texto; `theword._clean_verse`
+    remove nota `<RF>...<Rf>`, variante `<V...>`, devolve o título `<TS>` e
+    não deixa caractere grego no texto do interlinear reverso;
+    `theword._verse_index(16843008) == (1, 1, 1, 0)`; `db.strip_controls`,
+    `db.normalize_lang` ("Eng - English" vira "eng", "grk" vira "grc").
+  - `test_readers.py`: criar um `.bblx` temporário com `sqlite3` (tabela
+    `Details` e `Bible`, incluindo a linha de cabeçalho
+    `('Livro','Cap','Verso','...')` e um versículo com título de seção) e um
+    `Adder` falso que guarda as chamadas; conferir que `esword.read_bible`
+    pula o cabeçalho e grava o título em `heading` (defeito da T01). Idem um
+    `.bblx` com `Scripture` em blob: deve registrar `ignorado` (T03).
+- **Aceite:** todos passam; há ao menos um teste para cada defeito corrigido
+  em T01, T03, T04 e T05; a suíte roda em menos de 5 s; nenhum arquivo fora
+  de `tests/` alterado.
 - **Tamanho:** M.
 
 ## M2 — Ponte português ↔ inglês sem IA

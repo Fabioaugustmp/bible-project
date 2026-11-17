@@ -14,7 +14,9 @@ Vale para pessoas e para modelos. Responda e documente em português.
 5. [docs/FORMATOS.md](docs/FORMATOS.md): o que se sabe sobre os arquivos do
    e-Sword e do theWord. Tudo ali foi verificado nos arquivos reais.
 
-Pegue a primeira tarefa do backlog que não esteja concluída e cujas
+Siga a seção "Roteiro por modelo" do backlog: ela diz a próxima tarefa, qual
+modelo deve executá-la e quando um modelo menor deve parar e devolver a
+tarefa. Fora do roteiro, pegue a primeira tarefa não concluída cujas
 dependências estejam prontas. Se ela depender de uma pergunta da tabela
 "Decisões pendentes do usuário", pergunte antes; não decida pelo usuário.
 

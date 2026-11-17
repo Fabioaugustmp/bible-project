@@ -28,6 +28,15 @@ Importação completa (cerca de 8 minutos; gravar em arquivo separado, D009):
 python -u importer/build.py --out data/library-full.db "C:\Program Files (x86)\e-Sword" "C:\ProgramData\The Word" "%APPDATA%\The Word"
 ```
 
+Importação incremental (relê só o que mudou; cerca de 45 s sem mudanças, D017).
+Ela altera a base no lugar e, se for interrompida, pode deixá-la inconsistente:
+rode sempre sobre `data/library-full.db`, verifique e só então promova; em caso
+de interrupção, refaça a importação completa.
+
+```bash
+python -u importer/build.py --incremental --out data/library-full.db "C:\Program Files (x86)\e-Sword" "C:\ProgramData\The Word" "%APPDATA%\The Word"
+```
+
 Importação rápida só das amostras, para testar mudanças no importador:
 
 ```bash

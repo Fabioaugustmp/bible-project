@@ -144,3 +144,29 @@ ponte português ↔ inglês exigem as palavras como linhas, não um texto marca
 dividem a contagem (H2617 em inglês: "loving devotion" na BSB, "mercy" na
 KJV). A segmentação da ARA e da KJV usa o texto entre um código e o seguinte,
 o que às vezes inclui palavras a mais.
+
+## D013 — Busca bilíngue pela ponte Strong: regras e limites · 2026-11-17
+
+**Decisão:** na busca, cada palavra portuguesa é procurada também pelas
+traduções inglesas dos números Strong que a ARA traduz com ela, nos
+comentários e dicionários (não na Bíblia, que é buscada na versão aberta).
+A interface mostra os termos incluídos e por qual Strong, e permite desligar
+a ponte (a escolha fica guardada). Código em `app/bridge.py`.
+
+Regras (calibradas em 19 consultas, ver `docs/AVALIACAO-BUSCA-BILINGUE.md`):
+- um Strong só expande a palavra se responder por ao menos 15% dos usos dela
+  na ARA, se ela for ao menos 20% das traduções portuguesas desse Strong, e
+  se isso ocorrer 2 vezes ou mais;
+- entram as traduções inglesas com ao menos 15% e 3 ocorrências, no máximo
+  duas palavras, até 3 por Strong e 5 por palavra digitada;
+- termo que contém um já incluído é descartado ("sin offering" quando "sin" já entrou);
+- palavras de apoio (artigos, preposições, verbos muito comuns) nunca são
+  expandidas e, quando outra palavra foi expandida, deixam de ser exigidas,
+  porque não aparecem no texto em inglês;
+- acentos não importam ("graca" = "graça").
+
+**Motivo:** é a primeira entrega da ponte português ↔ inglês sem IA (EC2),
+explicável e baseada só em dados da própria biblioteca.
+
+**Limites:** falso positivo ocasional por tradução idiomática da BSB
+("loving devotion"); verbos e conceitos sem Strong não são cobertos.

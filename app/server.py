@@ -12,6 +12,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from bridge import BRIDGE, is_stopword
+
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
 DB_PATH = ROOT.parent / "data" / "library.db"
@@ -30,20 +32,49 @@ def rows(con, sql, params=()):
     return [dict(row) for row in con.execute(sql, params)]
 
 
-def fts_query(text: str) -> str:
-    """Transforma o que o usuário digitou em consulta FTS5 segura.
-
-    Entre aspas vira frase exata; fora delas, todas as palavras são exigidas.
-    """
+def parse_query(text: str):
+    """O que o usuário digitou -> lista de ('phrase', palavras) e ('word', palavra)."""
     parts = []
     for phrase, loose in re.findall(r'"([^"]*)"|([^"]+)', text):
-        if phrase.strip():
-            words = _WORD.findall(phrase)
-            if words:
-                parts.append('"' + " ".join(words) + '"')
-        for word in _WORD.findall(loose):
-            parts.append(f'"{word}"')
-    return " ".join(parts)
+        words = _WORD.findall(phrase)
+        if words:
+            parts.append(("phrase", words))
+        parts.extend(("word", word) for word in _WORD.findall(loose))
+    return parts
+
+
+def quote(words) -> str:
+    return '"' + " ".join(words if isinstance(words, list) else [words]) + '"'
+
+
+def fts_query(text: str) -> str:
+    """Consulta FTS5 segura: frase entre aspas é exata; fora delas, todas as palavras são exigidas."""
+    return " ".join(quote(value) for _, value in parse_query(text))
+
+
+def bilingual_query(con, text: str):
+    """Consulta com a ponte por Strong: cada palavra vira (palavra OR tradução inglesa).
+
+    Devolve (consulta FTS5, expansões). Sem nenhuma expansão, devolve a consulta comum.
+    Com expansão, as palavras de apoio (de, pela, o...) deixam de ser exigidas,
+    porque não aparecem no texto em inglês.
+    """
+    parts = parse_query(text)
+    expansions, groups = [], []
+    for kind, value in parts:
+        found = BRIDGE.expand(con, value) if kind == "word" else []
+        if found:
+            expansions.append({"word": value, "terms": found})
+        groups.append((kind, value, found))
+    if not expansions:
+        return fts_query(text), []
+    clauses = []
+    for kind, value, found in groups:
+        if kind == "word" and not found and is_stopword(value):
+            continue
+        terms = [quote(value)] + [quote(item["term"].split()) for item in found]
+        clauses.append("(" + " OR ".join(terms) + ")" if len(terms) > 1 else terms[0])
+    return " AND ".join(clauses), expansions
 
 
 # --- Endpoints ----------------------------------------------------------------
@@ -159,16 +190,20 @@ def api_item(con, q):
 def api_search(con, q):
     """Busca por palavra. Com `kind` e `offset`, devolve só mais uma página daquele tipo."""
     query = fts_query(q.get("q", ""))
-    empty = {"query": "", "verses": [], "comments": [], "entries": [], "totals": {}}
+    empty = {"query": "", "verses": [], "comments": [], "entries": [], "totals": {}, "expansions": []}
     if not query:
         return empty
+    # Ponte português -> inglês só nos comentários e dicionários; a Bíblia é buscada na versão aberta.
+    bilingual = q.get("bilingual", "1") != "0"
+    study_query, expansions = bilingual_query(con, q.get("q", "")) if bilingual else (query, [])
     module = int(q["module"]) if q.get("module") else None
     only = q.get("kind")
     offset = max(0, int(q.get("offset", 0)))
     snippet = "snippet({t}, {col}, '[[', ']]', '…', 26)"
     verse_filter = "and v.module_id = ?" if module else ""
     verse_params = (query, module) if module else (query,)
-    result = {"query": query, "verses": [], "comments": [], "entries": [], "totals": {}}
+    result = {"query": query, "verses": [], "comments": [], "entries": [], "totals": {},
+              "expansions": expansions, "bilingual": bilingual, "bridge": BRIDGE.available}
 
     if only in (None, "verses"):
         result["verses"] = rows(
@@ -186,7 +221,7 @@ def api_search(con, q):
             f" {snippet.format(t='comments_fts', col=0)} as hit"
             " from comments_fts join comments c on c.id = comments_fts.rowid join modules m on m.id = c.module_id"
             " where comments_fts match ? order by m.lang <> 'por', bm25(comments_fts) limit ? offset ?",
-            (query, PAGE["comments"], offset),
+            (study_query, PAGE["comments"], offset),
         )
     if only in (None, "entries"):
         result["entries"] = rows(
@@ -194,7 +229,7 @@ def api_search(con, q):
             f"select e.id, m.abbr, m.lang, m.kind, e.topic, {snippet.format(t='entries_fts', col=1)} as hit"
             " from entries_fts join entries e on e.id = entries_fts.rowid join modules m on m.id = e.module_id"
             " where entries_fts match ? order by m.lang <> 'por', bm25(entries_fts, 8.0, 1.0) limit ? offset ?",
-            (query, PAGE["entries"], offset),
+            (study_query, PAGE["entries"], offset),
         )
     if only is None:
         result["totals"] = {
@@ -202,9 +237,9 @@ def api_search(con, q):
                 f"select count(*) from verses_fts join verses v on v.id = verses_fts.rowid"
                 f" where verses_fts match ? {verse_filter}", verse_params).fetchone()[0],
             "comments": con.execute(
-                "select count(*) from comments_fts where comments_fts match ?", (query,)).fetchone()[0],
+                "select count(*) from comments_fts where comments_fts match ?", (study_query,)).fetchone()[0],
             "entries": con.execute(
-                "select count(*) from entries_fts where entries_fts match ?", (query,)).fetchone()[0],
+                "select count(*) from entries_fts where entries_fts match ?", (study_query,)).fetchone()[0],
         }
     return result
 

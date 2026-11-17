@@ -116,7 +116,8 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T10 | pendente |
 | T11 | pendente |
 | T21 | concluída (EC1): `strong_terms` com 137 mil termos; 16 de 18 traduções esperadas conferem, as 2 restantes são diferenças legítimas |
-| T20, T22–T25 (M2) | pendente |
+| T23 | concluída (EC2): 'graça' passa de 565 para 18.245 comentários; 39 de 40 primeiros resultados em inglês pertinentes em 4 consultas; D013 |
+| T20, T22, T24, T25 (M2) | pendente |
 | T30–T34 (M3) | pendente |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |

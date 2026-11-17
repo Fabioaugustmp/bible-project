@@ -5,6 +5,7 @@ const state = {
   module: null, book: 43, chapter: 1, verse: null,
   langFilter: "all",   // 'all' | 'por' | 'other': filtra comentários e citações no painel
   lastSearch: null,    // { query, data }: permite voltar aos resultados
+  bilingual: true,     // ponte por Strong na busca (T23)
 };
 
 // --- Utilitários --------------------------------------------------------------
@@ -24,7 +25,7 @@ function el(tag, props = {}, ...children) {
     else if (key === "ontoggle") node.addEventListener("toggle", value);
     else if (value !== null && value !== undefined && value !== false) node.setAttribute(key, value === true ? "" : value);
   }
-  node.append(...children.flat().filter((child) => child !== null && child !== undefined && child !== false));
+  node.append(...children.flat(Infinity).filter((child) => child !== null && child !== undefined && child !== false));
   return node;
 }
 
@@ -368,7 +369,7 @@ function searchSection(kind, title) {
     ? el("button", {
         class: "more",
         onclick: async () => {
-          const page = await api("search", { q: query, module: state.module, kind, offset: items.length });
+          const page = await api("search", { q: query, module: state.module, kind, offset: items.length, bilingual: state.bilingual ? 1 : 0 });
           items.push(...page[kind]);
           renderSearch(true);
         },
@@ -383,6 +384,7 @@ function renderSearch(keepScroll = false) {
   const scroll = $("#panel-body").scrollTop;
   const total = Object.values(data.totals).reduce((sum, n) => sum + n, 0);
   openPanel("search", `Busca: ${query}`,
+    bridgeNote(query, data),
     total ? null : el("p", { class: "empty" }, "Nada encontrado."),
     searchSection("verses", `Bíblia · ${module.abbr}`),
     searchSection("comments", "Comentários"),
@@ -390,8 +392,31 @@ function renderSearch(keepScroll = false) {
   if (keepScroll) $("#panel-body").scrollTop = scroll;
 }
 
+// Explica o que a ponte por Strong acrescentou à busca e permite desligá-la.
+function bridgeNote(query, data) {
+  if (!data.bridge) return null;
+  const toggle = (on, label) => el("button", {
+    class: "link", onclick: () => { state.bilingual = on; store.set("bilingual", on ? "1" : "0"); showSearch(query); },
+  }, label);
+  if (!data.bilingual) {
+    return el("div", { class: "bridge" }, "Buscando só os termos digitados. ", toggle(true, "Incluir termos em inglês"));
+  }
+  if (!data.expansions.length) return null;
+  return el("div", { class: "bridge" },
+    el("div", {}, "Nos comentários e dicionários também busquei:"),
+    el("ul", {}, data.expansions.map((item) => el("li", {},
+      el("b", {}, item.word), " → ",
+      item.terms.map((term, index) => [
+        index ? ", " : null,
+        el("span", { lang: "en" }, term.term),
+        el("span", { class: "why", title: `A Bíblia com Strong traduz ${term.strong} assim ${term.count} vezes` },
+          ` ${term.strong}`),
+      ])))),
+    toggle(false, "Buscar só o que digitei"));
+}
+
 async function showSearch(query) {
-  const data = await api("search", { q: query, module: state.module });
+  const data = await api("search", { q: query, module: state.module, bilingual: state.bilingual ? 1 : 0 });
   state.lastSearch = { query, data };
   renderSearch();
 }
@@ -437,6 +462,7 @@ async function init() {
   state.module = state.bibles.some((m) => m.id === saved) ? saved : state.bibles[0].id;
   const savedFilter = store.get("langFilter");
   if (["all", "por", "other"].includes(savedFilter)) state.langFilter = savedFilter;
+  state.bilingual = store.get("bilingual") !== "0";
   let fontSize = setFontSize(Number(store.get("fontSize")) || 20);
   readHash();
 

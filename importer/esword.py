@@ -2,6 +2,7 @@
 import re
 
 from db import MARK_CLOSE, MARK_OPEN, guess_lang, open_readonly, split_strongs, strip_controls
+from refs import find_plain
 from rtf import rtf_to_text
 from tokens import from_marked, tagged_of, text_of
 
@@ -87,6 +88,16 @@ def read_bible(path, add):
     return len(rows)
 
 
+def _with_refs(rows, text_index):
+    """Acha as citações escritas no texto de cada item (o e-Sword não tem links)."""
+    new_rows, row_refs = [], []
+    for row in rows:
+        text, item_refs = find_plain(row[text_index])
+        new_rows.append(row[:text_index] + (text,) + row[text_index + 1:])
+        row_refs.append(item_refs)
+    return new_rows, row_refs
+
+
 def read_commentary(path, add):
     src = open_readonly(path)
     meta = _details(src) | {"kind": "commentary"}
@@ -108,9 +119,10 @@ def read_commentary(path, add):
             rows.append((book, start, max(start, end), rtf_to_text(comments), f"Verses:{rowid}"))
     src.close()
     rows = [r for r in rows if r[3] and 1 <= r[0] <= 66]
+    rows, row_refs = _with_refs(rows, 3)
     meta["lang"] = guess_lang(_sample([r[3][:400] for r in rows[len(rows) // 2:]]))
     module_id = add.module(meta)
-    add.comments(module_id, rows)
+    add.comments(module_id, rows, refs=row_refs)
     return len(rows)
 
 
@@ -123,9 +135,10 @@ def read_dictionary(path, add):
         if topic and definition
     ]
     src.close()
+    rows, row_refs = _with_refs(rows, 1)
     meta["lang"] = guess_lang(_sample([r[1][:400] for r in rows[len(rows) // 2:]]))
     module_id = add.module(meta)
-    add.entries(module_id, rows)
+    add.entries(module_id, rows, refs=row_refs)
     return len(rows)
 
 

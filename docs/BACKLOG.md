@@ -33,7 +33,7 @@ este projeto pode ter que aquele não tem:
 Limite: módulos protegidos por direito autoral não podem ser distribuídos com
 o aplicativo; cada usuário importa os seus.
 
-## Estado atual (2026-11-17, após a Onda 3)
+## Estado atual (2026-11-17, após a Onda 4)
 
 - `data/library.db` é a base completa: 73 módulos (16 Bíblias, 24
   comentários, 25 dicionários, 6 livros, 1 de referências cruzadas, 1 de
@@ -56,12 +56,14 @@ o aplicativo; cada usuário importa os seus.
 - Ambiente: Windows, Python 3.14 (só biblioteca padrão, D003), Node instalado,
   Rust não instalado.
 
-**Onda 3 concluída em 2026-11-17** (P2 respondida "sim" pelo usuário): busca
-bilíngue (T23, D013), Strong clicável e painel "Palavra" (T20 + T22, D014) e
-referências ranqueadas (T25, D015).
+**Ondas 3 e 4 concluídas em 2026-11-17** (marco M2): busca bilíngue (T23,
+D013), Strong clicável e painel "Palavra" (T20 + T22, D014), referências
+ranqueadas (T25, D015) e citações clicáveis nos comentários (T24, D016). A base
+atual (1,48 GB) tem 2.310.407 citações com posição em `refs`; os comentários do
+e-Sword em português passaram a alimentar "Citado em" e a co-citação.
 
-**Próximo passo:** seguir o "Roteiro por modelo": primeiro a T11 (testes,
-Haiku), depois a T24 (citações clicáveis, Opus).
+**Próximo passo:** passo 3 do "Roteiro por modelo": T10, importação
+incremental (Haiku). Depois, M3 (embeddings), que depende da resposta P3.
 
 ## Como trabalhar
 
@@ -96,8 +98,8 @@ julgamento, vai para o mais capaz. Para trocar de modelo, use `/model`.
 
 | Passo | Tarefa | Modelo | Por quê | Entrega |
 |---|---|---|---|---|
-| 1 | T11 — testes automatizados | Haiku | especificação fechada, casos listados abaixo; não altera comportamento | pasta `tests/` passando, um commit |
-| 2 | T24 — citações clicáveis (EC5) | Opus | altera o conversor de RTF de todos os módulos; posições no texto; validação com julgamento; reimportação | tabela `refs`, interface, reimportação verificada |
+| 1 | T11 — testes automatizados — **concluída** | Haiku | especificação fechada, casos listados abaixo; não altera comportamento | pasta `tests/` passando, um commit |
+| 2 | T24 — citações clicáveis (EC5) — **concluída** | Opus | altera o conversor de RTF de todos os módulos; posições no texto; validação com julgamento; reimportação | tabela `refs`, interface, reimportação verificada |
 | 3 | T10 — importação incremental | Haiku (ou Sonnet, se o Haiku parar) | mudança contida em `build.py`, aceite numérico | opção `--incremental`, um commit |
 | 4 | M3 — busca semântica (T30–T34) | Opus | maior incerteza técnica; depende da resposta P3 | ver EC6 |
 | 5 | M4 — notas e exportação (T40–T42) | Sonnet | formatos de notas do e-Sword ainda não examinados | ver backlog |
@@ -147,7 +149,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T23 | concluída (EC2): 'graça' passa de 565 para 18.245 comentários; 39 de 40 primeiros resultados em inglês pertinentes em 4 consultas; D013 |
 | T20 + T22 | concluídas (EC3): botão Strong nas 5 Bíblias com Strong; painel Palavra com termo original, traduções em português e inglês, léxicos e ocorrências; 0,17 a 0,32 s |
 | T25 | concluída: referências ranqueadas por listas curadas (theWord, BSB, TSK) e co-citação; 0,02 a 0,04 s; D015 |
-| T24 (M2) | pendente (passo 2 do roteiro, Opus): é a Onda 4 |
+| T24 | concluída (EC5): 2,31 milhões de citações clicáveis (theWord e e-Sword), prévia na versão aberta; 99,1% de acordo com a lista do theWord; D016 |
 | T30–T34 (M3) | pendente |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |

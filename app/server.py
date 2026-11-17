@@ -88,6 +88,53 @@ def has_table(con, name):
     return con.execute("select 1 from sqlite_master where name = ?", (name,)).fetchone() is not None
 
 
+_ASTRAL = re.compile("[\U00010000-\U0010FFFF]")
+
+
+def item_refs(con, kind, item_ids, text_of, limit_end=None):
+    """Citações dos itens, com posições convertidas para o JavaScript (UTF-16).
+
+    `text_of` dá o texto de cada item, para a conversão de posição quando há
+    caracteres fora do plano básico (raros). `limit_end` corta as citações que
+    passam do trecho enviado.
+    """
+    if not item_ids or not has_table(con, "refs"):
+        return {}
+    found = {}
+    for start in range(0, len(item_ids), 500):
+        chunk = item_ids[start:start + 500]
+        for item_id, a, b, book, chapter, verse, to_chapter, to_verse in con.execute(
+            "select item_id, start, end, book, chapter, verse, to_chapter, to_verse from refs"
+            f" where kind = ? and item_id in ({','.join('?' * len(chunk))}) order by item_id, start",
+            (kind, *chunk),
+        ):
+            if limit_end is not None and b > limit_end:
+                continue
+            text = text_of(item_id)
+            if text and _ASTRAL.search(text[:b]):
+                a = a + len(_ASTRAL.findall(text[:a]))
+                b = b + len(_ASTRAL.findall(text[:b]))
+            found.setdefault(item_id, []).append(
+                {"start": a, "end": b, "book": book, "chapter": chapter, "verse": verse,
+                 "to_chapter": to_chapter, "to_verse": to_verse})
+    return found
+
+
+def api_passage(con, q):
+    """Texto de um trecho na versão escolhida (para a prévia de uma citação)."""
+    book, chapter, verse = int(q["book"]), int(q["chapter"]), int(q["verse"])
+    to_chapter, to_verse = int(q.get("to_chapter", chapter)), int(q.get("to_verse", verse))
+    module = int(q["module"])
+    verses = rows(
+        con,
+        "select chapter, verse, text from verses where module_id = ? and book = ?"
+        " and (chapter * 1000 + verse) between ? and ? order by chapter, verse limit 8",
+        (module, book, chapter * 1000 + verse, max(chapter * 1000 + verse, to_chapter * 1000 + to_verse)),
+    )
+    total = to_verse - verse + 1 if to_chapter == chapter else None
+    return {"verses": verses, "more": total is None or total > len(verses)}
+
+
 def api_library(con, q):
     return {
         "modules": rows(con, f"select {MODULE_COLUMNS} from modules order by kind, lang <> 'por', abbr"),
@@ -230,6 +277,10 @@ def api_verse(con, q):
         " order by m.lang <> 'por', (c.ref_end - c.ref_start), m.abbr",
         (book, ref, ref, chapter * 1000),
     )
+    excerpts = {comment["id"]: comment["excerpt"] for comment in comments}
+    refs_by_item = item_refs(con, "comment", list(excerpts), excerpts.get, limit_end=EXCERPT)
+    for comment in comments:
+        comment["refs"] = refs_by_item.get(comment["id"], [])
     cited = rows(
         con,
         "select * from ("
@@ -283,7 +334,12 @@ def api_item(con, q):
                " c.origin_key, m.origin_path"
                " from comments c join modules m on m.id = c.module_id where c.id = ?")
     found = rows(con, sql, (item_id,))
-    return found[0] if found else None
+    if not found:
+        return None
+    item = found[0]
+    kind = "entry" if q["kind"] == "entry" else "comment"
+    item["refs"] = item_refs(con, kind, [item_id], lambda _: item["text"]).get(item_id, [])
+    return item
 
 
 def api_search(con, q):
@@ -344,7 +400,7 @@ def api_search(con, q):
 
 
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "search": api_search, "word": api_word}
+       "item": api_item, "search": api_search, "word": api_word, "passage": api_passage}
 
 
 class Handler(BaseHTTPRequestHandler):

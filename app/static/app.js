@@ -203,6 +203,92 @@ function wordsOf(words) {
   return nodes;
 }
 
+// --- Citações bíblicas dentro dos comentários (T24) ------------------------------
+
+// Texto com as citações (posições vindas do servidor) como elementos clicáveis.
+function linked(text, refs = []) {
+  const fragment = document.createDocumentFragment();
+  let last = 0;
+  for (const ref of refs || []) {
+    if (ref.start < last || ref.end > text.length) continue;
+    fragment.append(text.slice(last, ref.start));
+    fragment.append(el("a", {
+      class: "ref", href: `#/${state.module}/${ref.book}/${ref.chapter}/${ref.verse}`,
+      "data-book": ref.book, "data-chapter": ref.chapter, "data-verse": ref.verse,
+      "data-to-chapter": ref.to_chapter, "data-to-verse": ref.to_verse,
+    }, text.slice(ref.start, ref.end)));
+    last = ref.end;
+  }
+  fragment.append(text.slice(last));
+  return fragment;
+}
+
+// Prévia do trecho citado, na versão aberta, ao passar o mouse ou focar a citação.
+const passageCache = new Map();
+let previewFor = null;
+
+async function showPreview(anchor) {
+  const d = anchor.dataset;
+  const key = `${state.module}:${d.book}.${d.chapter}.${d.verse}-${d.toChapter}.${d.toVerse}`;
+  previewFor = anchor;
+  if (!passageCache.has(key)) {
+    passageCache.set(key, api("passage", {
+      module: state.module, book: d.book, chapter: d.chapter, verse: d.verse,
+      to_chapter: d.toChapter, to_verse: d.toVerse,
+    }).catch(() => null));
+  }
+  const data = await passageCache.get(key);
+  if (previewFor !== anchor || !data) return;
+  const module = state.bibles.find((m) => m.id === state.module);
+  const book = Number(d.book);
+  const range = Number(d.toChapter) === Number(d.chapter) && Number(d.toVerse) === Number(d.verse)
+    ? refLabel(book, Number(d.chapter), Number(d.verse))
+    : `${refLabel(book, Number(d.chapter), Number(d.verse))}–${Number(d.toChapter) === Number(d.chapter) ? d.toVerse : d.toChapter + ":" + d.toVerse}`;
+  const box = $("#preview");
+  box.replaceChildren(
+    el("div", { class: "source" }, el("b", {}, range), el("span", {}, module.abbr)),
+    data.verses.length
+      ? el("div", { class: "t", lang: LANG[module.lang] || null },
+          data.verses.map((v, i) => [i ? " " : null, el("sup", {}, String(v.verse)), v.text]))
+      : el("p", { class: "empty" }, `${module.abbr} não tem este trecho.`),
+    ...(data.more ? [el("div", { class: "origin" }, "Trecho mais longo: clique para ler.")] : []));
+  box.hidden = false;
+  const rect = anchor.getBoundingClientRect();
+  const width = Math.min(360, innerWidth - 24);
+  box.style.width = width + "px";
+  box.style.left = Math.max(12, Math.min(rect.left, innerWidth - width - 12)) + "px";
+  const below = rect.bottom + 8;
+  box.style.top = (below + box.offsetHeight < innerHeight ? below : Math.max(8, rect.top - box.offsetHeight - 8)) + "px";
+}
+
+function hidePreview() {
+  previewFor = null;
+  $("#preview").hidden = true;
+}
+
+document.addEventListener("mouseover", (event) => {
+  const anchor = event.target.closest?.(".ref");
+  if (anchor && anchor !== previewFor) showPreview(anchor);
+});
+document.addEventListener("mouseout", (event) => {
+  const anchor = event.target.closest?.(".ref");
+  if (anchor && !anchor.contains(event.relatedTarget)) hidePreview();
+});
+document.addEventListener("focusin", (event) => {
+  if (event.target.classList?.contains("ref")) showPreview(event.target);
+});
+document.addEventListener("focusout", (event) => {
+  if (event.target.classList?.contains("ref")) hidePreview();
+});
+document.addEventListener("click", (event) => {
+  const anchor = event.target.closest?.(".ref");
+  if (!anchor) return;
+  event.preventDefault();
+  hidePreview();
+  const d = anchor.dataset;
+  go({ book: Number(d.book), chapter: Number(d.chapter), verse: Number(d.verse) });
+});
+
 // --- Painel ---------------------------------------------------------------------
 
 let panelMode = null; // 'verse' | 'search' | 'item'
@@ -248,7 +334,7 @@ function filterBar(onChange) {
 
 // Um comentário: uma linha recolhida; ao abrir, busca o texto inteiro uma vez.
 function commentRow(book, comment) {
-  const body = el("div", { class: "t", lang: LANG[comment.lang] || null }, comment.excerpt);
+  const body = el("div", { class: "t", lang: LANG[comment.lang] || null }, linked(comment.excerpt, comment.refs));
   const partial = comment.length > comment.excerpt.length;
   let loaded = !partial;
   return el("details", {
@@ -257,7 +343,8 @@ function commentRow(book, comment) {
       if (!event.target.open || loaded) return;
       loaded = true;
       try {
-        body.textContent = (await api("item", { kind: "comment", id: comment.id })).text;
+        const item = await api("item", { kind: "comment", id: comment.id });
+        body.replaceChildren(linked(item.text, item.refs));
       } catch {
         loaded = false;
       }
@@ -378,7 +465,7 @@ async function showItem(kind, id) {
     backVerse, backToSearch(),
     el("div", { class: "item" },
       el("div", { class: "source" }, el("b", {}, item.abbr), el("span", {}, item.title || ""), badge(item.lang)),
-      el("div", { class: "t", lang: LANG[item.lang] || null }, item.text),
+      el("div", { class: "t", lang: LANG[item.lang] || null }, linked(item.text, item.refs)),
       el("div", { class: "origin" }, `Origem: ${item.origin_path} · ${item.origin_key}`)));
 }
 

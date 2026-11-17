@@ -4,7 +4,7 @@ import sqlite3
 
 from canon import BOOKS, VERSES
 
-IMPORTER_VERSION = "0.2.0"
+IMPORTER_VERSION = "0.3.0"
 
 SCHEMA = """
 create table meta(key text primary key, value text);
@@ -88,6 +88,15 @@ create table entries(
 );
 create index entries_by_topic on entries(topic collate nocase);
 create index entries_by_origin on entries(module_id, origin_key);  -- verbetes-ligação dos léxicos
+
+-- Citações bíblicas dentro do texto de um comentário ou verbete, com a posição
+-- (em caracteres do texto gravado) para torná-las clicáveis. Ver importer/refs.py.
+create table refs(
+    kind text, item_id integer,
+    start integer, end integer,
+    book integer, chapter integer, verse integer, to_chapter integer, to_verse integer
+);
+create index refs_by_item on refs(kind, item_id);
 
 -- Versículos citados dentro de um comentário ('comment') ou verbete ('entry').
 create table links(kind text, item_id integer, book integer, chapter integer, verse integer);

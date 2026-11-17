@@ -60,7 +60,7 @@ langs = {row[0] for row in con.execute("select distinct lang from modules")}
 check(langs <= LANGS, f"idiomas: {sorted(langs)}")
 undefined = [row[0] for row in con.execute("select abbr from modules where lang = 'und'")]
 check(not undefined, f"módulos sem idioma identificado: {undefined or 'nenhum'}", warn=True)
-longest = one("select max(length(title)) from modules where kind = 'bible'")
+longest = one("select coalesce(max(length(title)), 0) from modules where kind = 'bible'")
 check(longest <= 90, f"título de Bíblia mais longo: {longest} caracteres")
 strongs = [row[0] for row in con.execute("select abbr from modules where has_strongs = 1 order by abbr")]
 few = [row[0] for row in con.execute(
@@ -132,6 +132,25 @@ out_of_range = one(
     "select count(*) from xrefs x where not exists (select 1 from books b where b.book = x.to_book)"
     " or x.to_chapter < 1 or x.to_verse < 1")
 check(out_of_range == 0, f"referências para fora do cânon: {out_of_range}")
+
+print("Citações no texto (refs):")
+if one("select count(*) from sqlite_master where name = 'refs'"):
+    for kind, count in con.execute("select kind, count(*) from refs group by kind"):
+        print(f"  [info] {kind}: {count} citações")
+    # Cada citação tem de apontar para um trecho real do texto, com número (a referência visível).
+    bad = 0
+    for table, kind in (("comments", "comment"), ("entries", "entry")):
+        for text, start, end in con.execute(
+            f"select t.text, r.start, r.end from refs r join {table} t on t.id = r.item_id"
+            f" where r.kind = ? and (r.item_id % 97) = 0", (kind,)):  # amostra de ~1%
+            piece = text[start:end]
+            # O texto do link pode não ter número ("ch.", "fifty-first Psalm"), mas tem de ter
+            # letra ou número e não passar de 80 caracteres (refs.MAX_VISIBLE).
+            if not (0 <= start < end <= len(text)) or not any(c.isalnum() for c in piece) or len(piece) > 80:
+                bad += 1
+    check(bad == 0, f"citações com posição inválida na amostra: {bad}")
+    out_of_canon = one("select count(*) from refs where book not between 1 and 66 or chapter < 1 or verse < 1")
+    check(out_of_canon == 0, f"citações fora do cânon: {out_of_canon}")
 
 print("Procedência:")
 check(one("select count(*) from modules where origin_sha256 is null or length(origin_sha256) <> 64") == 0,

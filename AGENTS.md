@@ -72,7 +72,10 @@ configuração para a pré-visualização fica em `.claude/launch.json`.
 
 - Texto com barras invertidas (RTF, expressões regulares) passado por heredoc
   de shell é corrompido (`\r` vira quebra de linha, `\x` some). Escreva um
-  arquivo `.py` e execute-o.
+  arquivo `.py` e execute-o. O mesmo vale para um script que gera ou altera
+  código: dentro de uma string Python comum, `\r` e `\f` viram caracteres de
+  controle. Para trechos com barra invertida, use a ferramenta de edição de
+  arquivo e confira o resultado com `python -m unittest discover -s tests`.
 - Colunas de texto dos módulos podem conter bytes que não são UTF-8. Leia com
   `cast(coluna as blob)` e decodifique no Python.
 - `length()` do SQLite para em um byte nulo; para tamanho real use

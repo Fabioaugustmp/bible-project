@@ -16,6 +16,7 @@ Devolve o texto e quantas vezes foi preciso ressincronizar (0 = leitura limpa).
 """
 import re
 
+from refs import CLOSE, MID, OPEN, strip_marks
 from rtf import tidy
 
 _HEADER = re.compile(rb"(-?\d{1,4}) (\d{1,5}) (-?\d{1,5}) (\d{1,4}) (\d{1,4}) ([^\r\n]{0,600})\r\n")
@@ -39,7 +40,19 @@ def _read_string(data: bytes, pos: int):
         end += 1
 
 
+_LINK = re.compile(rb'"(tw://[^"]{1,200})"')
+_DIGIT = re.compile(r"\d")
+
+
 def rvf_to_text(data: bytes):
+    """RVF -> (texto limpo, ressincronizações). Links viram só o texto visível."""
+    marked, resyncs = rvf_to_marked(data)
+    return strip_marks(marked), resyncs
+
+
+def rvf_to_marked(data: bytes):
+    """Como rvf_to_text, mas com o texto de cada item com link entre as marcas de importer/refs.py.
+    O alvo vem no fim da linha de cabeçalho do item: `6 1 -1 9 0 "tw://bible.*?id=9.6.18|..."`."""
     out, resyncs, size = [], 0, len(data)
     pos = data.find(b"\r\n") + 2  # primeira linha: versão do formato ("-8 1 3")
 
@@ -59,16 +72,23 @@ def rvf_to_text(data: bytes):
         if style >= 0:
             if paragraph != -1:
                 out.append("\n")
+            link = _LINK.search(header.group(6))
+            texts = []
             for index in range(count):
                 text, after = _read_string(data, pos)
                 if text is None:
                     resyncs += 1
                     pos = resync(pos)
                     break
-                if index:
-                    out.append("\n")
-                out.append(text)
+                texts.append(text)
                 pos = after
+            joined = "\n".join(texts)
+            # O alvo também aparece no cabeçalho de itens vizinhos que não são o link;
+            # só o texto curto com número é a própria referência ("1 Sam. 6:18").
+            if link and len(joined.strip()) <= 40 and _DIGIT.search(joined):
+                out.append(OPEN + link.group(1).decode("latin-1") + MID + joined + CLOSE)
+            else:
+                out.append(joined)
         elif style == -9 and count == 2:
             name_end = data.find(b"\r\n", pos)
             if name_end < 0 or name_end + 6 > size:

@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import db  # noqa: E402
 import esword  # noqa: E402
 import theword  # noqa: E402
+from refs import verses_of  # noqa: E402
 from tokens import normalize_term, strip_accents  # noqa: E402
 
 READERS = {**{ext: ("esword", fn) for ext, fn in esword.READERS.items()},
@@ -98,25 +99,34 @@ class Adder:
         )
         self.items += len(rows)
 
-    def _with_links(self, sql, kind, module_id, rows, links):
+    def _with_links(self, sql, kind, module_id, rows, links, refs):
+        """Grava itens; `links[i]` são os versículos citados (do módulo) e `refs[i]` as
+        citações com posição no texto. Sem `links`, os versículos citados vêm das citações."""
         for index, row in enumerate(rows):
             item_id = self.con.execute(sql, (module_id, *row)).lastrowid
-            if links and links[index]:
+            item_refs = refs[index] if refs else ()
+            if item_refs:
+                self.con.executemany(
+                    "insert into refs values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [(kind, item_id, *ref) for ref in item_refs],
+                )
+            cited = links[index] if links else sorted({verse for ref in item_refs for verse in verses_of(ref)})
+            if cited:
                 self.con.executemany(
                     "insert into links values (?, ?, ?, ?, ?)",
-                    [(kind, item_id, *ref) for ref in links[index]],
+                    [(kind, item_id, *ref) for ref in cited],
                 )
         self.items += len(rows)
 
-    def comments(self, module_id, rows, links=None):
+    def comments(self, module_id, rows, links=None, refs=None):
         self._with_links(
             "insert into comments(module_id, book, ref_start, ref_end, text, origin_key)"
-            " values (?, ?, ?, ?, ?, ?)", "comment", module_id, rows, links)
+            " values (?, ?, ?, ?, ?, ?)", "comment", module_id, rows, links, refs)
 
-    def entries(self, module_id, rows, links=None):
+    def entries(self, module_id, rows, links=None, refs=None):
         self._with_links(
             "insert into entries(module_id, topic, text, origin_key) values (?, ?, ?, ?)",
-            "entry", module_id, rows, links)
+            "entry", module_id, rows, links, refs)
 
 
 def find_modules(folders):
@@ -162,6 +172,7 @@ def merge_duplicate_bibles(con):
                 ).rowcount
             con.execute("delete from verses where module_id = ?", (donor_id,))
             con.execute("delete from tokens where module_id = ?", (donor_id,))
+            con.execute("delete from xrefs where module_id = ?", (donor_id,))
             con.execute("delete from modules where id = ?", (donor_id,))
             message = (f"mesma Bíblia ({abbr}) que {Path(keeper_path).name}; mantida aquela, "
                        f"com {copied} de {headings} títulos de seção copiados desta")

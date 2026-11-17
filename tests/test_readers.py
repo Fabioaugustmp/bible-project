@@ -129,7 +129,7 @@ class ThewordReadTwmTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             add = FakeAdder()
             add.entries_calls = []
-            add.entries = lambda module_id, rows, links=None: add.entries_calls.append(rows)
+            add.entries = lambda module_id, rows, links=None, refs=None: add.entries_calls.append(rows)
             count = theword.read_twm(make_dct_twm(tmp, topics), add)
 
         self.assertEqual(count, 2)

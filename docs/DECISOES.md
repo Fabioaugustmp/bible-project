@@ -219,3 +219,44 @@ que os próprios comentaristas da biblioteca juntam.
 
 **Não feito:** os votos do OpenBible.info, citados na pesquisa, não foram
 usados (exigiria baixar dado externo e conferir a licença).
+
+## D016 — Citações clicáveis: posição no texto, sem marcas no texto gravado · 2026-11-17
+
+**Decisão:** as citações bíblicas dentro de comentários e verbetes ficam numa
+tabela própria, `refs`, com a posição (início e fim, em caracteres do texto
+gravado) e o destino (livro, capítulo, versículo e fim do intervalo). O texto
+gravado não recebe nenhuma marca, para não atrapalhar a busca. Código em
+`importer/refs.py`; os conversores `rtf_to_marked` e `rvf_to_marked` marcam o
+trecho de cada link com caracteres de uso privado do Unicode, que `extract`
+retira ao calcular as posições.
+
+Regras:
+- **theWord:** só links cujo alvo é versículo (`tw://bible...` e
+  `tw://[self]?L.C.V`); o marcador `[vref]` é trocado pelo rótulo em português.
+- **e-Sword:** reconhecimento no texto, com tabelas de abreviações inglesas do
+  e-Sword e portuguesas (do cânon, mais variantes e as grafias da tradução
+  automática do espanhol). As abreviações inglesas com sublinhado são trocadas
+  no texto gravado pelo rótulo em português (`Exo_19:3-6` vira `Êx 19:3-6`).
+  Citação para versículo que não existe é descartada.
+- A lista de citados (`links`) dos itens do e-Sword e dos módulos do theWord
+  sem lista legível passa a vir das citações, com intervalos expandidos até 60
+  versículos. Isso faz os comentários em português aparecerem em "Citado em" e
+  contarem na co-citação das referências cruzadas (D015).
+- Na interface, a posição é convertida para UTF-16 (o JavaScript) pelo
+  servidor; passar o mouse mostra o trecho na versão aberta, clicar navega.
+
+**Validação:** contra a lista de citados do próprio theWord, 99,1% dos itens
+coincidem nos módulos que a têm legível (amostra de 12 módulos: 66.732 itens).
+As diferenças restantes vêm de versículos que a lista do theWord inclui sem link
+no texto e de links que ela omite.
+
+**Resultado na base completa:** 2.310.407 citações (1.585.852 em comentários,
+724.555 em verbetes); nos módulos do e-Sword, 60.718 citações, que somaram
+140.921 linhas à lista de citados. Links cujo texto é só pontuação (";") ou
+passa de 80 caracteres não viram citação.
+
+**Limites:** continuação de citações em inglês ("Hb_4:12; 5:3") não é
+reconhecida; citação só de capítulo ("Gn 12") e abreviação toda em maiúsculas
+("MT 28.18") também não; no e-Sword,
+uma abreviação portuguesa ambígua no começo de frase ("Os 2.3") pode ser lida
+como citação.

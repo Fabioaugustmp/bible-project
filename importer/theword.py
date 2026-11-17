@@ -4,8 +4,9 @@ import zlib
 
 from canon import NT_VERSES, OT_BOOKS, OT_VERSES, references
 from db import MARK_CLOSE, MARK_OPEN, open_readonly, split_strongs, strip_controls
-from rtf import rtf_to_text, tidy
-from rvf import is_rvf, rvf_to_text
+from refs import extract
+from rtf import rtf_to_marked, rtf_to_text, tidy
+from rvf import is_rvf, rvf_to_marked
 from tokens import from_marked, from_wt, tagged_of, text_of
 
 # --- Bíblias ----------------------------------------------------------------
@@ -142,7 +143,8 @@ def _looks_like_text(data: bytes) -> bool:
 def _content_text(data):
     """Converte o conteúdo de um tópico em texto.
 
-    Devolve (texto, estado): 'ok', 'parcial' (RVF com trechos pulados) ou
+    Devolve (texto com as marcas de citação de importer/refs.py, estado):
+    'ok', 'parcial' (RVF com trechos pulados) ou
     'ilegivel' (criptografado ou formato desconhecido).
     """
     if not data:
@@ -153,15 +155,15 @@ def _content_text(data):
         except zlib.error:
             return "", "ilegivel"
     if is_rvf(data):
-        text, resyncs = rvf_to_text(data)
-        return text, "parcial" if resyncs else "ok"
+        marked, resyncs = rvf_to_marked(data)
+        return marked, "parcial" if resyncs else "ok"
     if not _looks_like_text(data):
         return "", "ilegivel"
     try:
         decoded = data.decode("utf-8")
     except UnicodeDecodeError:
         decoded = data.decode("cp1252", "replace")
-    return rtf_to_text(decoded), "ok"
+    return rtf_to_marked(decoded), "ok"
 
 
 def _verse_index(vi: int):
@@ -230,10 +232,11 @@ def read_twm(path, add):
         query = ("select t.id, cast(t.subject as blob), cast(c.data as blob)"
                  " from topics t join content c on c.topic_id = t.id order by t.id")
 
-    rows, topic_ids, states = [], [], {"ok": 0, "parcial": 0, "ilegivel": 0}
+    rows, topic_ids, row_refs, states = [], [], [], {"ok": 0, "parcial": 0, "ilegivel": 0}
     for record in src.execute(query):
-        text, state = _content_text(record[-1])
+        marked, state = _content_text(record[-1])
         states[state] += 1
+        text, item_refs = extract(marked)
         if not text:
             continue
         topic_id = record[0]
@@ -250,6 +253,7 @@ def read_twm(path, add):
                 continue
             rows.append((subject, text, f"topic:{topic_id}"))
         topic_ids.append(topic_id)
+        row_refs.append(item_refs)
 
     if not rows:
         src.close()
@@ -270,9 +274,9 @@ def read_twm(path, add):
         "lang": config.get("lang") or "und",
     })
     if kind == "commentary":
-        add.comments(module_id, rows, row_links)
+        add.comments(module_id, rows, row_links, row_refs)
     else:
-        add.entries(module_id, rows, row_links)
+        add.entries(module_id, rows, row_links, row_refs)
     if states["ilegivel"]:
         add.log("aviso", f"{states['ilegivel']} tópicos ilegíveis foram ignorados")
     if states["parcial"]:

@@ -163,3 +163,43 @@ aspas duplicadas; ver D011.
   módulos (`default.prgs`: 2.980 e 11.094; `default2.prgs`: 11.213 e 240). O
   significado não foi confirmado, então os parágrafos não são importados.
 - `headings`: todos com `pos = 1` e `level = 1`; os 5.289 títulos são em inglês.
+
+### Citações bíblicas dentro dos comentários e verbetes (verificado em 2026-11-17)
+
+**theWord, RTF.** Campo `{\field{\*\fldinst HYPERLINK "alvo"}{\fldrslt texto visível}}`.
+Alvos de versículo encontrados (contagem nas 300 primeiras entradas de cada módulo):
+
+| Forma | Ocorrências |
+|---|---|
+| `tw://bible.*?id=L.C.V` (com ou sem `|_AUTODETECT_|`) | cerca de 92 mil |
+| `tw://bible.*?id=L.C.V-L.C.V` | cerca de 8 mil |
+| `tw://bible.*?id=L.C.V-V` | cerca de 2 mil |
+| `tw://[self]?L.C.V` (link do comentário para o próprio versículo) | 265 |
+| `tw://bible.*/?id=...` (erro de digitação tolerado pelo theWord) | raro, visto no Four-Fold Gospel |
+
+Outros alvos não são versículo e ficam como texto: `tw://[strong]?H1322`,
+`tw://[self]?tid=...` (outro tópico), `tw://*.*?txt=Etymology` (busca de texto).
+Na concordância KJC e em outros módulos o texto visível é o marcador `[vref]`;
+o importador o troca pelo rótulo em português (`Êx 6:16-20`).
+
+**theWord, RVF.** O alvo vem no fim da linha de cabeçalho do item de texto:
+`6 1 -1 9 0 "tw://bible.*?id=9.6.18|_AUTODETECT_|"`. O mesmo alvo aparece também
+no cabeçalho de itens vizinhos que não são o link; só o item curto (até 40
+caracteres) e com número é tratado como a citação.
+
+**e-Sword.** Não há links; as citações estão escritas no texto:
+- abreviação inglesa do e-Sword com sublinhado: `Exo_19:3-6`, `1Sa_16:10-11`
+  (63 abreviações distintas; o Diário Viver mistura algumas portuguesas no mesmo
+  formato, como `Hb_4:12`);
+- abreviação portuguesa com ponto: `Is 48.6-7; Jr 31.22`, `1 Pe 2.3`, e
+  continuações do mesmo livro (`Sl 10.9; 17.12; 22.13`).
+- As notas da Reina-Valera e o Diário Viver foram traduzidos do espanhol por
+  máquina e trazem grafias como `2 Rss`, `2 Rseis`, `1 Smamuel` (Reis, Samuel),
+  `Mau` (Malaquias) e `Feitos` (Atos). Há também referências erradas na origem
+  (`2 Rss 12.28`, que não existe); citação para versículo inexistente é ignorada.
+
+**Lista de citados do theWord (`bible_link_search`).** Expande intervalos
+versículo a versículo e usa versículo 0 para algumas marcas de capítulo
+inteiro sem link correspondente no texto. Nos módulos com
+`compressed.search.data = 1` (Biblical Illustrator) a lista vem compactada e não
+é lida; para eles, a lista de citados passa a vir das citações encontradas no texto.

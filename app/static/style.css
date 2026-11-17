@@ -211,3 +211,17 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 /* O painel não pode crescer além da largura definida por causa de conteúdo largo */
 .panel { min-width: 0; }
 .panel-body { overflow-x: hidden; }
+
+/* Citações bíblicas nos comentários e a prévia do trecho */
+a.ref {
+  color: var(--accent); text-decoration: underline dotted; text-underline-offset: .2em;
+  cursor: pointer; border-radius: 2px;
+}
+a.ref:hover, a.ref:focus-visible { text-decoration-style: solid; background: var(--accent-soft); }
+.preview {
+  position: fixed; z-index: 10; padding: 10px 12px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgb(0 0 0 / .18); pointer-events: none;
+}
+.preview .t { font: .98rem/1.55 var(--serif); }
+.preview sup { font: 600 .6em var(--sans); color: var(--accent); margin-right: .25em; }

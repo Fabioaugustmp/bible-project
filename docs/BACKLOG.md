@@ -157,7 +157,8 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T60 | concluída: seis cores por tipo (`--type-*` em style.css, claro e escuro) e etiquetas nas seções do painel, em cada item (versões, referências, comentários, citados, verbetes abertos), nos resultados de busca e na seção Léxicos do painel Palavra; Léxico = Dodson, AHLB, LSJ, MLSJ, KJC, LXXHebGreek. Contraste do texto medido com WCAG (painel e fundo da leitura): tema claro de 4,88:1 (comentário, sobre o fundo da leitura) a 6,96:1; tema escuro de 7,46:1 a 10,64:1; testado em Jo 3:16, busca "graça" e painel Palavra (G25) nos dois temas, sem erros no console; revisão: a etiqueta escrita ficou só onde os tipos se misturam (Citado em, dicionários e livros na busca, item aberto, léxicos); seções homogêneas mostram uma barra na cor do tipo no título |
 | T61 | concluída (EC9, D018): botão Fixar e 'Fixar ao lado', coluna com abas, divisórias por mouse e teclado, arranjo guardado; testada em 1280, 1024, 768 e 375 px e nos dois temas |
 | T65 | concluída (EC8, D019): grafo no painel do versículo (Lista/Grafo), posicionamento próprio em `app/static/graph.js`; centros e isolado conferidos nos 5 versículos, 0 rótulos sobrepostos, recentrar 45 ms com cache; só lista abaixo de 760 px |
-| T62–T64, T66 (M7) | pendente |
+| T64 | concluída: botão 'Dic.' abre as 26 obras de dicionário e livro; índice alfabético, filtro por texto e paginação (`/api/titles`); verificado com o Easton (382 títulos com A, 'abin' acha Abinadab, verbete abre). Dic Port (36 mil) não foi medido |
+| T62, T63, T66 (M7) | pendente (Sonnet, pelo roteiro) |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |
 

@@ -807,6 +807,62 @@ async function showWord(strong, source = null, offset = 0, previous = null) {
     section("Ocorrências", data.total, data.occurrences.map(occurrence), more));
 }
 
+// --- Folhear dicionários e livros (T64) -------------------------------------------
+
+let browseState = { module: null, letter: "", q: "" };
+
+// Lista de dicionários e livros disponíveis, para escolher o que folhear.
+function browseHome() {
+  const sources = state.modules.filter((m) => m.kind === "dictionary" || m.kind === "book");
+  const list = sources.map((m) => el("button", {
+    class: "result", onclick: () => { browseState = { module: m.id, letter: "", q: "" }; showBrowse(); },
+  }, el("div", { class: "source" }, kindTag(typeOf(m.kind, m.abbr)), el("b", {}, m.abbr),
+      el("span", {}, `${m.items} itens`)),
+    el("div", { class: "t clamp2" }, m.title || "")));
+  openPanel("browse", "Dicionários e livros", section("Escolha uma obra", sources.length, list));
+}
+
+async function showBrowse() {
+  const source = state.modules.find((m) => m.id === browseState.module);
+  if (!source) return browseHome();
+  const data = await api("titles", { module: source.id, letter: browseState.letter, q: browseState.q });
+  const search = el("input", {
+    type: "search", value: browseState.q, placeholder: "Filtrar títulos", "aria-label": "Filtrar títulos",
+    class: "browse-filter",
+  });
+  let timer = null;
+  search.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      browseState = { ...browseState, q: search.value.trim(), letter: "" };
+      showBrowse();
+    }, 250);
+  });
+  const letters = el("nav", { class: "letters", "aria-label": "Letras" },
+    ["", ...data.letters].map((letter) => el("button", {
+      class: "chip" + (browseState.letter === letter ? " on" : ""),
+      "aria-pressed": String(browseState.letter === letter),
+      onclick: () => { browseState = { ...browseState, letter, q: "" }; showBrowse(); },
+    }, letter || "Todas")));
+  const rows_ = data.items.map((item) => el("button", {
+    class: "result browse-row", onclick: () => showItem("entry", item.id),
+  }, el("div", { class: "source" }, el("b", {}, item.topic))));
+  const more = data.offset + data.items.length < data.total
+    ? el("button", {
+        class: "more", onclick: async () => {
+          const page = await api("titles", { module: source.id, letter: browseState.letter, q: browseState.q, offset: data.offset + data.items.length });
+          data.items.push(...page.items);
+          data.offset = page.offset;
+          showBrowse();
+        },
+      }, `Mais títulos (${data.items.length} de ${data.total})`)
+    : null;
+  openPanel("browse", source.abbr, el("button", { class: "link back", onclick: browseHome }, "← Obras"),
+    el("p", { class: "t browse-intro" }, source.title || ""),
+    search, letters,
+    section("Títulos", data.total, data.items.length ? rows_ : el("p", { class: "empty" }, "Nenhum título encontrado."), more));
+}
+
 // --- Busca ----------------------------------------------------------------------
 
 const resultBuilders = {
@@ -945,6 +1001,9 @@ async function init() {
   $("#smaller").addEventListener("click", () => { fontSize = setFontSize(fontSize - 1); });
   $("#larger").addEventListener("click", () => { fontSize = setFontSize(fontSize + 1); });
   $("#theme").addEventListener("click", toggleTheme);
+  $("#browse").addEventListener("click", () => {
+    if (browseState.module) showBrowse(); else browseHome();
+  });
   $("#words").addEventListener("click", () => {
     state.words = !state.words;
     store.set("words", state.words ? "1" : "0");

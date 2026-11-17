@@ -315,6 +315,34 @@ def api_xref_graph(con, q):
     return xref_graph(con, int(q["book"]), int(q["chapter"]), int(q["verse"]), size)
 
 
+def api_titles(con, q):
+    """Títulos de um dicionário ou livro (T64): filtro por texto, letra inicial e paginação."""
+    module = int(q["module"])
+    kind = con.execute("select kind from modules where id = ?", (module,)).fetchone()
+    if not kind or kind[0] not in ("dictionary", "book"):
+        raise ValueError("módulo não é dicionário nem livro")
+    text = (q.get("q") or "").strip()
+    letter = (q.get("letter") or "").strip()[:1]
+    offset = max(0, int(q.get("offset", 0)))
+    where, params = ["module_id = ?"], [module]
+    if text:
+        where.append("topic like ?")
+        params.append(f"%{text}%")
+    if letter:
+        where.append("topic like ?")
+        params.append(f"{letter}%")
+    clause = " and ".join(where)
+    items = rows(con, f"select id, topic from entries where {clause} order by topic collate nocase limit 60 offset ?",
+                 (*params, offset))
+    total = con.execute(f"select count(*) from entries where {clause}", params).fetchone()[0]
+    # Letras disponíveis (com o filtro de texto, se houver), para o índice alfabético.
+    letters = [r[0] for r in con.execute(
+        "select distinct upper(substr(topic, 1, 1)) from entries where module_id = ? "
+        + ("and topic like ? " if text else "") + "order by 1",
+        (module, f"%{text}%") if text else (module,)) if r[0]]
+    return {"items": items, "total": total, "letters": letters, "offset": offset}
+
+
 def api_cited(con, q):
     """Itens de um módulo que citam o versículo (aberto sob demanda no painel)."""
     book, chapter, verse = int(q["book"]), int(q["chapter"]), int(q["verse"])
@@ -409,7 +437,7 @@ def api_search(con, q):
 
 
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "search": api_search, "word": api_word, "passage": api_passage,
+       "item": api_item, "titles": api_titles, "search": api_search, "word": api_word, "passage": api_passage,
        "xref-graph": api_xref_graph}
 
 

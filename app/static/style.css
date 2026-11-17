@@ -315,3 +315,10 @@ i.kind {
 .xg-key i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 2px; vertical-align: -1px; }
 .xg-key i.ot { background: var(--ot); }
 .xg-key i.nt { background: var(--nt); }
+
+/* Folhear dicionários e livros (T64) */
+.browse-filter { margin: 8px 0 10px; }
+.letters { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+.letters .chip { min-width: 2rem; padding: 0 6px; }
+.browse-row { padding: 6px 10px; margin: 2px 0; }
+.browse-intro { font-size: 13px; color: var(--muted); margin: 0 0 6px; }

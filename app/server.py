@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from bridge import BRIDGE, is_stopword
+from xrefs import graph as xref_graph
 from xrefs import ranked as ranked_xrefs
 
 ROOT = Path(__file__).resolve().parent
@@ -306,6 +307,14 @@ def api_verse(con, q):
             "xrefs": xrefs, "xrefs_total": xrefs_total}
 
 
+def api_xref_graph(con, q):
+    """Grafo das referências cruzadas de um versículo (T65)."""
+    if not has_table(con, "xrefs"):
+        return {"nodes": [], "edges": [], "total": 0}
+    size = min(20, max(5, int(q.get("size", 15))))
+    return xref_graph(con, int(q["book"]), int(q["chapter"]), int(q["verse"]), size)
+
+
 def api_cited(con, q):
     """Itens de um módulo que citam o versículo (aberto sob demanda no painel)."""
     book, chapter, verse = int(q["book"]), int(q["chapter"]), int(q["verse"])
@@ -400,7 +409,8 @@ def api_search(con, q):
 
 
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "search": api_search, "word": api_word, "passage": api_passage}
+       "item": api_item, "search": api_search, "word": api_word, "passage": api_passage,
+       "xref-graph": api_xref_graph}
 
 
 class Handler(BaseHTTPRequestHandler):

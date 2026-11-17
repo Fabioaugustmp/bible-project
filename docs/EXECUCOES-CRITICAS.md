@@ -373,6 +373,18 @@ passagem) e por onde continuar a explorar (clicar num nó recentra).
 | Rm 8:28 | 29 | 2Ts 2:13 (9), 2Tm 1:9, Ef 1:4 (7) | 0,52 s |
 | Is 53:5 | 30 | 2Co 5:21 (9), 1Co 15:3, Dn 9:24, Rm 4:25 (7); Gn 3:15 isolado | 1,29 s |
 
+**Dados implementados (2026-11-17, `app/xrefs.py::graph`, `/api/xref-graph`).**
+A primeira versão ligava dois vizinhos quando um aparecia entre os 40 primeiros
+do outro, chamando o ranqueamento completo 15 vezes: 1,3 a 1,6 s. A versão
+final calcula as ligações entre os vizinhos por consultas diretas (listas
+curadas entre eles, TSK e co-citação sem os itens que citam versículos
+demais) e guarda para cada nó só as 4 ligações mais fortes com peso mínimo 3.
+Medido: 0,08 a 0,34 s, cerca de 40 ligações entre 15 vizinhos, centros iguais
+aos do método exato (Sl 23:1: Is 40:11 grau 11, Jo 10:11 grau 10; Is 53:5:
+2Co 5:21 grau 10; Gn 1:1: Sl 33:6 e Pv 8:27, com Sl 89:11 isolado). Gn 3:15,
+isolado na medição anterior, passou a ter 4 ligações por co-citação, inclusive
+de comentários em português que entraram com a T24.
+
 **Desenho proposto.**
 - *Dados:* `/api/xref-graph?book&chapter&verse&size=15`. Nós = o versículo
   e os N primeiros de `ranked` (com fontes e co-citação); arestas = pares de

@@ -447,7 +447,7 @@ difíceis em [EXECUCOES-CRITICAS.md](EXECUCOES-CRITICAS.md) (EC8, EC9).
   testamento; clicar num nó recentra o grafo (com voltar), passar o mouse
   mostra o texto; a lista continua disponível ao lado.
 - **Aceite:** em Sl 23:1, Is 40:11 e Jo 10:11 aparecem como os nós maiores;
-  em Is 53:5, Gn 3:15 aparece isolado; resposta em menos de 1 s (com cache);
+  em Is 53:5, 2Co 5:21; em Gn 1:1, Sl 89:11 aparece isolado; resposta em menos de 1 s;
   rótulos sem sobreposição; legível nos dois temas; navegável por teclado; no
   celular, só a lista.
 - **Depende de:** P6; fica melhor com T61 (coluna larga). **Tamanho:** G.

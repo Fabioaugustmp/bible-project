@@ -142,7 +142,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T08 | concluída (EC4): painel enxuto (Jo 3:16 de 315 KB para 19 KB), recolhido e filtrável; busca paginada com volta; perícopes e referências cruzadas na tela; testado em 1280 px e 375 px, temas claro e escuro |
 | T09 | concluída em parte: referências cruzadas (theWord e BSB) e títulos em inglês importados; parágrafos não, por falta de confirmação do campo `typ` |
 | T10 | pendente (passo 3 do roteiro, Haiku) |
-| T11 | pendente (passo 1 do roteiro, Haiku) |
+| T11 | concluída: 39 testes em `tests/` (rtf 8, rvf 6, tokens 14, cleaners 9, readers 2), 39 passam, 0 falhas esperadas; `unittest` em 0,02 s (0,46 s com o interpretador); não cobertos: T03(b) Webster com `cast` de blob e T04(c) marcação Strong da católica, que pedem dados reais |
 | T21 | concluída (EC1): `strong_terms` com 137 mil termos; 16 de 18 traduções esperadas conferem, as 2 restantes são diferenças legítimas |
 | T23 | concluída (EC2): 'graça' passa de 565 para 18.245 comentários; 39 de 40 primeiros resultados em inglês pertinentes em 4 consultas; D013 |
 | T20 + T22 | concluídas (EC3): botão Strong nas 5 Bíblias com Strong; painel Palavra com termo original, traduções em português e inglês, léxicos e ocorrências; 0,17 a 0,32 s |

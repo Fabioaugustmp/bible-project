@@ -40,6 +40,14 @@ const LANG = { por: "pt-BR", eng: "en", spa: "es", grc: "grc", heb: "he" };
 const LANG_LABEL = { por: "PT", eng: "EN", spa: "ES", grc: "GR", heb: "HE" };
 const LANG_NAME = { por: "Português", eng: "Inglês", spa: "Espanhol", grc: "Grego", heb: "Hebraico", und: "Outros" };
 
+// Tipos de conteúdo (T60): etiqueta de cada um; cores em style.css (--type-*).
+const TYPE_LABEL = {
+  bible: "Bíblia", commentary: "Comentário", dictionary: "Dicionário",
+  lexicon: "Léxico", book: "Livro", xref: "Referências",
+};
+// Dicionários cujos verbetes são números Strong: aparecem como "Léxico", não "Dicionário".
+const LEXICON_ABBRS = new Set(["Dodson", "AHLB", "LSJ", "MLSJ", "KJC", "LXXHebGreek"]);
+
 function refLabel(book, chapter, verse) {
   return `${bookOf(book).name} ${chapter}${verse ? ":" + verse : ""}`;
 }
@@ -314,6 +322,34 @@ function section(title, count, ...content) {
   return [el("h3", {}, title + " ", count === null ? null : el("small", {}, `(${count})`)), ...content.flat()];
 }
 
+// Etiqueta de tipo de conteúdo (T60).
+function kindTag(type) {
+  return type ? el("i", { class: `kind kind-${type}` }, TYPE_LABEL[type]) : null;
+}
+
+// Tipo de um módulo; dicionário cujos verbetes são números Strong vira léxico.
+function typeOf(kind, abbr) {
+  if (kind === "dictionary") return LEXICON_ABBRS.has(abbr) ? "lexicon" : "dictionary";
+  return { bible: "bible", commentary: "commentary", book: "book", xrefs: "xref" }[kind] || null;
+}
+
+// Tipo de um item: comentário, ou verbete (o tipo do módulo dele, achado pela sigla).
+function itemType(kind, abbr, moduleId = null) {
+  if (kind === "comment" || kind === "commentary") return "commentary";
+  const module = moduleId !== null
+    ? state.modules.find((m) => m.id === moduleId)
+    : state.modules.find((m) => m.abbr === abbr);
+  return module ? typeOf(module.kind, module.abbr) : null;
+}
+
+// Como section, com as etiquetas de tipo antes do título (T60).
+function typedSection(types, title, count, ...content) {
+  const [heading, ...rest] = section(title, count, ...content);
+  const tags = [...new Set(types)].filter(Boolean).flatMap((type) => [kindTag(type), " "]);
+  heading.prepend(...tags);
+  return [heading, ...rest];
+}
+
 const passesFilter = (lang) =>
   state.langFilter === "all" || (state.langFilter === "por" ? lang === "por" : lang !== "por");
 
@@ -351,7 +387,7 @@ function commentRow(book, comment) {
     },
   },
     el("summary", {},
-      el("b", {}, comment.abbr), el("span", { class: "range" }, rangeLabel(book, comment.ref_start, comment.ref_end)),
+      kindTag("commentary"), el("b", {}, comment.abbr), el("span", { class: "range" }, rangeLabel(book, comment.ref_start, comment.ref_end)),
       badge(comment.lang),
       el("span", { class: "peek", lang: LANG[comment.lang] || null }, comment.excerpt.slice(0, 110))),
     body,
@@ -374,7 +410,8 @@ function citedGroup(group) {
       }, item.kind === "entry" ? item.label : rangeLabel(item.book, item.ref_start, item.ref_end))));
     },
   },
-    el("summary", {}, el("b", {}, group.abbr), el("span", { class: "range" }, group.title || ""),
+    el("summary", {}, kindTag(itemType(group.kind, group.abbr, group.module_id)),
+      el("b", {}, group.abbr), el("span", { class: "range" }, group.title || ""),
       badge(group.lang), el("span", { class: "count" }, String(group.count))),
     list);
 }
@@ -390,6 +427,7 @@ async function showVerse() {
 
   const versionItem = (v) => el("div", { class: "item", lang: LANG[v.lang] || null, dir: v.lang === "heb" ? "rtl" : null },
     el("div", { class: "source", dir: "ltr" },
+      kindTag("bible"),
       v.module_id === state.module
         ? el("b", {}, v.abbr)
         : el("button", { class: "link", title: "Ler nesta versão", onclick: () => go({ module: v.module_id }) }, v.abbr),
@@ -407,6 +445,7 @@ async function showVerse() {
     class: "result", onclick: () => go({ book: x.book, chapter: x.chapter, verse: x.verse }),
     title: "Listas curadas: theWord, BSB e TSK. Citados juntos: comentários e verbetes que citam os dois versículos.",
   }, el("div", { class: "source" },
+      kindTag("xref"),
       el("b", {}, refLabel(x.book, x.chapter, x.verse) + (x.span ? `–${x.verse + x.span}` : "")),
       el("span", {}, why(x))),
     x.text ? el("div", { class: "t clamp2" }, x.text) : null));
@@ -436,7 +475,7 @@ async function showVerse() {
   openPanel("verse", refLabel(book, chapter, verse),
     backToSearch(),
     jumps,
-    section("Versões", data.versions.length,
+    typedSection(["bible"], "Versões", data.versions.length,
       native.map(versionItem),
       foreign.length
         ? el("details", { class: "fold plain", open: native.length === 0 },
@@ -444,13 +483,14 @@ async function showVerse() {
               el("span", { class: "range" }, foreign.map((v) => v.abbr).join(" · "))),
             foreign.map(versionItem))
         : null),
-    data.xrefs.length ? section("Referências cruzadas", data.xrefs_total, xrefs, moreXrefs) : null,
+    data.xrefs.length ? typedSection(["xref"], "Referências cruzadas", data.xrefs_total, xrefs, moreXrefs) : null,
     filterBar(showVerse),
-    section("Comentários", of(comments, data.comments),
+    typedSection(["commentary"], "Comentários", of(comments, data.comments),
       comments.length ? comments.map((c) => commentRow(book, c))
         : el("p", { class: "empty" }, data.comments.length ? "Nenhum neste idioma." : "Nenhum comentário cobre este versículo.")),
     data.cited.length
-      ? section("Citado em", `${citedTotal} em ${cited.length} obras`, cited.map(citedGroup))
+      ? typedSection(cited.map((g) => itemType(g.kind, g.abbr, g.module_id)), "Citado em",
+          `${citedTotal} em ${cited.length} obras`, cited.map(citedGroup))
       : null);
 }
 
@@ -464,7 +504,7 @@ async function showItem(kind, id) {
   openPanel("item", title,
     backVerse, backToSearch(),
     el("div", { class: "item" },
-      el("div", { class: "source" }, el("b", {}, item.abbr), el("span", {}, item.title || ""), badge(item.lang)),
+      el("div", { class: "source" }, kindTag(itemType(kind, item.abbr)), el("b", {}, item.abbr), el("span", {}, item.title || ""), badge(item.lang)),
       el("div", { class: "t", lang: LANG[item.lang] || null }, linked(item.text, item.refs)),
       el("div", { class: "origin" }, `Origem: ${item.origin_path} · ${item.origin_key}`)));
 }
@@ -494,7 +534,8 @@ async function showWord(strong, source = null, offset = 0, previous = null) {
         loaded = true;
         body.textContent = (await api("item", { kind: "entry", id: entry.id })).text;
       },
-    }, el("summary", {}, el("b", {}, entry.abbr), el("span", { class: "range" }, entry.title || ""), badge(entry.lang)),
+    }, el("summary", {}, kindTag(typeOf("dictionary", entry.abbr)), el("b", {}, entry.abbr),
+        el("span", { class: "range" }, entry.title || ""), badge(entry.lang)),
       body);
   };
   // O primeiro léxico já vem aberto: carrega o texto inteiro dele.
@@ -524,7 +565,7 @@ async function showWord(strong, source = null, offset = 0, previous = null) {
       el("span", { lang: "pt-BR" }, ` ${langLabel} · ${data.total} versículos`)) : null,
     data.translations.por.length ? section("Como a Bíblia em português traduz", null, chips(data.translations.por, "pt-BR")) : null,
     data.translations.eng.length ? section("Em inglês", null, chips(data.translations.eng, "en")) : null,
-    section("Léxicos", data.lexicons.length,
+    typedSection(data.lexicons.map((e) => typeOf("dictionary", e.abbr)), "Léxicos", data.lexicons.length,
       data.lexicons.length ? data.lexicons.map(lexicon) : el("p", { class: "empty" }, "Nenhum léxico legível tem este número.")),
     section("Ocorrências", data.total, data.occurrences.map(occurrence), more));
 }
@@ -534,17 +575,17 @@ async function showWord(strong, source = null, offset = 0, previous = null) {
 const resultBuilders = {
   verses: (v) => el("button", {
     class: "result", onclick: () => go({ book: v.book, chapter: v.chapter, verse: v.verse }),
-  }, el("div", { class: "source" }, el("b", {}, refLabel(v.book, v.chapter, v.verse))),
+  }, el("div", { class: "source" }, kindTag("bible"), el("b", {}, refLabel(v.book, v.chapter, v.verse))),
     el("div", { class: "t" }, highlighted(v.hit))),
   comments: (c) => el("button", {
     class: "result", onclick: () => showItem("comment", c.id),
-  }, el("div", { class: "source" }, el("b", {}, c.abbr),
+  }, el("div", { class: "source" }, kindTag("commentary"), el("b", {}, c.abbr),
       el("span", {}, rangeLabel(c.book, c.ref_start, c.ref_end)), badge(c.lang)),
     el("div", { class: "t" }, highlighted(c.hit))),
   entries: (e) => el("button", {
     class: "result", onclick: () => showItem("entry", e.id),
-  }, el("div", { class: "source" }, el("b", {}, e.topic), el("span", {}, e.abbr),
-      e.kind === "book" ? el("span", { class: "badge" }, "livro") : null, badge(e.lang)),
+  }, el("div", { class: "source" }, kindTag(typeOf(e.kind, e.abbr)), el("b", {}, e.topic), el("span", {}, e.abbr),
+      badge(e.lang)),
     el("div", { class: "t" }, highlighted(e.hit))),
 };
 

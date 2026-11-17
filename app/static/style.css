@@ -7,6 +7,9 @@
   --accent: #8a4b1f;
   --accent-soft: #f3e6d6;
   --mark: #ffe9a8;
+  /* Cor de cada tipo de conteúdo (T60): texto com contraste de pelo menos 4,5:1 nos dois temas */
+  --type-bible: #2c5f8f; --type-commentary: #3d7a2f; --type-dictionary: #8c3a7d;
+  --type-lexicon: #00786e; --type-book: #936100; --type-xref: #b2384a;
   --reading-size: 20px;
   --serif: "Literata", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
   --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -18,12 +21,16 @@
   :root:not([data-theme="light"]) {
     --paper: #17181a; --surface: #1f2123; --ink: #e6e1d7; --muted: #9a9488;
     --line: #2f3236; --accent: #e0a574; --accent-soft: #3a2c20; --mark: #6b5310;
+    --type-bible: #8dbde8; --type-commentary: #a8d67c; --type-dictionary: #e09ad0;
+    --type-lexicon: #6fd3c6; --type-book: #e6bf5c; --type-xref: #f09aa6;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --paper: #17181a; --surface: #1f2123; --ink: #e6e1d7; --muted: #9a9488;
   --line: #2f3236; --accent: #e0a574; --accent-soft: #3a2c20; --mark: #6b5310;
+  --type-bible: #8dbde8; --type-commentary: #a8d67c; --type-dictionary: #e09ad0;
+  --type-lexicon: #6fd3c6; --type-book: #e6bf5c; --type-xref: #f09aa6;
   color-scheme: dark;
 }
 
@@ -225,3 +232,16 @@ a.ref:hover, a.ref:focus-visible { text-decoration-style: solid; background: var
 }
 .preview .t { font: .98rem/1.55 var(--serif); }
 .preview sup { font: 600 .6em var(--sans); color: var(--accent); margin-right: .25em; }
+
+/* Marca visual por tipo de conteúdo (T60): etiqueta curta na cor do tipo */
+.kind-bible { --kind: var(--type-bible); }
+.kind-commentary { --kind: var(--type-commentary); }
+.kind-dictionary { --kind: var(--type-dictionary); }
+.kind-lexicon { --kind: var(--type-lexicon); }
+.kind-book { --kind: var(--type-book); }
+.kind-xref { --kind: var(--type-xref); }
+i.kind {
+  flex: none; font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; line-height: 1.5; color: var(--kind);
+  border: 1px solid var(--kind); border-radius: 4px; padding: 0 4px;
+}

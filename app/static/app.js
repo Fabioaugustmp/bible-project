@@ -311,7 +311,7 @@ let pendingView = null;
 let renderTarget = null;
 
 function openPanel(mode, title, ...content) {
-  const nodes = content.flat().filter(Boolean);
+  const nodes = content.flat(Infinity).filter(Boolean);
   if (renderTarget) {
     renderTarget.title = title;
     renderTarget.body.replaceChildren(...nodes);
@@ -529,7 +529,7 @@ function badge(lang) {
 }
 
 function section(title, count, ...content) {
-  return [el("h3", {}, title + " ", count === null ? null : el("small", {}, `(${count})`)), ...content.flat()];
+  return [el("h3", {}, title + " ", count === null ? null : el("small", {}, `(${count})`)), ...content.flat(Infinity)];
 }
 
 // Etiqueta de tipo de conteúdo (T60).

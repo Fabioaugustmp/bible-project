@@ -1,3 +1,5 @@
+import { xrefGraph } from "./graph.js";
+
 const $ = (selector) => document.querySelector(selector);
 
 const state = {
@@ -660,6 +662,25 @@ async function showVerse(ref = null) {
       el("b", {}, refLabel(x.book, x.chapter, x.verse) + (x.span ? `–${x.verse + x.span}` : "")),
       el("span", {}, why(x))),
     x.text ? el("div", { class: "t clamp2" }, x.text) : null));
+  // Lista ou grafo (T65). O grafo precisa de largura: em telas estreitas, só a lista.
+  const graphFits = matchMedia("(min-width: 760px)").matches;
+  const xrefMode = graphFits && store.get("xrefView") === "graph" ? "graph" : "list";
+  const xrefSwitch = graphFits
+    ? el("div", { class: "filters xref-switch", role: "group", "aria-label": "Mostrar referências como" },
+        [["list", "Lista"], ["graph", "Grafo"]].map(([value, text]) => el("button", {
+          class: "chip" + (xrefMode === value ? " on" : ""), "aria-pressed": String(xrefMode === value),
+          onclick: () => { store.set("xrefView", value); showVerse(); },
+        }, text)))
+    : null;
+  const graph = xrefMode === "graph"
+    ? xrefGraph({ book, chapter, verse }, {
+        api,
+        label: (b, c, v) => `${bookOf(b).abbr} ${c}:${v}`,
+        preview: showPreview,
+        hidePreview,
+        open: (ref) => go(ref),
+      })
+    : null;
   const moreXrefs = data.xrefs.length < data.xrefs_total && data.xrefs.length < 60
     ? el("button", {
         class: "more", onclick: () => { xrefLimit = Math.min(60, xrefLimit + 24); showVerse(); },
@@ -694,7 +715,10 @@ async function showVerse(ref = null) {
               el("span", { class: "range" }, foreign.map((v) => v.abbr).join(" · "))),
             foreign.map(versionItem))
         : null),
-    data.xrefs.length ? typedSection(["xref"], "Referências cruzadas", data.xrefs_total, xrefs, moreXrefs) : null,
+    data.xrefs.length
+      ? typedSection(["xref"], "Referências cruzadas", data.xrefs_total, xrefSwitch,
+          graph || [xrefs, moreXrefs])
+      : null,
     filterBar(showVerse),
     typedSection(["commentary"], "Comentários", of(comments, data.comments),
       comments.length ? comments.map((c) => commentRow(book, c))

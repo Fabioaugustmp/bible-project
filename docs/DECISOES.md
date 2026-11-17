@@ -317,3 +317,25 @@ importação completa. Remoções não encolhem o arquivo (no teste, +0,5 MB).
 **Motivo da mudança em relação a EC9:** o endereço continua sendo só a
 passagem (`#/versão/livro/capítulo/versículo`), que é o que vale a pena copiar
 e compartilhar; o arranjo da tela é preferência de cada aparelho.
+
+## D019 — Grafo de referências: posicionamento próprio, determinístico · 2026-11-17
+
+**Decisão (P6 respondida pelo usuário: escrever no projeto):** o grafo usa um
+posicionamento por força escrito em `app/static/graph.js`, sem biblioteca.
+- Determinístico: os vizinhos começam num círculo, na ordem do ranqueamento, e
+  300 passos de repulsão e atração os acomodam; o mesmo versículo dá sempre o
+  mesmo desenho. Depois, o desenho é esticado para ocupar a área.
+- Nó maior = mais ligado aos outros vizinhos; cor = Antigo ou Novo Testamento;
+  traço pela força da ligação; ligações ao centro tracejadas e mais claras.
+- Rótulos evitam outros rótulos e outros nós (tentam os dois lados e
+  deslocamentos verticais).
+- Clique ou Enter num vizinho recentra o grafo (com voltar); no centro, abre no
+  leitor. Passar o mouse ou focar mostra o texto do versículo (a prévia da T24).
+- Na seção de referências cruzadas, a escolha Lista/Grafo fica guardada; abaixo
+  de 760 px de largura de janela, só a lista.
+- O servidor guarda em memória até 500 grafos calculados.
+
+**Medido:** posicionamento em 2 a 7 ms; API de 0,2 a 0,5 s no primeiro cálculo
+(1,2 s no pior caso, com a base fria) e 45 ms para recentrar num grafo já visto;
+em Sl 23:1, Is 53:5, Jo 3:16, Gn 1:1 e Rm 8:28, nenhum rótulo sobre outro
+rótulo ou nó, e os centros esperados aparecem como os maiores nós.

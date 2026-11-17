@@ -99,7 +99,20 @@ EDGES_PER_NODE = 4   # cada nó mostra só as suas ligações mais fortes: o gra
 MIN_EDGE_WEIGHT = 3  # ligação mais fraca que isto não aparece (uma lista curada vale 3)
 
 
+_GRAPH_CACHE = {}    # a base não muda com o servidor no ar; recentrar e voltar ficam instantâneos
+_GRAPH_CACHE_LIMIT = 500
+
+
 def graph(con, book, chapter, verse, size=15):
+    key = (book, chapter, verse, size)
+    if key not in _GRAPH_CACHE:
+        if len(_GRAPH_CACHE) >= _GRAPH_CACHE_LIMIT:
+            _GRAPH_CACHE.clear()
+        _GRAPH_CACHE[key] = _graph(con, book, chapter, verse, size)
+    return _GRAPH_CACHE[key]
+
+
+def _graph(con, book, chapter, verse, size):
     """Nós = o versículo e os `size` vizinhos mais fortes (ranked); arestas = ligações entre eles.
 
     Peso de uma ligação entre dois vizinhos: 3 por lista curada que liga um ao

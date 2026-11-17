@@ -88,7 +88,7 @@ que depende da resposta P3. T10 (importação incremental) concluída: D017.
 | P3 | Dependências além da biblioteca padrão são aceitas (necessárias em M3)? | Sim, isoladas no indexador; registrar nova decisão que revê a D003 |
 | P4 | Uso de modelo de linguagem (local ou por API) é aceito? | Só opcional e por último (M6) |
 | P5 | Manter a página do Notion sincronizada? | Não: hoje ela espelha IDEIAS.md e está desatualizada em relação a este arquivo |
-| P6 | Grafo e colunas (M7): escrever o posicionamento por força no próprio projeto ou incluir uma biblioteca pronta (d3-force, licença a conferir) em `app/static/vendor/`? | Escrever no projeto: são no máximo 20 nós; evita dependência (D004) |
+| P6 | Grafo e colunas (M7): escrever o posicionamento por força no próprio projeto ou incluir uma biblioteca pronta? | **Respondida: escrever no projeto** (2026-11-17) |
 | P7 | Fazer M7 (organização da tela e grafo) antes de M3 (embeddings)? | **Respondida: sim** (2026-11-17) |
 
 ## Roteiro por modelo
@@ -156,7 +156,8 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T30–T34 (M3) | pendente |
 | T60 | concluída: seis cores por tipo (`--type-*` em style.css, claro e escuro) e etiquetas nas seções do painel, em cada item (versões, referências, comentários, citados, verbetes abertos), nos resultados de busca e na seção Léxicos do painel Palavra; Léxico = Dodson, AHLB, LSJ, MLSJ, KJC, LXXHebGreek. Contraste do texto medido com WCAG (painel e fundo da leitura): tema claro de 4,88:1 (comentário, sobre o fundo da leitura) a 6,96:1; tema escuro de 7,46:1 a 10,64:1; testado em Jo 3:16, busca "graça" e painel Palavra (G25) nos dois temas, sem erros no console; revisão: a etiqueta escrita ficou só onde os tipos se misturam (Citado em, dicionários e livros na busca, item aberto, léxicos); seções homogêneas mostram uma barra na cor do tipo no título |
 | T61 | concluída (EC9, D018): botão Fixar e 'Fixar ao lado', coluna com abas, divisórias por mouse e teclado, arranjo guardado; testada em 1280, 1024, 768 e 375 px e nos dois temas |
-| T62–T66 (M7) | pendente (T65: dados prontos, desenho depende de P6) |
+| T65 | concluída (EC8, D019): grafo no painel do versículo (Lista/Grafo), posicionamento próprio em `app/static/graph.js`; centros e isolado conferidos nos 5 versículos, 0 rótulos sobrepostos, recentrar 45 ms com cache; só lista abaixo de 760 px |
+| T62–T64, T66 (M7) | pendente |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |
 

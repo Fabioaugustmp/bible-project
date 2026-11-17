@@ -10,6 +10,7 @@
   /* Cor de cada tipo de conteúdo (T60): texto com contraste de pelo menos 4,5:1 nos dois temas */
   --type-bible: #2c5f8f; --type-commentary: #3d7a2f; --type-dictionary: #8c3a7d;
   --type-lexicon: #00786e; --type-book: #936100; --type-xref: #b2384a;
+  --ot: #a15c12; --nt: #2c5f8f;   /* grafo: Antigo e Novo Testamento */
   --reading-size: 20px;
   --serif: "Literata", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
   --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -23,6 +24,8 @@
     --line: #2f3236; --accent: #e0a574; --accent-soft: #3a2c20; --mark: #6b5310;
     --type-bible: #8dbde8; --type-commentary: #a8d67c; --type-dictionary: #e09ad0;
     --type-lexicon: #6fd3c6; --type-book: #e6bf5c; --type-xref: #f09aa6;
+  --ot: #e3a35c; --nt: #8dbde8;
+    --ot: #e3a35c; --nt: #8dbde8;
     color-scheme: dark;
   }
 }
@@ -291,3 +294,24 @@ i.kind {
   .pinned { flex: 0 0 55%; border-left: 0; border-top: 1px solid var(--line); }
 }
 .pinned .back { display: none; }   /* "voltar" só faz sentido no painel */
+
+/* Grafo das referências (T65) */
+.xref-switch { margin: 4px 0 10px; }
+.xgraph { min-height: 200px; }
+.xgraph[aria-busy="true"] { opacity: .5; }
+.xgraph svg { display: block; overflow: visible; }
+.xg-edge { stroke: var(--muted); stroke-opacity: .45; }
+.xg-edge.to-center { stroke-opacity: .18; stroke-dasharray: 3 3; }
+.xg-node { cursor: pointer; outline: none; }
+.xg-node circle { stroke: var(--surface); stroke-width: 1.5; }
+.xg-node.ot circle { fill: var(--ot); }
+.xg-node.nt circle { fill: var(--nt); }
+.xg-node.center circle { stroke: var(--ink); stroke-width: 2.5; }
+.xg-node text { font: 600 11px var(--sans); fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.xg-node:hover circle, .xg-node:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
+.xg-node:focus-visible text { fill: var(--accent); }
+.xg-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; margin: 6px 0 4px; font-size: 12px; }
+.xg-key { color: var(--muted); }
+.xg-key i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 2px; vertical-align: -1px; }
+.xg-key i.ot { background: var(--ot); }
+.xg-key i.nt { background: var(--nt); }

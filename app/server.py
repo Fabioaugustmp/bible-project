@@ -257,6 +257,9 @@ def api_word(con, q):
     }
 
 
+XBOOK_POOL = 400   # referências consideradas para a faixa por livro (T66)
+
+
 def api_verse(con, q):
     """Tudo sobre um versículo, em formato enxuto: os textos longos vêm de /api/item."""
     book, chapter, verse = int(q["book"]), int(q["chapter"]), int(q["verse"])
@@ -296,7 +299,17 @@ def api_verse(con, q):
         (book, chapter, verse) * 2,
     )
     xrefs, xrefs_total = [], 0
-    if has_table(con, "xrefs"):
+    if has_table(con, "xrefs") and q.get("xbook"):
+        # Filtro por livro (T66): as referências do ranqueamento, só daquele livro.
+        only = int(q["xbook"])
+        everything, _ = ranked_xrefs(con, book, chapter, verse, XBOOK_POOL)
+        xrefs = [item for item in everything if item["book"] == only][:60]
+        xrefs_total = sum(1 for item in everything if item["book"] == only)
+        for item in xrefs:
+            found = con.execute("select text from verses where module_id = ? and book = ? and chapter = ?"
+                                " and verse = ?", (module, item["book"], item["chapter"], item["verse"])).fetchone()
+            item["text"] = found[0] if found else None
+    elif has_table(con, "xrefs"):
         limit = min(60, max(1, int(q.get("xrefs", 12))))
         xrefs, xrefs_total = ranked_xrefs(con, book, chapter, verse, limit)
         for item in xrefs:
@@ -341,6 +354,15 @@ def api_titles(con, q):
         + ("and topic like ? " if text else "") + "order by 1",
         (module, f"%{text}%") if text else (module,)) if r[0]]
     return {"items": items, "total": total, "letters": letters, "offset": offset}
+
+
+def api_xref_books(con, q):
+    """Quantas referências do ranqueamento o versículo tem em cada livro (T66)."""
+    everything, _ = ranked_xrefs(con, int(q["book"]), int(q["chapter"]), int(q["verse"]), XBOOK_POOL)
+    counts = {}
+    for item in everything:
+        counts[item["book"]] = counts.get(item["book"], 0) + 1
+    return {"books": [{"book": b, "count": counts.get(b, 0)} for b in range(1, 67)]}
 
 
 def api_cited(con, q):
@@ -437,7 +459,7 @@ def api_search(con, q):
 
 
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "titles": api_titles, "search": api_search, "word": api_word, "passage": api_passage,
+       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "search": api_search, "word": api_word, "passage": api_passage,
        "xref-graph": api_xref_graph}
 
 

@@ -322,3 +322,17 @@ i.kind {
 .letters .chip { min-width: 2rem; padding: 0 6px; }
 .browse-row { padding: 6px 10px; margin: 2px 0; }
 .browse-intro { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+
+/* Faixa de livros nas referências cruzadas (T66) */
+.bookmap { margin: 6px 0 12px; }
+.bk-group { display: grid; grid-template-columns: 5.6rem 1fr; gap: 6px; align-items: end; margin-bottom: 4px; }
+.bk-name { font-size: 11px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.bk-bars { display: flex; gap: 2px; align-items: flex-end; min-height: 36px; }
+.bk-bar {
+  flex: 1 1 0; min-width: 3px; max-width: 16px; padding: 0; height: 2px; border: 0; border-radius: 2px 2px 0 0;
+  background: var(--type-xref); opacity: .55; cursor: pointer;
+}
+.bk-bar.zero { background: var(--line); opacity: 1; cursor: default; }
+.bk-bar.on, .bk-bar:hover:not(.zero) { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+.bk-chips { margin-top: 8px; }
+.bk-chips .chip { height: 26px; font-size: 12px; }

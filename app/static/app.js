@@ -631,12 +631,52 @@ function citedGroup(group) {
 }
 
 let xrefLimit = 12, xrefVerse = null;
+let xrefBook = null;   // livro escolhido na faixa (T66); null = todos
+
+// Grupos da faixa por livro (T66), na ordem da Bíblia.
+const BOOK_GROUPS = [["Lei", 1, 5], ["Históricos", 6, 17], ["Poéticos", 18, 22], ["Profetas", 23, 39],
+  ["Evangelhos", 40, 43], ["Atos", 44, 44], ["Cartas", 45, 65], ["Apocalipse", 66, 66]];
+
+// Faixa com uma barra por livro: a altura é a quantidade de referências daquele livro.
+function bookStrip(counts) {
+  const max = Math.max(1, ...counts.map((c) => c.count));
+  const bars = BOOK_GROUPS.map(([name, from, to]) => {
+    const row = counts.filter((c) => c.book >= from && c.book <= to);
+    return el("div", { class: "bk-group" },
+      el("span", { class: "bk-name" }, name),
+      el("div", { class: "bk-bars", role: "group", "aria-label": name },
+        row.map((c) => {
+          const label = bookOf(c.book).name;
+          return el("button", {
+            class: "bk-bar" + (xrefBook === c.book ? " on" : "") + (c.count ? "" : " zero"),
+            disabled: c.count ? null : "disabled",
+            style: `height:${Math.max(2, Math.round((c.count / max) * 34))}px`,
+            title: `${label}: ${c.count} referências`,
+            "aria-label": `${label}: ${c.count} referências`,
+            "aria-pressed": String(xrefBook === c.book),
+            onclick: () => { xrefBook = xrefBook === c.book ? null : c.book; showVerse(); },
+          });
+        })));
+  });
+  const present = counts.filter((c) => c.count);
+  const chips = el("div", { class: "chips bk-chips" },
+    present.map((c) => el("button", {
+      class: "chip" + (xrefBook === c.book ? " on" : ""), "aria-pressed": String(xrefBook === c.book),
+      onclick: () => { xrefBook = xrefBook === c.book ? null : c.book; showVerse(); },
+    }, `${bookOf(c.book).abbr} ${c.count}`)));
+  return el("div", { class: "bookmap" },
+    bars,
+    chips,
+    xrefBook ? el("button", { class: "link", onclick: () => { xrefBook = null; showVerse(); } },
+      `Mostrar todos os livros (filtro: ${bookOf(xrefBook).name})`) : null);
+}
 
 async function showVerse(ref = null) {
   const { book, chapter, verse } = ref || state;
   const verseKey = `${book}.${chapter}.${verse}`;
-  if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; }
-  const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit });
+  if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; xrefBook = null; }
+  const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook });
+  const bookCounts = data.xrefs_total || xrefBook ? (await api("xref-books", { book, chapter, verse })).books : null;
   if (!ref && (book !== state.book || chapter !== state.chapter || verse !== state.verse)) return;
   pendingView = { type: "verse", book, chapter, verse };
 
@@ -681,6 +721,7 @@ async function showVerse(ref = null) {
         open: (ref) => go(ref),
       })
     : null;
+  const strip = !graph && bookCounts ? bookStrip(bookCounts) : null;
   const moreXrefs = data.xrefs.length < data.xrefs_total && data.xrefs.length < 60
     ? el("button", {
         class: "more", onclick: () => { xrefLimit = Math.min(60, xrefLimit + 24); showVerse(); },
@@ -715,9 +756,9 @@ async function showVerse(ref = null) {
               el("span", { class: "range" }, foreign.map((v) => v.abbr).join(" · "))),
             foreign.map(versionItem))
         : null),
-    data.xrefs.length
+    data.xrefs.length || xrefBook
       ? typedSection(["xref"], "Referências cruzadas", data.xrefs_total, xrefSwitch,
-          graph || [xrefs, moreXrefs])
+          graph || [strip, xrefs.length ? xrefs : el("p", { class: "empty" }, "Nenhuma referência neste livro."), moreXrefs])
       : null,
     filterBar(showVerse),
     typedSection(["commentary"], "Comentários", of(comments, data.comments),

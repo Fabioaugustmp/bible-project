@@ -103,7 +103,7 @@ julgamento, vai para o mais capaz. Para trocar de modelo, use `/model`.
 | 1 | T11 — testes automatizados — **concluída** | Haiku | especificação fechada, casos listados abaixo; não altera comportamento | pasta `tests/` passando, um commit |
 | 2 | T24 — citações clicáveis (EC5) — **concluída** | Opus | altera o conversor de RTF de todos os módulos; posições no texto; validação com julgamento; reimportação | tabela `refs`, interface, reimportação verificada |
 | 3 | T10 — importação incremental — **concluída** | Haiku (ou Sonnet, se o Haiku parar) | mudança contida em `build.py`, aceite numérico | opção `--incremental`, um commit |
-| 4 | M7 — organização da tela e grafo (T60–T66), se P7 = sim | Opus para T61 e T65 (EC9, EC8); Sonnet para T62, T63 e T66; Haiku para T60 e T64 | desenho de interface e de visualização exige julgamento; as demais estão especificadas | ver M7 |
+| 4 | M7 — organização da tela e grafo (T60–T66), se P7 = sim | Opus para T61 e T65 (EC9, EC8); Sonnet para T62; Haiku para T60, T63, T64 e T66 | desenho de interface e de visualização exige julgamento; as demais estão especificadas | ver M7 |
 | 5 | M3 — busca semântica (T30–T34) | Opus | maior incerteza técnica; depende da resposta P3 | ver EC6 |
 | 6 | M4 — notas e exportação (T40–T42) | Sonnet | formatos de notas do e-Sword ainda não examinados | ver backlog |
 | 7 | M5 — produto distribuível (T50–T52) | Opus | decisões de arquitetura; depende de P1 | ver EC7 |
@@ -158,7 +158,8 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T61 | concluída (EC9, D018): botão Fixar e 'Fixar ao lado', coluna com abas, divisórias por mouse e teclado, arranjo guardado; testada em 1280, 1024, 768 e 375 px e nos dois temas |
 | T65 | concluída (EC8, D019): grafo no painel do versículo (Lista/Grafo), posicionamento próprio em `app/static/graph.js`; centros e isolado conferidos nos 5 versículos, 0 rótulos sobrepostos, recentrar 45 ms com cache; só lista abaixo de 760 px |
 | T64 | concluída: botão 'Dic.' abre as 26 obras de dicionário e livro; índice alfabético, filtro por texto e paginação (`/api/titles`); verificado com o Easton (382 títulos com A, 'abin' acha Abinadab, verbete abre). Dic Port (36 mil) não foi medido |
-| T62, T63, T66 (M7) | pendente (Sonnet, pelo roteiro) |
+| T66 | concluída (Haiku): faixa com 66 barras por livro, agrupadas em 8 grupos; clique filtra a lista; contagem pelo mesmo ranqueamento da lista (`/api/xref-books`); Sl 23:1 mostra Ez 29, Jo 34, Is 19, 1Pe 3; Gn 1:1 mostra Sl 43, Pv 13, Jo 19. Só no modo Lista |
+| T62, T63 (M7) | pendente (T62 Sonnet; T63 Haiku, pode seguir) |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |
 

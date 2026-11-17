@@ -62,8 +62,8 @@ ranqueadas (T25, D015) e citações clicáveis nos comentários (T24, D016). A b
 atual (1,48 GB) tem 2.310.407 citações com posição em `refs`; os comentários do
 e-Sword em português passaram a alimentar "Citado em" e a co-citação.
 
-**Próximo passo:** passo 3 do "Roteiro por modelo": T10, importação
-incremental (Haiku). Depois, M3 (embeddings), que depende da resposta P3.
+**Próximo passo:** passo 4 do "Roteiro por modelo": M3 (embeddings, Opus),
+que depende da resposta P3. T10 (importação incremental) concluída: D017.
 
 ## Como trabalhar
 
@@ -100,7 +100,7 @@ julgamento, vai para o mais capaz. Para trocar de modelo, use `/model`.
 |---|---|---|---|---|
 | 1 | T11 — testes automatizados — **concluída** | Haiku | especificação fechada, casos listados abaixo; não altera comportamento | pasta `tests/` passando, um commit |
 | 2 | T24 — citações clicáveis (EC5) — **concluída** | Opus | altera o conversor de RTF de todos os módulos; posições no texto; validação com julgamento; reimportação | tabela `refs`, interface, reimportação verificada |
-| 3 | T10 — importação incremental | Haiku (ou Sonnet, se o Haiku parar) | mudança contida em `build.py`, aceite numérico | opção `--incremental`, um commit |
+| 3 | T10 — importação incremental — **concluída** | Haiku (ou Sonnet, se o Haiku parar) | mudança contida em `build.py`, aceite numérico | opção `--incremental`, um commit |
 | 4 | M3 — busca semântica (T30–T34) | Opus | maior incerteza técnica; depende da resposta P3 | ver EC6 |
 | 5 | M4 — notas e exportação (T40–T42) | Sonnet | formatos de notas do e-Sword ainda não examinados | ver backlog |
 | 6 | M5 — produto distribuível (T50–T52) | Opus | decisões de arquitetura; depende de P1 | ver EC7 |
@@ -143,7 +143,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T07 | concluída: 71 módulos, 0 erros, 479 s, base de 1,16 GB promovida; verify.py passa; interface testada |
 | T08 | concluída (EC4): painel enxuto (Jo 3:16 de 315 KB para 19 KB), recolhido e filtrável; busca paginada com volta; perícopes e referências cruzadas na tela; testado em 1280 px e 375 px, temas claro e escuro |
 | T09 | concluída em parte: referências cruzadas (theWord e BSB) e títulos em inglês importados; parágrafos não, por falta de confirmação do campo `typ` |
-| T10 | pendente (passo 3 do roteiro, Haiku) |
+| T10 | concluída (passo 3 do roteiro, Haiku; D017): `build.py --incremental`; base de amostras (8 módulos, 101.262 versículos): completa 16,4 s, primeira incremental (sem base) 16,6 s, segunda (sem mudanças) 2,8 s com 0 arquivos relidos; arquivo removido (Almeida.dctx) sai da base e, de volta, é relido: contagens de todas as tabelas iguais às da importação completa e `verify.py` passa; 5 testes novos (61 no total, todos passam); não medido na biblioteca completa (critério "menos de 60 s" pendente) |
 | T11 | concluída: 41 testes em `tests/` (39 escritos pelo Haiku; os 2 que faltavam, Webster com título fora do UTF-8 e byte de controle da católica, acrescentados na revisão com dados sintéticos); `python -m unittest discover -s tests` em 0,05 s |
 | T21 | concluída (EC1): `strong_terms` com 137 mil termos; 16 de 18 traduções esperadas conferem, as 2 restantes são diferenças legítimas |
 | T23 | concluída (EC2): 'graça' passa de 565 para 18.245 comentários; 39 de 40 primeiros resultados em inglês pertinentes em 4 consultas; D013 |

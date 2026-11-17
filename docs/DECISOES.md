@@ -260,3 +260,38 @@ reconhecida; citação só de capítulo ("Gn 12") e abreviação toda em maiúsc
 ("MT 28.18") também não; no e-Sword,
 uma abreviação portuguesa ambígua no começo de frase ("Os 2.3") pode ser lida
 como citação.
+
+## D017 — Importação incremental: controle por arquivo e regra de releitura · 2026-11-17
+
+**Decisão:** `importer/build.py --incremental` reaproveita a base de saída em
+vez de recriá-la. A tabela `import_files(origin_path, origin_sha256,
+importer_version, status)` tem um registro por arquivo de módulo visto, em
+toda importação (completa ou incremental). `status` é `importado`, `ignorado`,
+`erro` ou `unido` (cópia unida por `merge_duplicate_bibles`, D011).
+
+Regras:
+- Arquivo com registro de mesmo SHA-256 e mesma versão do importador é pulado
+  sem ser lido pelo leitor. Qualquer outro arquivo novo ou alterado tem antes
+  apagado o que gerou (`forget_path`: verses, tokens, xrefs, headings,
+  comments, entries, links e refs dos itens dele, modules e import_log) e é
+  relido.
+- Arquivo que estava na base e sumiu da pasta é apagado com o mesmo critério.
+- Se algo mudou ou sumiu, as cópias unidas são relidas também: a cópia que
+  fica pode depender delas para os títulos copiados.
+- Sempre refeitos depois das leituras: unir Bíblias, `strong_terms` (apagado e
+  recalculado), índice FTS, resíduos, `meta` e o relatório.
+- Base com versão do importador diferente, ou sem `import_files` (anterior a
+  esta decisão): aviso no terminal e importação completa.
+- A versão do importador (0.3.0) não mudou: a saída dos módulos é a mesma; só
+  foi acrescentada a tabela de controle.
+
+**Motivo:** cópias unidas, arquivos ignorados e com erro não ficam em `modules`.
+Sem o controle, seriam relidos a cada execução.
+
+**Limites:** o SHA-256 de todos os arquivos é calculado a cada execução (leitura
+de bytes, sem reimportação). Arquivo com `erro` ou `ignorado` fica pulado até
+mudar o arquivo ou a versão do importador. Se uma cópia unida muda e a que fica
+não, os títulos copiados da versão antiga podem continuar na cópia que fica.
+A base é alterada no lugar; se a execução for interrompida, ela pode ficar
+inconsistente (com `journal_mode = off`, D009): nesse caso, refazer a
+importação completa. Remoções não encolhem o arquivo (no teste, +0,5 MB).

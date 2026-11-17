@@ -107,6 +107,15 @@ create table import_log(
     id integer primary key, at text, level text, origin_path text, message text
 );
 
+-- Controle da importação incremental (D017): um registro por arquivo de módulo visto.
+-- status: 'importado' | 'ignorado' | 'erro' | 'unido' (cópia unida por merge_duplicate_bibles).
+create table import_files(
+    origin_path text primary key,
+    origin_sha256 text,
+    importer_version text,
+    status text
+);
+
 create virtual table verses_fts using fts5(
     text, content='verses', content_rowid='id', tokenize="unicode61 remove_diacritics 2");
 create virtual table comments_fts using fts5(

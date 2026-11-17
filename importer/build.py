@@ -4,11 +4,14 @@ Uso:
     python importer/build.py --out data/library.db PASTA [PASTA ...]
 
 Os arquivos de origem são abertos somente para leitura. A base de saída é
-recriada do zero a cada execução.
+recriada do zero a cada execução, salvo com --incremental: então a base
+existente é reaproveitada e só os arquivos novos ou alterados são relidos
+(regras em docs/DECISOES.md, D017).
 """
 import argparse
 import hashlib
 import json
+import sqlite3
 import sys
 import time
 from collections import Counter
@@ -42,8 +45,8 @@ def sha256(path: Path) -> str:
 class Adder:
     """O que um leitor de módulo pode gravar, já com a procedência do arquivo."""
 
-    def __init__(self, con, path: Path, source: str):
-        self.con, self.path, self.source = con, path, source
+    def __init__(self, con, path: Path, source: str, sha: str | None = None):
+        self.con, self.path, self.source, self.sha = con, path, source, sha
         self.module_id = None
         self.items = 0
 
@@ -61,7 +64,7 @@ class Adder:
             " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (self.source, meta["kind"], meta.get("abbr") or self.path.stem,
              meta.get("title") or self.path.stem, meta.get("author"), db.normalize_lang(meta.get("lang")),
-             meta.get("has_strongs", 0), str(self.path), sha256(self.path), stat.st_size,
+             meta.get("has_strongs", 0), str(self.path), self.sha or sha256(self.path), stat.st_size,
              datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(timespec="seconds"),
              db.IMPORTER_VERSION, now()),
         )
@@ -147,7 +150,9 @@ def merge_duplicate_bibles(con):
 
     Mantém a cópia sem títulos (nos módulos examinados é a completa e a de
     texto mais limpo), copia para ela os títulos da outra e remove a outra.
+    Devolve os caminhos das cópias removidas.
     """
+    donors = []
     groups = con.execute(
         "select source, abbr from modules where kind = 'bible' group by source, abbr having count(*) > 1"
     ).fetchall()
@@ -181,12 +186,16 @@ def merge_duplicate_bibles(con):
                 (now(), donor_path, message),
             )
             print(f"  unido    {Path(donor_path).name} -> {Path(keeper_path).name} ({copied} títulos)")
+            donors.append(donor_path)
+    return donors
 
 
 def build_strong_terms(con):
     """Índices de `tokens` e a tabela `strong_terms`: como cada idioma traduz cada Strong."""
-    con.execute("create index tokens_by_strong on tokens(strong)")
-    con.execute("create index tokens_by_ref on tokens(module_id, book, chapter, verse, pos)")
+    con.execute("create index if not exists tokens_by_strong on tokens(strong)")
+    con.execute("create index if not exists tokens_by_ref on tokens(module_id, book, chapter, verse, pos)")
+    con.execute("delete from strong_terms")  # derivada de tokens: sempre recalculada
+
     counts = Counter()
     for lang, surface, strong, lemma in con.execute(
         "select m.lang, t.surface, t.strong, t.lemma from tokens t join modules m on m.id = t.module_id"
@@ -226,47 +235,145 @@ def check_residue(con):
     return problems
 
 
+def forget_path(con, origin_path: str) -> int:
+    """Apaga da base o que um arquivo de módulo gerou (D017). Devolve quantos módulos eram dele."""
+    ids = [row[0] for row in con.execute("select id from modules where origin_path = ?", (origin_path,))]
+    for module_id in ids:
+        # Links e refs de comentários e verbetes saem antes, enquanto os itens ainda existem.
+        for kind, table in (("comment", "comments"), ("entry", "entries")):
+            for owner in ("links", "refs"):
+                con.execute(f"delete from {owner} where kind = ? and item_id in"
+                            f" (select id from {table} where module_id = ?)", (kind, module_id))
+        for table in ("verses", "tokens", "xrefs", "headings", "comments", "entries"):
+            con.execute(f"delete from {table} where module_id = ?", (module_id,))
+        con.execute("delete from modules where id = ?", (module_id,))
+    con.execute("delete from import_log where origin_path = ?", (origin_path,))
+    con.execute("delete from import_files where origin_path = ?", (origin_path,))
+    return len(ids)
+
+
+def import_one(con, path: Path, sha: str) -> None:
+    """Lê um arquivo de módulo, grava o resultado e registra o estado dele em import_files."""
+    source, reader = READERS[path.suffix.lower()]
+    adder = Adder(con, path, source, sha)
+    tick = time.time()
+    try:
+        con.execute("savepoint module")
+        reader(path, adder)
+        con.execute("release module")
+    except Exception as error:  # um módulo ruim não interrompe os demais
+        con.execute("rollback to module")
+        con.execute("release module")
+        adder.module_id, adder.items = None, 0
+        adder.log("erro", f"{type(error).__name__}: {error}")
+    if adder.module_id:
+        con.execute("update modules set items = ? where id = ?", (adder.items, adder.module_id))
+        print(f"  ok       {adder.items:>7}  {time.time() - tick:5.1f}s  {path.name}")
+        status = "importado"
+    else:
+        reason = con.execute(
+            "select level, message from import_log where origin_path = ? order by id desc", (str(path),)
+        ).fetchone()
+        print(f"  {reason[0]:<8} {path.name}: {reason[1]}")
+        status = "erro" if reason[0] == "erro" else "ignorado"
+    con.execute("insert or replace into import_files values (?, ?, ?, ?)",
+                (str(path), sha, db.IMPORTER_VERSION, status))
+    con.commit()
+
+
+def open_existing(out: Path):
+    """Abre a base de saída para a importação incremental: (conexão, None) ou (None, motivo)."""
+    try:
+        con = sqlite3.connect(out)
+        tables = {row[0] for row in con.execute("select name from sqlite_master where type = 'table'")}
+        found = None
+        if "meta" in tables:
+            row = con.execute("select value from meta where key = 'importer_version'").fetchone()
+            found = row[0] if row else None
+    except sqlite3.DatabaseError as error:
+        return None, f"não foi possível ler a base: {error}"
+    if "import_files" not in tables:
+        con.close()
+        return None, "a base não tem a tabela import_files (é anterior à T10)"
+    if found != db.IMPORTER_VERSION:
+        con.close()
+        return None, f"versão do importador na base: {found}; atual: {db.IMPORTER_VERSION}"
+    con.executescript("pragma journal_mode = off; pragma synchronous = off;")
+    return con, None
+
+
+def sync_files(con, paths):
+    """Lê os arquivos novos ou alterados, apaga os que sumiram e deixa os demais como estão (D017).
+
+    Sem base anterior não há controle, então tudo é lido: é a importação completa.
+    """
+    control = {row[0]: row[1:] for row in con.execute(
+        "select origin_path, origin_sha256, importer_version, status from import_files")}
+    present = {str(path): path for path in paths}
+    shas = {key: sha256(path) for key, path in present.items()}
+    to_read, donors, skipped = [], [], 0
+    for key, path in present.items():
+        row = control.get(key)
+        if row and row[0] == shas[key] and row[1] == db.IMPORTER_VERSION:
+            if row[2] == "unido":
+                donors.append(path)
+            else:
+                skipped += 1
+        else:
+            to_read.append(path)
+    removed = [key for key in control if key not in present]
+    if to_read or removed:
+        # Algo mudou: as cópias unidas são relidas, porque a cópia que ficou pode depender delas.
+        to_read.extend(donors)
+    else:
+        skipped += len(donors)
+    for key in removed:
+        forget_path(con, key)
+        print(f"  removido {Path(key).name}")
+    for path in to_read:
+        key = str(path)
+        if key in control:
+            forget_path(con, key)
+        import_one(con, path, shas[key])
+    con.commit()
+    return {"pulados": skipped, "lidos": len(to_read), "removidos": len(removed)}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("folders", nargs="+", help="pastas com módulos")
     parser.add_argument("--out", default="data/library.db")
+    parser.add_argument("--incremental", action="store_true",
+                        help="reaproveita a base de saída e relê só o que mudou (D017)")
     args = parser.parse_args()
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    if out.exists():
-        out.unlink()
-    con = db.create(out)
+    con = None
+    if args.incremental and out.exists():
+        con, reason = open_existing(out)
+        if con is None:
+            print(f"aviso: a base existente não serve à importação incremental ({reason});"
+                  " fazendo a importação completa")
+    elif args.incremental:
+        print(f"sem base existente em {out}; fazendo a importação completa")
+    if con is None:
+        if out.exists():
+            out.unlink()
+        con = db.create(out)
     started = time.time()
 
     paths = find_modules(args.folders)
     print(f"{len(paths)} arquivos de módulo encontrados")
-    for path in paths:
-        source, reader = READERS[path.suffix.lower()]
-        adder = Adder(con, path, source)
-        tick = time.time()
-        try:
-            con.execute("savepoint module")
-            reader(path, adder)
-            con.execute("release module")
-        except Exception as error:  # um módulo ruim não interrompe os demais
-            con.execute("rollback to module")
-            con.execute("release module")
-            adder.module_id, adder.items = None, 0
-            adder.log("erro", f"{type(error).__name__}: {error}")
-        if adder.module_id:
-            con.execute("update modules set items = ? where id = ?", (adder.items, adder.module_id))
-            print(f"  ok       {adder.items:>7}  {time.time() - tick:5.1f}s  {path.name}")
-        else:
-            reason = con.execute(
-                "select level, message from import_log where origin_path = ? order by id desc", (str(path),)
-            ).fetchone()
-            print(f"  {reason[0]:<8} {path.name}: {reason[1]}")
-        con.commit()
-
-    merge_duplicate_bibles(con)
+    stats = sync_files(con, paths)
+    donors = merge_duplicate_bibles(con)
+    for donor in donors:
+        con.execute("update import_files set status = 'unido' where origin_path = ?", (donor,))
     con.commit()
+    if args.incremental:
+        print(f"incremental: {stats['pulados']} arquivos pulados sem releitura; {stats['lidos']} relidos"
+              f" (novos, alterados ou cópias unidas); {stats['removidos']} removidos da base")
     print("montando termos por Strong...")
     terms = build_strong_terms(con)
     words = con.execute("select count(*) from tokens").fetchone()[0]
@@ -274,11 +381,12 @@ def main():
     con.commit()
     print("montando índice de busca...")
     db.rebuild_search(con)
+    con.execute("delete from import_log where level = 'aviso' and origin_path = ''")  # refeito a cada execução
     for problem in check_residue(con):
         con.execute("insert into import_log(at, level, origin_path, message) values (?, 'aviso', '', ?)",
                     (now(), problem))
         print("  aviso:", problem)
-    con.executemany("insert into meta values (?, ?)", [
+    con.executemany("insert or replace into meta values (?, ?)", [
         ("importer_version", db.IMPORTER_VERSION), ("built_at", now()),
         ("source_folders", json.dumps([str(Path(f).resolve()) for f in args.folders])),
     ])

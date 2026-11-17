@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from bridge import BRIDGE, is_stopword
+from xrefs import ranked as ranked_xrefs
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
@@ -242,21 +243,16 @@ def api_verse(con, q):
         ") order by lang <> 'por', count desc",
         (book, chapter, verse) * 2,
     )
-    xrefs = []
+    xrefs, xrefs_total = [], 0
     if has_table(con, "xrefs"):
-        # Uma linha por destino; as fontes que o citam ficam agrupadas.
-        xrefs = rows(
-            con,
-            "select x.to_book as book, x.to_chapter as chapter, x.to_verse as verse, max(x.to_span) as span,"
-            " group_concat(distinct m.abbr) as sources, count(distinct m.id) as weight,"
-            " (select v.text from verses v where v.module_id = ? and v.book = x.to_book"
-            "  and v.chapter = x.to_chapter and v.verse = x.to_verse) as text"
-            " from xrefs x join modules m on m.id = x.module_id"
-            " where x.book = ? and x.chapter = ? and x.verse = ?"
-            " group by x.to_book, x.to_chapter, x.to_verse order by weight desc, min(x.rowid)",
-            (module, book, chapter, verse),
-        )
-    return {"versions": versions, "comments": comments, "cited": cited, "xrefs": xrefs}
+        limit = min(60, max(1, int(q.get("xrefs", 12))))
+        xrefs, xrefs_total = ranked_xrefs(con, book, chapter, verse, limit)
+        for item in xrefs:
+            found = con.execute("select text from verses where module_id = ? and book = ? and chapter = ?"
+                                " and verse = ?", (module, item["book"], item["chapter"], item["verse"])).fetchone()
+            item["text"] = found[0] if found else None
+    return {"versions": versions, "comments": comments, "cited": cited,
+            "xrefs": xrefs, "xrefs_total": xrefs_total}
 
 
 def api_cited(con, q):

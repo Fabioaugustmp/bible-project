@@ -56,9 +56,13 @@ o aplicativo; cada usuário importa os seus.
 - Ambiente: Windows, Python 3.14 (só biblioteca padrão, D003), Node instalado,
   Rust não instalado.
 
-**Próximo passo:** Onda 3 (T23 busca bilíngue, T20 + T22 Strong clicável e
-painel "Palavra", T25 referências ranqueadas). Antes, o usuário precisa
-responder P2 (ponte antes dos embeddings), já recomendada como "sim".
+**Onda 3 concluída em 2026-11-17** (P2 respondida "sim" pelo usuário): busca
+bilíngue (T23, D013), Strong clicável e painel "Palavra" (T20 + T22, D014) e
+referências ranqueadas (T25, D015).
+
+**Próximo passo:** Onda 4, citações clicáveis nos comentários (T24, EC5).
+Altera o conversor de RTF usado por todos os módulos: começar pelos testes
+de `rtf.py` (T11) e exige reimportação.
 
 ## Como trabalhar
 
@@ -79,7 +83,7 @@ responder P2 (ponte antes dos embeddings), já recomendada como "sim".
 | # | Pergunta | Recomendação |
 |---|---|---|
 | P1 | Confirma o posicionamento acima? O projeto será público? | Sim; público muda M5 (assistente de importação, créditos, licença) |
-| P2 | Ponte português↔inglês (M2) antes dos embeddings (M3)? | Sim: usa só dados existentes e sem dependências |
+| P2 | Ponte português↔inglês (M2) antes dos embeddings (M3)? | **Respondida: sim** (2026-11-17) |
 | P3 | Dependências além da biblioteca padrão são aceitas (necessárias em M3)? | Sim, isoladas no indexador; registrar nova decisão que revê a D003 |
 | P4 | Uso de modelo de linguagem (local ou por API) é aceito? | Só opcional e por último (M6) |
 | P5 | Manter a página do Notion sincronizada? | Não: hoje ela espelha IDEIAS.md e está desatualizada em relação a este arquivo |
@@ -118,7 +122,8 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T21 | concluída (EC1): `strong_terms` com 137 mil termos; 16 de 18 traduções esperadas conferem, as 2 restantes são diferenças legítimas |
 | T23 | concluída (EC2): 'graça' passa de 565 para 18.245 comentários; 39 de 40 primeiros resultados em inglês pertinentes em 4 consultas; D013 |
 | T20 + T22 | concluídas (EC3): botão Strong nas 5 Bíblias com Strong; painel Palavra com termo original, traduções em português e inglês, léxicos e ocorrências; 0,17 a 0,32 s |
-| T24, T25 (M2) | pendente |
+| T25 | concluída: referências ranqueadas por listas curadas (theWord, BSB, TSK) e co-citação; 0,02 a 0,04 s; D015 |
+| T24 (M2) | pendente: é a Onda 4 |
 | T30–T34 (M3) | pendente |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |

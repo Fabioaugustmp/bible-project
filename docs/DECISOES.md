@@ -196,3 +196,26 @@ verbetes do LSJ (0,77 s por palavra grega; com o índice, 0,32 s).
 léxico LXXHebGreek aparece com o grego e o hebraico em codificação antiga de
 fonte (ilegível) e fica por último; não há léxico Strong hebraico legível além
 do AHLB e da concordância KJC.
+
+## D015 — Referências cruzadas ranqueadas · 2026-11-17
+
+**Decisão:** o painel do versículo ordena as referências cruzadas por:
+1. número de listas curadas que trazem a referência: módulo de referências
+   do theWord, referências do interlinear BSB e o TSK/TSKe (o comentário de
+   cada versículo no TSK é a própria lista de referências);
+2. a mesmo número de listas, versículos de outro capítulo antes dos do mesmo
+   capítulo;
+3. co-citação: quantos outros comentários e verbetes citam os dois versículos
+   no mesmo trecho.
+
+Sem lista curada, uma referência só entra se for citada junto em 3 itens ou
+mais. Itens que citam mais de 150 versículos (verbetes temáticos longos) não
+contam para a co-citação, e vizinhos a até 3 versículos no mesmo capítulo são
+ignorados. O painel mostra 12 e permite ver até 60; cada uma diz de onde veio.
+Código em `app/xrefs.py`.
+
+**Motivo:** o TSK é exaustivo e sem ordem; a co-citação dá a ordem a partir do
+que os próprios comentaristas da biblioteca juntam.
+
+**Não feito:** os votos do OpenBible.info, citados na pesquisa, não foram
+usados (exigiria baixar dado externo e conferir a licença).

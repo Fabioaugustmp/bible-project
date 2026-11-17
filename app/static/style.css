@@ -207,3 +207,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 .lemma span { font: 13px var(--sans); color: var(--muted); }
 .chip .n { margin-left: 6px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .chip.on .n { color: inherit; }
+
+/* O painel não pode crescer além da largura definida por causa de conteúdo largo */
+.panel { min-width: 0; }
+.panel-body { overflow-x: hidden; }

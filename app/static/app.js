@@ -292,9 +292,13 @@ function citedGroup(group) {
     list);
 }
 
+let xrefLimit = 12, xrefVerse = null;
+
 async function showVerse() {
   const { book, chapter, verse } = state;
-  const data = await api("verse", { book, chapter, verse, module: state.module });
+  const verseKey = `${book}.${chapter}.${verse}`;
+  if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; }
+  const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit });
   if (book !== state.book || chapter !== state.chapter || verse !== state.verse) return;
 
   const versionItem = (v) => el("div", { class: "item", lang: LANG[v.lang] || null, dir: v.lang === "heb" ? "rtl" : null },
@@ -307,12 +311,23 @@ async function showVerse() {
   const native = data.versions.filter((v) => v.lang === "por");
   const foreign = data.versions.filter((v) => v.lang !== "por");
 
+  // Referências ranqueadas (T25): listas curadas primeiro, depois co-citação nos comentários.
+  const why = (x) => [
+    ...x.sources,
+    x.cocited ? `citados juntos ${x.cocited}×` : null,
+  ].filter(Boolean).join(" · ");
   const xrefs = data.xrefs.map((x) => el("button", {
     class: "result", onclick: () => go({ book: x.book, chapter: x.chapter, verse: x.verse }),
+    title: "Listas curadas: theWord, BSB e TSK. Citados juntos: comentários e verbetes que citam os dois versículos.",
   }, el("div", { class: "source" },
       el("b", {}, refLabel(x.book, x.chapter, x.verse) + (x.span ? `–${x.verse + x.span}` : "")),
-      el("span", {}, x.sources.split(",").join(" · "))),
+      el("span", {}, why(x))),
     x.text ? el("div", { class: "t clamp2" }, x.text) : null));
+  const moreXrefs = data.xrefs.length < data.xrefs_total && data.xrefs.length < 60
+    ? el("button", {
+        class: "more", onclick: () => { xrefLimit = Math.min(60, xrefLimit + 24); showVerse(); },
+      }, `Mais referências (${data.xrefs.length} de ${data.xrefs_total})`)
+    : null;
 
   const comments = data.comments.filter((c) => passesFilter(c.lang));
   const cited = data.cited.filter((c) => passesFilter(c.lang));
@@ -327,7 +342,7 @@ async function showVerse() {
     },
   }, label);
   const jumps = el("nav", { class: "jumps", "aria-label": "Seções do painel" },
-    data.xrefs.length ? jump(`Referências ${data.xrefs.length}`, "Referências cruzadas") : null,
+    data.xrefs.length ? jump(`Referências ${data.xrefs_total}`, "Referências cruzadas") : null,
     jump(`Comentários ${data.comments.length}`, "Comentários"),
     data.cited.length ? jump(`Citado em ${data.cited.reduce((sum, g) => sum + g.count, 0)}`, "Citado em") : null);
 
@@ -342,7 +357,7 @@ async function showVerse() {
               el("span", { class: "range" }, foreign.map((v) => v.abbr).join(" · "))),
             foreign.map(versionItem))
         : null),
-    data.xrefs.length ? section("Referências cruzadas", data.xrefs.length, xrefs) : null,
+    data.xrefs.length ? section("Referências cruzadas", data.xrefs_total, xrefs, moreXrefs) : null,
     filterBar(showVerse),
     section("Comentários", of(comments, data.comments),
       comments.length ? comments.map((c) => commentRow(book, c))

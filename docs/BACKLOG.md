@@ -33,28 +33,32 @@ este projeto pode ter que aquele não tem:
 Limite: módulos protegidos por direito autoral não podem ser distribuídos com
 o aplicativo; cada usuário importa os seus.
 
-## Estado atual (2026-11-16, após a Onda 1)
+## Estado atual (2026-11-17, após a Onda 2)
 
-- Funciona: importador (`importer/build.py`), verificação
-  (`importer/verify.py`), servidor (`app/server.py`, porta 8377) e interface
-  (leitura, painel do versículo, busca por palavra, ir para referência).
-- `data/library.db` é a **base completa**: 71 módulos (16 Bíblias, 24
-  comentários, 25 dicionários, 6 livros), 1,16 GB, importada em 479 s, sem
-  nenhum módulo com erro. `python importer/verify.py data/library.db` passa.
-- 49 arquivos ficaram de fora e estão em `import_log`: cerca de 20 `.twm`
-  criptografados, 5 Bíblias `.ontx`/`.ntx` criptografadas, 1 Bíblia cifrada do
-  e-Sword, 6 cópias "com cabeçalhos" unidas às originais (D011), planos de
-  leitura, mapa e módulos auxiliares ainda não importados (T09).
-- Medido na base completa: `/api/verse` responde em cerca de 0,25 s, mas com
-  315 KB em Jo 3:16 e 346 KB em Rm 8:28 (texto integral de 19 comentários);
-  Jo 3:16 tem 15 versões, 19 comentários e mais de 200 citações. A interface
-  ainda não foi adaptada a esse volume (T08).
-- Defeito conhecido que segue aberto: os dois interlineares BSB aparecem com
-  texto misturado (T05).
+- `data/library.db` é a base completa: 73 módulos (16 Bíblias, 24
+  comentários, 25 dicionários, 6 livros, 1 de referências cruzadas, 1 de
+  títulos), 1,26 GB, importada em 413 s, sem nenhum módulo com erro.
+  `python importer/verify.py data/library.db` passa.
+- Novo na base: 1,42 milhão de palavras em `tokens` (5 Bíblias com Strong),
+  137 mil termos em `strong_terms`, 22.677 referências cruzadas em `xrefs`,
+  5.289 títulos em inglês em `headings` (ainda não exibidos; D012).
+- Interface: leitura com títulos de perícope; painel do versículo com
+  versões (outros idiomas recolhidos), referências cruzadas com o texto na
+  versão aberta, comentários recolhidos (texto integral ao abrir), filtro de
+  idioma e obras que citam o versículo agrupadas; busca paginada com volta
+  aos resultados. `/api/verse` responde em cerca de 0,23 s com 10 a 19 KB.
+- Ainda não usado pela interface: `tokens` e `strong_terms` (são a base das
+  tarefas T20–T23 da Onda 3).
+- 49 arquivos ficaram de fora e estão em `import_log` (criptografados, cópias
+  unidas pela D011, planos de leitura, mapa, parágrafos).
 - Módulos de origem: `C:\Program Files (x86)\e-Sword`,
   `C:\ProgramData\The Word`, `%APPDATA%\The Word`.
 - Ambiente: Windows, Python 3.14 (só biblioteca padrão, D003), Node instalado,
   Rust não instalado.
+
+**Próximo passo:** Onda 3 (T23 busca bilíngue, T20 + T22 Strong clicável e
+painel "Palavra", T25 referências ranqueadas). Antes, o usuário precisa
+responder P2 (ponte antes dos embeddings), já recomendada como "sim".
 
 ## Como trabalhar
 
@@ -107,7 +111,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T05 | concluída (EC1): interlineares BSB com texto limpo e títulos de seção; palavras em `tokens` |
 | T06 | concluída: verify.py com tolerâncias e verificações de T02–T04; passa na base de amostras (resultado na base completa: ver T07) |
 | T07 | concluída: 71 módulos, 0 erros, 479 s, base de 1,16 GB promovida; verify.py passa; interface testada |
-| T08 | em andamento (EC4): API enxuta, painel recolhido, filtro de idioma, citações sob demanda, paginação e voltar à busca testados; faltam conferir títulos de perícope e referências cruzadas na interface (dependem da base nova), tela estreita e tema claro |
+| T08 | concluída (EC4): painel enxuto (Jo 3:16 de 315 KB para 19 KB), recolhido e filtrável; busca paginada com volta; perícopes e referências cruzadas na tela; testado em 1280 px e 375 px, temas claro e escuro |
 | T09 | concluída em parte: referências cruzadas (theWord e BSB) e títulos em inglês importados; parágrafos não, por falta de confirmação do campo `typ` |
 | T10 | pendente |
 | T11 | pendente |

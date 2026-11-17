@@ -169,3 +169,16 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 .result .t.clamp2 { color: var(--muted); }
 .jumps { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 -6px; }
 .panel-body h3 { scroll-margin-top: 8px; }
+
+/* Tela estreita: a navegação ocupa a linha inteira e os seletores encolhem */
+@media (max-width: 560px) {
+  .bar { padding: 8px 12px; gap: 8px; }
+  .nav { flex: 1 1 100%; min-width: 0; }
+  .nav select { flex: 1 1 0; min-width: 0; max-width: none; padding: 0 6px; }
+  .nav #chapter { flex: 0 0 4.2rem; }
+  .search { flex: 1 1 0; }
+  .tools button.icon { min-width: 32px; padding: 0 6px; }
+  .panel { flex-basis: 60%; }
+  .panel-head { padding: 10px 14px; }
+  .panel-body { padding: 4px 14px 32px; }
+}

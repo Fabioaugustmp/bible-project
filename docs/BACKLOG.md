@@ -89,7 +89,7 @@ que depende da resposta P3. T10 (importação incremental) concluída: D017.
 | P4 | Uso de modelo de linguagem (local ou por API) é aceito? | Só opcional e por último (M6) |
 | P5 | Manter a página do Notion sincronizada? | Não: hoje ela espelha IDEIAS.md e está desatualizada em relação a este arquivo |
 | P6 | Grafo e colunas (M7): escrever o posicionamento por força no próprio projeto ou incluir uma biblioteca pronta (d3-force, licença a conferir) em `app/static/vendor/`? | Escrever no projeto: são no máximo 20 nós; evita dependência (D004) |
-| P7 | Fazer M7 (organização da tela e grafo) antes de M3 (embeddings)? | Sim: M3 depende de P3, e M7 melhora o uso diário do que já existe |
+| P7 | Fazer M7 (organização da tela e grafo) antes de M3 (embeddings)? | **Respondida: sim** (2026-11-17) |
 
 ## Roteiro por modelo
 

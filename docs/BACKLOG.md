@@ -88,6 +88,8 @@ que depende da resposta P3. T10 (importação incremental) concluída: D017.
 | P3 | Dependências além da biblioteca padrão são aceitas (necessárias em M3)? | Sim, isoladas no indexador; registrar nova decisão que revê a D003 |
 | P4 | Uso de modelo de linguagem (local ou por API) é aceito? | Só opcional e por último (M6) |
 | P5 | Manter a página do Notion sincronizada? | Não: hoje ela espelha IDEIAS.md e está desatualizada em relação a este arquivo |
+| P6 | Grafo e colunas (M7): escrever o posicionamento por força no próprio projeto ou incluir uma biblioteca pronta (d3-force, licença a conferir) em `app/static/vendor/`? | Escrever no projeto: são no máximo 20 nós; evita dependência (D004) |
+| P7 | Fazer M7 (organização da tela e grafo) antes de M3 (embeddings)? | Sim: M3 depende de P3, e M7 melhora o uso diário do que já existe |
 
 ## Roteiro por modelo
 
@@ -101,9 +103,10 @@ julgamento, vai para o mais capaz. Para trocar de modelo, use `/model`.
 | 1 | T11 — testes automatizados — **concluída** | Haiku | especificação fechada, casos listados abaixo; não altera comportamento | pasta `tests/` passando, um commit |
 | 2 | T24 — citações clicáveis (EC5) — **concluída** | Opus | altera o conversor de RTF de todos os módulos; posições no texto; validação com julgamento; reimportação | tabela `refs`, interface, reimportação verificada |
 | 3 | T10 — importação incremental — **concluída** | Haiku (ou Sonnet, se o Haiku parar) | mudança contida em `build.py`, aceite numérico | opção `--incremental`, um commit |
-| 4 | M3 — busca semântica (T30–T34) | Opus | maior incerteza técnica; depende da resposta P3 | ver EC6 |
-| 5 | M4 — notas e exportação (T40–T42) | Sonnet | formatos de notas do e-Sword ainda não examinados | ver backlog |
-| 6 | M5 — produto distribuível (T50–T52) | Opus | decisões de arquitetura; depende de P1 | ver EC7 |
+| 4 | M7 — organização da tela e grafo (T60–T66), se P7 = sim | Opus para T61 e T65 (EC9, EC8); Sonnet para T62, T63 e T66; Haiku para T60 e T64 | desenho de interface e de visualização exige julgamento; as demais estão especificadas | ver M7 |
+| 5 | M3 — busca semântica (T30–T34) | Opus | maior incerteza técnica; depende da resposta P3 | ver EC6 |
+| 6 | M4 — notas e exportação (T40–T42) | Sonnet | formatos de notas do e-Sword ainda não examinados | ver backlog |
+| 7 | M5 — produto distribuível (T50–T52) | Opus | decisões de arquitetura; depende de P1 | ver EC7 |
 
 **Quando um modelo menor deve parar e devolver a tarefa** (anotando o motivo
 na tabela "Estado das tarefas" e sem commitar código pela metade):
@@ -151,6 +154,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T25 | concluída: referências ranqueadas por listas curadas (theWord, BSB, TSK) e co-citação; 0,02 a 0,04 s; D015 |
 | T24 | concluída (EC5): 2,31 milhões de citações clicáveis (theWord e e-Sword), prévia na versão aberta; 99,1% de acordo com a lista do theWord; D016 |
 | T30–T34 (M3) | pendente |
+| T60–T66 (M7) | pendente (planejado em 2026-11-17; depende de P6 e P7) |
 | T40–T42 (M4) | pendente |
 | T50–T52 (M5) | pendente |
 
@@ -360,6 +364,111 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
   entre comentários; mostrar as dez melhores com o texto em português e a
   origem de cada uma.
 - **Depende de:** T09. **Tamanho:** M.
+
+## M7 — Organização da tela e visualização
+
+Planejado em 2026-11-17 a pedido do usuário. Desenho das duas partes mais
+difíceis em [EXECUCOES-CRITICAS.md](EXECUCOES-CRITICAS.md) (EC8, EC9).
+
+**Como está hoje (avaliado na base completa):**
+- Duas colunas: o texto e um único painel à direita (embaixo, no celular). O
+  painel troca de modo (versículo, busca, palavra, verbete): só uma coisa por
+  vez. Abrir um verbete tira o versículo da vista; há botões de voltar, mas
+  não dá para ler um comentário e um dicionário ao mesmo tempo.
+- Bíblia, comentário, dicionário, léxico e livro se distinguem só pelo título
+  da seção e pela sigla; não há marca visual por tipo.
+- Dicionários e livros só são alcançados pela busca ou por "Citado em"; não há
+  como folhear um dicionário.
+- Comentários aparecem por versículo; não há leitura contínua de um
+  comentário acompanhando o texto.
+- Versões aparecem empilhadas no painel, um versículo por vez; não há leitura
+  de versões lado a lado.
+- Referências cruzadas: lista ranqueada (T25). Medido em 5 versículos: os 15
+  primeiros vizinhos têm entre 24 e 53 ligações entre si e formam núcleos
+  claros (Sl 23:1: Is 40:11 ligado a 12 deles, Jo 10:11 a 10; Is 53:5:
+  2Co 5:21 é o centro e Gn 3:15 fica isolado). Há estrutura real de grafo.
+
+### T60 — Marca visual por tipo de conteúdo
+- **Modelo:** Haiku.
+- **Fazer:** uma cor de acento e um rótulo curto por tipo (Bíblia, comentário,
+  dicionário, léxico, livro, referência), definidos como variáveis CSS com
+  versões clara e escura, usados nos títulos de seção do painel, nos
+  resultados de busca e nas etiquetas de origem. Léxico = dicionário cujos
+  verbetes são números Strong (Dodson, AHLB, LSJ, MLSJ, KJC, LXXHebGreek).
+- **Aceite:** em Jo 3:16 e na busca "graça", cada item mostra o tipo; contraste
+  de texto de pelo menos 4,5:1 nos dois temas (medir); nada muda de lugar.
+- **Tamanho:** P.
+
+### T61 — Divisão de tela em colunas (EC9)
+- **Modelo:** Opus.
+- **Fazer:** layout de estudo com até três colunas redimensionáveis: texto |
+  painel de estudo | coluna fixada. Fixar qualquer item do painel (um
+  comentário, um verbete, o grafo, a busca) o leva para a terceira coluna, que
+  fica lá enquanto o painel continua mudando. Larguras e itens fixados ficam
+  guardados. Telas menores: duas colunas (tablet) ou painel inferior com abas
+  (celular, como hoje).
+- **Aceite:** ler Jo 3 com o Gill fixado numa coluna e o painel mostrando o
+  verbete "propitiation" do Easton, sem perder nenhum dos dois; arrastar a
+  divisória; recarregar a página mantém o arranjo; 1280, 1024, 768 e 375 px
+  sem rolagem horizontal; console sem erros.
+- **Tamanho:** G.
+
+### T62 — Versões em paralelo
+- **Modelo:** Sonnet.
+- **Fazer:** modo de leitura com 2 a 4 versões lado a lado, alinhadas por
+  versículo (linhas de mesma altura), incluindo grego, hebraico (da direita
+  para a esquerda) e inglês. A escolha das versões fica guardada.
+- **Aceite:** Jo 3 em ARA, NVI, KJV e TR alinhados; Sl 23 em ARA e WLC;
+  versículo ausente numa versão aparece vazio, sem desalinhar.
+- **Depende de:** T61 (usa a largura das colunas). **Tamanho:** M.
+
+### T63 — Comentário que acompanha a leitura
+- **Modelo:** Sonnet.
+- **Fazer:** fixar um comentário na coluna (T61) e, ao selecionar ou rolar até
+  um versículo, mostrar o trecho do comentário que o cobre, com as citações
+  clicáveis (T24).
+- **Aceite:** ler Rm 8 com o JFB acompanhando; mudar de versículo troca o
+  trecho em menos de 0,3 s.
+- **Depende de:** T61. **Tamanho:** M.
+
+### T64 — Navegador de dicionários e livros
+- **Modelo:** Haiku (ou Sonnet).
+- **Fazer:** escolher um dicionário ou livro e folhear os títulos (índice
+  alfabético com letras, filtro por texto do título, paginação); abrir o
+  verbete com citações clicáveis. Novo endpoint que lista títulos por módulo.
+- **Aceite:** abrir o Easton e chegar a "Abinadab" pela letra A e pelo filtro;
+  abrir o Dicionário Almeida; 36 mil títulos do Dic Port sem travar.
+- **Tamanho:** M.
+
+### T65 — Grafo das referências de um versículo (EC8)
+- **Modelo:** Opus.
+- **Fazer:** ver EC8. Grafo do versículo aberto com os 12 a 20 vizinhos mais
+  fortes (T25) e as ligações entre eles; nó maior = mais ligado; cor por
+  testamento; clicar num nó recentra o grafo (com voltar), passar o mouse
+  mostra o texto; a lista continua disponível ao lado.
+- **Aceite:** em Sl 23:1, Is 40:11 e Jo 10:11 aparecem como os nós maiores;
+  em Is 53:5, Gn 3:15 aparece isolado; resposta em menos de 1 s (com cache);
+  rótulos sem sobreposição; legível nos dois temas; navegável por teclado; no
+  celular, só a lista.
+- **Depende de:** P6; fica melhor com T61 (coluna larga). **Tamanho:** G.
+
+### T66 — Mapa de conexões por livro
+- **Modelo:** Sonnet.
+- **Fazer:** faixa com os 66 livros em ordem, agrupados (Lei, Históricos,
+  Poéticos, Profetas, Evangelhos, Atos, Cartas, Apocalipse), com barras para a
+  quantidade de referências do versículo (ou do capítulo inteiro) que vão para
+  cada livro. Clicar num livro filtra a lista de referências.
+- **Aceite:** em Sl 23:1 aparecem as barras de Ezequiel, Isaías, João e 1 Pedro;
+  em Gn 1:1, as de Salmos e Provérbios e a de João; leitura correta nos dois
+  temas.
+- **Tamanho:** P. Mais barato que o grafo e útil sozinho; pode vir antes.
+
+### Descartado nesta frente
+- **Arcos da Bíblia inteira** (todas as 340 mil ligações num só desenho):
+  bonito, mas não ajuda a estudar um texto; já estava descartado em IDEIAS.md.
+- **Grafo de todo um capítulo ou livro:** passa de 100 nós e vira emaranhado;
+  o mapa por livro (T66) responde a mesma pergunta ("para onde este capítulo
+  aponta?") de forma legível.
 
 ## M3 — Busca semântica (embeddings)
 

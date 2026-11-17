@@ -53,6 +53,7 @@ pendentes" no backlog).
 | M3 | Busca semântica com embeddings locais, medida por um conjunto de avaliação próprio | pendente |
 | M4 | Notas e marcações em base separada; importação das notas do e-Sword; exportação de estudo | pendente |
 | M5 | Produto distribuível: assistente de importação, casca desktop, créditos e licenças | pendente |
+| M7 | Organização da tela e visualização: marcas por tipo, colunas, versões em paralelo, comentário acompanhando, navegador de dicionários, grafo de referências e mapa por livro | pendente (planejado; ordem em relação a M3 depende de P7) |
 | M6 | Opcional: tradução local sob demanda, léxico breve em português, perguntas com resposta citada | pendente |
 
 ### Critério de conclusão de cada marco

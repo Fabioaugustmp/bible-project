@@ -354,6 +354,82 @@ uso for só pessoal, a relevância cai para C.
 
 **Depende de.** P1 no backlog.
 
+## EC8 — Grafo das referências de um versículo (T65)
+
+**Por que é crítica.** É a única visualização que pode virar decoração; precisa
+mostrar algo que a lista não mostra. A lista diz "estes são os 15 versículos
+mais ligados"; o grafo mostra **como eles se ligam entre si**: quais formam um
+núcleo (o tema central), quais fazem ponte entre Antigo e Novo Testamento
+(profecia e cumprimento), quais ficam isolados (uma ligação só desta
+passagem) e por onde continuar a explorar (clicar num nó recentra).
+
+**Fatos medidos (2026-11-17, base completa, `app/xrefs.py`):**
+
+| Versículo | Ligações entre os 15 vizinhos | Mais ligados | Tempo |
+|---|---|---|---|
+| Jo 3:16 | 24 | 1Jo 4:9 (6), Rm 5:8, Rm 8:32, 1Jo 4:10 (5) | 0,93 s |
+| Gn 1:1 | 39 | Sl 33:6 (11), Pv 8:27 (8), Pv 8:23, Cl 1:16 (7) | 0,62 s |
+| Sl 23:1 | 53 | Is 40:11 (12), Jo 10:11, 1Pe 2:25 (10), Sl 80:1 (9) | 0,62 s |
+| Rm 8:28 | 29 | 2Ts 2:13 (9), 2Tm 1:9, Ef 1:4 (7) | 0,52 s |
+| Is 53:5 | 30 | 2Co 5:21 (9), 1Co 15:3, Dn 9:24, Rm 4:25 (7); Gn 3:15 isolado | 1,29 s |
+
+**Desenho proposto.**
+- *Dados:* `/api/xref-graph?book&chapter&verse&size=15`. Nós = o versículo
+  e os N primeiros de `ranked` (com fontes e co-citação); arestas = pares de
+  vizinhos em que um aparece entre os 40 primeiros do outro, com o peso (número
+  de listas curadas mais co-citação). Cache em memória por versículo (as
+  referências não mudam enquanto a base não muda).
+- *Desenho:* SVG. Centro fixo no meio; demais nós posicionados por força
+  (repulsão entre nós, atração nas arestas, poucas centenas de iterações; com
+  no máximo 20 nós cabe em poucos milissegundos). Raio do nó pelo grau; cor por
+  testamento (duas cores do tema, com contraste nos dois modos); traço das
+  arestas pela força. Rótulo curto ("Is 40:11") sempre visível, deslocado para
+  não sobrepor (testar colisão de caixas e afastar).
+- *Interação:* passar o mouse ou focar mostra o texto (reaproveita a prévia da
+  T24); clicar recentra o grafo no nó (pilha de voltar); botão "abrir no
+  leitor"; Tab percorre os nós; a lista ranqueada continua ao lado, como
+  alternativa acessível e única opção no celular.
+- *Destaques opcionais, se o protótipo mostrar valor:* contorno nos nós que
+  fazem ponte AT↔NT; esmaecer arestas fracas.
+
+**Validação.** Protótipo com os 5 versículos da tabela, mostrado ao usuário
+antes de acabamento. Critérios: os núcleos da tabela aparecem como os maiores
+nós; nenhum rótulo sobreposto em 420 px de largura; resposta abaixo de 1 s com
+cache; legível em claro e escuro. Se o usuário não achar que ajuda a estudar,
+fica só o mapa por livro (T66).
+
+**Riscos.** Grafo emaranhado em versículos muito citados (limitar a 20 nós e
+esconder arestas abaixo de um peso mínimo); custo de 1,3 s no primeiro
+cálculo (cache, e calcular as arestas em uma consulta só em vez de chamar
+`ranked` 15 vezes); decisão P6 (escrever o posicionamento ou usar biblioteca).
+
+## EC9 — Divisão de tela em colunas (T61)
+
+**Por que é crítica.** Muda a estrutura da interface inteira: o painel único
+hoje concentra versículo, busca, palavra e verbete. Toda tarefa visual
+seguinte (versões em paralelo, comentário acompanhando, grafo em espaço largo)
+depende dela.
+
+**Desenho proposto.**
+- Três áreas: texto, painel (o atual) e coluna fixada. Um botão "fixar" em
+  cada item do painel cria a coluna; mais de um item fixado vira abas dentro da
+  coluna.
+- Divisórias arrastáveis com mouse e teclado (setas), larguras mínimas
+  (texto 28rem, colunas 20rem); larguras e itens fixados guardados no
+  navegador (com proteção para armazenamento indisponível, como hoje).
+- Pontos de quebra: 1100 px ou mais = três colunas; 760 a 1100 = duas (a
+  coluna fixada vira aba do painel); menos de 760 = painel inferior com abas.
+- Estado da tela no endereço (`#/...`) para que voltar e recarregar
+  reproduzam o arranjo.
+
+**Validação.** Os critérios da T61 no backlog, mais: nenhum item do painel
+perde a função que tem hoje (comparar com a lista de testes feitos nas Ondas
+2 a 4: painel de Jo 3:16, busca bilíngue com voltar, painel Palavra, prévia
+de citação).
+
+**Riscos.** É a maior mudança em `app.js` até aqui: separar o painel atual em
+componentes antes de criar a coluna; testar no navegador a cada passo.
+
 ## O que não é crítico
 
 T03, T04, T06, T10 e T11 são necessárias, mas simples e bem especificadas:

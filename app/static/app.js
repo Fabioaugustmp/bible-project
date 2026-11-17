@@ -301,17 +301,225 @@ document.addEventListener("click", (event) => {
 
 let panelMode = null; // 'verse' | 'search' | 'item'
 
+// O que o painel mostra agora, para poder fixá-lo (T61). Cada show* define
+// `pendingView` antes de chamar openPanel.
+let currentView = null;
+let pendingView = null;
+// Quando definido, openPanel escreve num item fixado em vez do painel (restauração).
+let renderTarget = null;
+
 function openPanel(mode, title, ...content) {
+  const nodes = content.flat().filter(Boolean);
+  if (renderTarget) {
+    renderTarget.title = title;
+    renderTarget.body.replaceChildren(...nodes);
+    return;
+  }
   panelMode = mode;
+  currentView = pendingView ? { ...pendingView, title } : null;
+  pendingView = null;
   $("#panel-title").textContent = title;
-  $("#panel-body").replaceChildren(...content.flat().filter(Boolean));
+  $("#panel-body").replaceChildren(...nodes);
   $("#panel-body").scrollTop = 0;
   $("#panel").hidden = false;
+  $("#panel-pin").hidden = !currentView;
+  layout.showPinned(false);
+  layout.update();
 }
 
 function closePanel() {
   panelMode = null;
+  currentView = null;
   $("#panel").hidden = true;
+  layout.update();
+}
+
+// --- Colunas: painel, itens fixados e divisórias (T61) ----------------------------
+
+const MIN_READER = 448, MIN_COLUMN = 320, MAX_PINS = 6, WIDE = 1100;
+
+const layout = {
+  pins: [],          // [{ id, view, title, body }]
+  active: null,      // id do item fixado visível
+  narrowPinned: false,
+
+  isWide: () => innerWidth >= WIDE,
+
+  // Telas estreitas: painel e coluna fixada se revezam no mesmo espaço.
+  showPinned(on) {
+    this.narrowPinned = on && this.pins.length > 0;
+    this.update();
+  },
+
+  update() {
+    const hasPins = this.pins.length > 0;
+    const panelOpen = !$("#panel").hidden;
+    const root = $(".layout");
+    root.classList.toggle("has-pins", hasPins);
+    root.classList.toggle("show-pinned", this.narrowPinned || (hasPins && !panelOpen));
+    $("#pinned").hidden = !hasPins;
+    $("#split-panel").hidden = !panelOpen;
+    $("#split-pinned").hidden = !hasPins;
+    const switcher = $("#show-pins");
+    switcher.hidden = !hasPins;
+    switcher.textContent = `Fixados (${this.pins.length})`;
+    this.renderTabs();
+    this.applyWidths();
+  },
+
+  renderTabs() {
+    const tabs = $("#pin-tabs");
+    const panelOpen = !$("#panel").hidden;
+    tabs.replaceChildren(
+      // Em tela estreita, volta ao painel de estudo.
+      panelOpen ? el("button", { class: "pin-tab back-to-panel", onclick: () => this.showPinned(false) }, "← Estudo") : null,
+      ...this.pins.map((pin) => el("span", { class: "pin-tab" + (pin.id === this.active ? " on" : "") },
+        el("button", {
+          class: "pin-title", role: "tab", "aria-selected": String(pin.id === this.active),
+          title: pin.title, onclick: () => this.activate(pin.id),
+        }, pin.title),
+        el("button", { class: "pin-close", "aria-label": `Desafixar ${pin.title}`, onclick: () => this.unpin(pin.id) }, "×"))));
+    const pin = this.pins.find((item) => item.id === this.active);
+    $("#pinned-body").replaceChildren(...(pin ? [pin.body] : []));
+  },
+
+  activate(id) {
+    this.active = id;
+    this.save();
+    this.showPinned(true);
+  },
+
+  add(view, title, body) {
+    const same = this.pins.find((pin) => JSON.stringify(pin.view) === JSON.stringify(view));
+    if (same) {
+      same.body = body;
+      same.title = title;
+      return this.activate(same.id);
+    }
+    const pin = { id: `p${Date.now()}${Math.random().toString(36).slice(2, 6)}`, view, title, body };
+    this.pins.push(pin);
+    if (this.pins.length > MAX_PINS) this.pins.shift();
+    this.activate(pin.id);
+  },
+
+  unpin(id) {
+    this.pins = this.pins.filter((pin) => pin.id !== id);
+    if (this.active === id) this.active = this.pins.at(-1)?.id ?? null;
+    if (!this.pins.length) this.narrowPinned = false;
+    this.save();
+    this.update();
+  },
+
+  save() {
+    store.set("pins", JSON.stringify({ active: this.pins.findIndex((p) => p.id === this.active),
+      views: this.pins.map((pin) => ({ ...pin.view, title: pin.title })) }));
+  },
+
+  // Larguras (guardadas ou padrão), sempre deixando ao texto pelo menos MIN_READER.
+  applyWidths() {
+    const root = $(".layout");
+    if (!this.isWide()) {
+      root.style.setProperty("--panel-w", "");
+      root.style.setProperty("--pinned-w", "");
+      return;
+    }
+    const total = root.clientWidth;
+    const panelOpen = !$("#panel").hidden, pinsOpen = this.pins.length > 0;
+    let panel = Number(store.get("panelWidth")) || Math.min(480, total * 0.42);
+    let pinned = Number(store.get("pinnedWidth")) || Math.min(448, total * 0.34);
+    const room = total - MIN_READER - 14;   // 14 = duas divisórias
+    const used = (panelOpen ? panel : 0) + (pinsOpen ? pinned : 0);
+    if (used > room) {   // encolhe as duas colunas na mesma proporção, sem passar do mínimo
+      const factor = room / used;
+      panel = Math.max(MIN_COLUMN, panel * factor);
+      pinned = Math.max(MIN_COLUMN, pinned * factor);
+    }
+    root.style.setProperty("--panel-w", Math.round(panel) + "px");
+    root.style.setProperty("--pinned-w", Math.round(pinned) + "px");
+  },
+};
+
+// Fixa o que o painel mostra: o conteúdo (com seus botões) vai para a coluna.
+function pinCurrent() {
+  if (!currentView) return;
+  const body = el("div", { class: "pinned-content" });
+  body.append(...$("#panel-body").childNodes);
+  const { title, ...view } = currentView;
+  layout.add(view, title, body);
+  closePanel();
+  if (view.type === "verse" && state.verse) go({ verse: null });
+}
+
+// Fixa uma vista sem passar pelo painel (por exemplo, um comentário aberto no painel do versículo).
+async function pinView(view) {
+  const pin = { body: el("div", { class: "pinned-content" }) };
+  await renderView(view, pin);
+  layout.add(view, pin.title, pin.body);
+}
+
+// Remonta um item fixado a partir da descrição guardada (ao recarregar a página).
+async function renderView(view, target) {
+  renderTarget = target;
+  try {
+    if (view.type === "verse") await showVerse(view);
+    else if (view.type === "item") await showItem(view.kind, view.id);
+    else if (view.type === "word") await showWord(view.strong);
+    else if (view.type === "search") {
+      const saved = state.lastSearch;
+      await showSearch(view.query);
+      state.lastSearch = saved;
+    }
+  } finally {
+    renderTarget = null;
+  }
+}
+
+async function restorePins() {
+  let saved = null;
+  try { saved = JSON.parse(store.get("pins") || "null"); } catch { saved = null; }
+  if (!saved?.views?.length) return;
+  for (const { title, ...view } of saved.views.slice(-MAX_PINS)) {
+    const pin = { id: `p${Math.random().toString(36).slice(2, 10)}`, view, title, body: el("div", { class: "pinned-content" }) };
+    await renderView(view, pin);
+    layout.pins.push(pin);
+  }
+  layout.active = layout.pins[Math.max(0, saved.active)]?.id ?? layout.pins[0]?.id ?? null;
+  layout.update();
+  layout.applyWidths();
+}
+
+// Divisórias: arrastar com o mouse ou usar as setas do teclado.
+function setupSplitter(splitter, column, key) {
+  const resize = (width) => {
+    const total = $(".layout").clientWidth;
+    const other = key === "panelWidth"
+      ? (layout.pins.length ? $("#pinned").getBoundingClientRect().width : 0)
+      : (!$("#panel").hidden ? $("#panel").getBoundingClientRect().width : 0);
+    const clamped = Math.round(Math.max(MIN_COLUMN, Math.min(width, total - MIN_READER - other)));
+    store.set(key, clamped);
+    layout.applyWidths();
+  };
+  splitter.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    splitter.setPointerCapture(event.pointerId);
+    splitter.classList.add("dragging");
+    const move = (e) => resize($(column).getBoundingClientRect().right - e.clientX);
+    const stop = () => {
+      splitter.classList.remove("dragging");
+      splitter.removeEventListener("pointermove", move);
+      splitter.removeEventListener("pointerup", stop);
+    };
+    splitter.addEventListener("pointermove", move);
+    splitter.addEventListener("pointerup", stop);
+  });
+  splitter.addEventListener("keydown", (event) => {
+    const step = event.shiftKey ? 64 : 24;
+    const width = $(column).getBoundingClientRect().width;
+    if (event.key === "ArrowLeft") resize(width + step);
+    else if (event.key === "ArrowRight") resize(width - step);
+    else return;
+    event.preventDefault();
+  });
 }
 
 function badge(lang) {
@@ -392,7 +600,10 @@ function commentRow(book, comment) {
       badge(comment.lang),
       el("span", { class: "peek", lang: LANG[comment.lang] || null }, comment.excerpt.slice(0, 110))),
     body,
-    partial ? el("div", { class: "origin" }, `${Math.round(comment.length / 1000)} mil caracteres`) : null);
+    el("div", { class: "origin fold-actions" },
+      partial ? `${Math.round(comment.length / 1000)} mil caracteres · ` : null,
+      el("button", { class: "link", onclick: () => pinView({ type: "item", kind: "comment", id: comment.id }) },
+        "Fixar ao lado")));
 }
 
 // Um módulo que cita o versículo: a lista de itens só é buscada ao abrir.
@@ -419,12 +630,13 @@ function citedGroup(group) {
 
 let xrefLimit = 12, xrefVerse = null;
 
-async function showVerse() {
-  const { book, chapter, verse } = state;
+async function showVerse(ref = null) {
+  const { book, chapter, verse } = ref || state;
   const verseKey = `${book}.${chapter}.${verse}`;
   if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; }
   const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit });
-  if (book !== state.book || chapter !== state.chapter || verse !== state.verse) return;
+  if (!ref && (book !== state.book || chapter !== state.chapter || verse !== state.verse)) return;
+  pendingView = { type: "verse", book, chapter, verse };
 
   const versionItem = (v) => el("div", { class: "item", lang: LANG[v.lang] || null, dir: v.lang === "heb" ? "rtl" : null },
     el("div", { class: "source", dir: "ltr" },
@@ -495,8 +707,9 @@ async function showVerse() {
 
 async function showItem(kind, id) {
   const item = await api("item", { kind, id });
+  pendingView = { type: "item", kind, id };
   if (!item) return;
-  const title = kind === "entry" ? item.label : rangeLabel(item.book, item.ref_start, item.ref_end);
+  const title = kind === "entry" ? item.label : `${item.abbr} · ${rangeLabel(item.book, item.ref_start, item.ref_end)}`;
   const backVerse = state.verse
     ? el("button", { class: "link back", onclick: showVerse }, `← ${refLabel(state.book, state.chapter, state.verse)}`)
     : null;
@@ -514,6 +727,7 @@ async function showWord(strong, source = null, offset = 0, previous = null) {
   document.querySelectorAll(".w.picked").forEach((node) => node.classList.remove("picked"));
   source?.classList.add("picked");
   const data = await api("word", { strong, module: state.module, offset });
+  pendingView = { type: "word", strong };
   if (previous) data.occurrences = previous.concat(data.occurrences);
   const original = data.original[0]?.term;
   const langLabel = data.original_lang === "grc" ? "grego" : "hebraico";
@@ -608,6 +822,7 @@ function searchSection(kind, title) {
 
 function renderSearch(keepScroll = false) {
   const { query, data } = state.lastSearch;
+  pendingView = { type: "search", query };
   const module = state.bibles.find((m) => m.id === state.module);
   const scroll = $("#panel-body").scrollTop;
   const total = Object.values(data.totals).reduce((sum, n) => sum + n, 0);
@@ -711,6 +926,11 @@ async function init() {
     store.set("words", state.words ? "1" : "0");
     render();
   });
+  $("#panel-pin").addEventListener("click", pinCurrent);
+  $("#show-pins").addEventListener("click", () => layout.showPinned(true));
+  setupSplitter($("#split-panel"), "#panel", "panelWidth");
+  setupSplitter($("#split-pinned"), "#pinned", "pinnedWidth");
+  window.addEventListener("resize", () => layout.applyWidths());
   $("#panel-close").addEventListener("click", () => {
     state.lastSearch = null;
     closePanel();
@@ -733,6 +953,8 @@ async function init() {
   window.addEventListener("hashchange", () => { readHash(); render(); });
 
   render();
+  layout.applyWidths();
+  await restorePins();
 }
 
 init().catch((error) => {

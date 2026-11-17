@@ -42,12 +42,25 @@
       <p id="hint" class="hint">Clique em um versículo para ver versões, comentários e citações.</p>
     </main>
 
+    <div id="split-panel" class="splitter" role="separator" aria-orientation="vertical" tabindex="0"
+         aria-label="Largura do painel de estudo (setas ajustam)" hidden></div>
     <aside id="panel" class="panel" aria-label="Estudo" hidden>
       <div class="panel-head">
         <h2 id="panel-title"></h2>
+        <button id="show-pins" class="chip pins-switch" hidden></button>
+        <button id="panel-pin" class="icon" title="Fixar numa coluna ao lado" aria-label="Fixar numa coluna ao lado">Fixar</button>
         <button id="panel-close" class="icon" aria-label="Fechar painel">×</button>
       </div>
       <div id="panel-body" class="panel-body"></div>
+    </aside>
+
+    <div id="split-pinned" class="splitter" role="separator" aria-orientation="vertical" tabindex="0"
+         aria-label="Largura da coluna fixada (setas ajustam)" hidden></div>
+    <aside id="pinned" class="panel pinned" aria-label="Itens fixados" hidden>
+      <div class="panel-head pinned-head">
+        <div id="pin-tabs" class="pin-tabs" role="tablist" aria-label="Itens fixados"></div>
+      </div>
+      <div id="pinned-body" class="panel-body"></div>
     </aside>
   </div>
 

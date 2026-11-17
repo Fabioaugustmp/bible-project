@@ -295,3 +295,25 @@ não, os títulos copiados da versão antiga podem continuar na cópia que fica.
 A base é alterada no lugar; se a execução for interrompida, ela pode ficar
 inconsistente (com `journal_mode = off`, D009): nesse caso, refazer a
 importação completa. Remoções não encolhem o arquivo (no teste, +0,5 MB).
+
+## D018 — Divisão de tela: itens fixáveis, arranjo guardado no navegador · 2026-11-17
+
+**Decisão (T61):**
+- O painel de estudo ganha o botão "Fixar": o que ele mostra (versículo,
+  verbete, comentário, palavra, busca) vai para uma coluna à direita, com abas
+  (até 6). Cada comentário aberto no painel do versículo tem também "Fixar ao
+  lado". O conteúdo fixado é o mesmo elemento da tela (os botões continuam
+  funcionando); ao recarregar, é remontado a partir da descrição guardada.
+- Divisórias arrastáveis (mouse) e ajustáveis pelas setas do teclado
+  (Shift = passo maior). O texto nunca fica com menos de 448 px; colunas, no
+  mínimo 320 px. Sem largura guardada, as duas colunas encolhem na mesma
+  proporção para caber.
+- Abaixo de 1100 px, painel e coluna fixada se revezam no mesmo espaço
+  (botões "Fixados (n)" e "← Estudo"); abaixo de 820 px ficam embaixo do texto.
+- O arranjo (larguras, itens fixados, aba ativa) fica guardado no navegador
+  (localStorage, com proteção quando indisponível), **não no endereço**, como
+  EC9 propunha.
+
+**Motivo da mudança em relação a EC9:** o endereço continua sendo só a
+passagem (`#/versão/livro/capítulo/versículo`), que é o que vale a pena copiar
+e compartilhar; o arranjo da tela é preferência de cada aparelho.

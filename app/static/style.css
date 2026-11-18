@@ -428,3 +428,8 @@ kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-w
 /* Você quis dizer? (DESENHO-PESQUISA, fase 4) */
 .suggest { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; }
 .suggest .empty { width: 100%; margin: 0; }
+
+/* Marcas no texto: nota (ponto) e estudo (traço) (DESENHO: Ler, texto primeiro) */
+.v.has-note > sup::after { content: " ●"; color: var(--accent); font-size: .8em; }
+.v.has-study > sup::after { content: " ▬"; color: var(--muted); font-size: .8em; }
+body.marks-off .v > sup::after { content: none; }

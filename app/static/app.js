@@ -161,6 +161,7 @@ async function render() {
   else if (!sameChapter) {
     const { verses } = await api("chapter", { module: state.module, book: state.book, chapter: state.chapter });
     if (token !== renderToken) return; // navegação mais nova já em andamento
+    const marks = await api("user/marks", { book: state.book, chapter: state.chapter }).catch(() => ({ notes: {}, studies: {} }));
     shown = { module: state.module, book: state.book, chapter: state.chapter, words: state.words };
     document.title = `${refLabel(state.book, state.chapter)} · ${module.abbr}`;
     $("#kicker").textContent = module.title || module.abbr;
@@ -173,13 +174,17 @@ async function render() {
       text.replaceChildren(...verses.flatMap((v) => [
         v.heading ? el("h2", { class: "pericope", dir: "ltr" }, v.heading) : null,
         el("span", {
-          class: "v", "data-verse": v.verse, role: "button", tabindex: "0",
+          class: "v" + (marks.notes[v.verse] ? " has-note" : "") + (marks.studies[v.verse] ? " has-study" : ""),
+          "data-verse": v.verse, role: "button", tabindex: "0",
+          title: [marks.notes[v.verse] ? `${marks.notes[v.verse]} nota(s)` : null,
+            marks.studies[v.verse] ? `em ${marks.studies[v.verse]} estudo(s)` : null].filter(Boolean).join(" · ") || null,
           onclick: (event) => {
             const word = event.target.closest(".w");
             if (word && state.words) {
               event.stopPropagation();
               showWord(word.dataset.strong.split(" ")[0], word);
             } else {
+              if (marks.notes[v.verse]) pendingTab = "notas";
               go({ verse: v.verse });
             }
           },
@@ -755,6 +760,7 @@ function citedGroup(group) {
 
 let xrefLimit = 12, xrefVerse = null;
 let verseTab = "versoes";   // aba do painel do versículo (ergonomia)
+let pendingTab = null;      // aba pedida por um clique (ex.: marca de nota abre "Minhas notas")
 let versionsOpen = false; // mostra todas as versões em português
 let xrefBook = null;   // livro escolhido na faixa (T66); null = todos
 
@@ -800,6 +806,7 @@ async function showVerse(ref = null) {
   const { book, chapter, verse } = ref || state;
   const verseKey = `${book}.${chapter}.${verse}`;
   if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; xrefBook = null; versionsOpen = false; }
+  if (pendingTab) { verseTab = pendingTab; pendingTab = null; }
   const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook });
   const similar = await api("similar", { book, chapter, verse }).catch(() => ({ available: false, verses: [] }));
   const notesData = await api("user/notes", { book, chapter, verse }).catch(() => ({ notes: [] }));
@@ -1593,6 +1600,7 @@ async function userWrite(action, body) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `erro ${response.status}`);
+  if (action.startsWith("note")) render();   // atualiza as marcas do texto
   return data;
 }
 
@@ -1682,6 +1690,17 @@ $("#topic-form").addEventListener("submit", (event) => {
 $("#topic-close").addEventListener("click", closeTopics);
 $("#topics").addEventListener("click", () => openTopics());
 $("#studies").addEventListener("click", () => openStudies());
+// Marcas no texto (notas e estudos): liga e desliga; a escolha fica no navegador.
+function applyMarks(on) {
+  document.body.classList.toggle("marks-off", !on);
+  $("#marks").setAttribute("aria-pressed", String(on));
+}
+applyMarks(store.get("marks") !== "0");
+$("#marks").addEventListener("click", () => {
+  const on = document.body.classList.contains("marks-off");
+  store.set("marks", on ? "1" : "0");
+  applyMarks(on);
+});
 $("#studies-close").addEventListener("click", closeStudies);
 
 // --- Atalhos de teclado (D2): só fora de campos de texto; Esc vale sempre ----------

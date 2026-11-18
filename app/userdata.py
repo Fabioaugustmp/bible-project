@@ -112,6 +112,20 @@ def list_all(con, q):
     return {"notes": [dict(r) for r in rows]}
 
 
+def list_marks(con, q):
+    """Marcas do capítulo para o texto: quantas notas e em quantos estudos cada versículo aparece."""
+    book, chapter = int(q["book"]), int(q["chapter"])
+    notes = {r["verse"]: r["n"] for r in con.execute(
+        "select a.verse, count(*) as n from notes n join anchors a on a.id = n.anchor_id"
+        " where a.book = ? and a.chapter = ? and n.deleted_at is null group by a.verse", (book, chapter))}
+    studies = {r["verse"]: r["n"] for r in con.execute(
+        "select a.verse, count(distinct b.study_id) as n from study_blocks b"
+        " join anchors a on a.id = b.anchor_id join studies s on s.id = b.study_id"
+        " where b.kind = 'passagem' and a.book = ? and a.chapter = ? and s.deleted_at is null"
+        " group by a.verse", (book, chapter))}
+    return {"notes": notes, "studies": studies}
+
+
 def export_markdown(con, names):
     """Todas as notas, em Markdown, agrupadas por passagem na ordem da Bíblia."""
     rows = con.execute(
@@ -375,7 +389,7 @@ def export_study(con, q, names):
     return "\n".join(lines).rstrip() + "\n"
 
 
-READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study}
+READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study, "marks": list_marks}
 WRITE = {
     "note/create": create_note, "note/update": update_note, "note/delete": delete_note,
     "study/create": create_study, "study/update": update_study, "study/delete": delete_study,

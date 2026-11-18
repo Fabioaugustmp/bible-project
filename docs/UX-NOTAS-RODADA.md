@@ -89,3 +89,12 @@ Validação feita por um agente de revisão (Opus) em 375, 768, 1024 e 1280 px. 
 - **3. Alvos de toque:** em telas de toque (`pointer: coarse`), botões, seletores e campos têm 44 px de altura mínima; chips 40 px; × da faixa "Continuar" 44×44. Medido em 375 px: os botões da barra com 44 px. Em desktop com mouse, a altura continua 36 px.
 
 Não verificado: a captura de tela do celular saiu cortada, embora as medidas mostrem que o conteúdo cabe; toque real; tablet e celular em tema escuro.
+
+## Item 4: painel como folha no celular
+
+- Até 560 px, o painel de estudo e a coluna fixada viram uma folha inferior, com 70% da altura e bordas arredondadas em cima. A leitura continua visível atrás dela.
+- Durante a seleção de versículos (`body.selecting`), a folha some, e a barra de ações fica fixa no pé da tela. Assim o texto e a barra ficam visíveis. Ao sair da seleção, a folha volta.
+- Medido em 375 px: a folha ocupa 375 × 568 px, fixa no pé. Na seleção, a folha fica `display: none` e a barra fica fixa no pé, com 155 px de altura (ocupa cerca de um quinto da tela).
+- Em 1280 px, o painel continua estático e a barra continua pegajosa (sticky), sem mudança.
+
+Limites: a folha não tem alça para recolher; fecha pelo ×. A barra de ações tem 155 px porque os botões de 44 px quebram em duas linhas; pode ser reduzida depois. Não testei gestos de arrastar nem toque real.

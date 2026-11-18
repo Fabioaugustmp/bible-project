@@ -153,7 +153,9 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T20 + T22 | concluídas (EC3): botão Strong nas 5 Bíblias com Strong; painel Palavra com termo original, traduções em português e inglês, léxicos e ocorrências; 0,17 a 0,32 s |
 | T25 | concluída: referências ranqueadas por listas curadas (theWord, BSB, TSK) e co-citação; 0,02 a 0,04 s; D015 |
 | T24 | concluída (EC5): 2,31 milhões de citações clicáveis (theWord e e-Sword), prévia na versão aberta; 99,1% de acordo com a lista do theWord; D016 |
-| T30–T34 (M3) | pendente |
+| T30 | concluída: ambiente `.venv-bench` com PyTorch CUDA, sentence-transformers 6.3, mteb 2.27 e ragas; D020 |
+| T31 | concluída: `bench/eval_embeddings.py`; BGE-M3 vence no caso central (versículo -> comentário em inglês: 0,714 contra 0,615); D021 |
+| T32–T34 (M3) | pendente: T32 é o próximo passo |
 | T60 | concluída: seis cores por tipo (`--type-*` em style.css, claro e escuro) e etiquetas nas seções do painel, em cada item (versões, referências, comentários, citados, verbetes abertos), nos resultados de busca e na seção Léxicos do painel Palavra; Léxico = Dodson, AHLB, LSJ, MLSJ, KJC, LXXHebGreek. Contraste do texto medido com WCAG (painel e fundo da leitura): tema claro de 4,88:1 (comentário, sobre o fundo da leitura) a 6,96:1; tema escuro de 7,46:1 a 10,64:1; testado em Jo 3:16, busca "graça" e painel Palavra (G25) nos dois temas, sem erros no console; revisão: a etiqueta escrita ficou só onde os tipos se misturam (Citado em, dicionários e livros na busca, item aberto, léxicos); seções homogêneas mostram uma barra na cor do tipo no título |
 | T61 | concluída (EC9, D018): botão Fixar e 'Fixar ao lado', coluna com abas, divisórias por mouse e teclado, arranjo guardado; testada em 1280, 1024, 768 e 375 px e nos dois temas |
 | T65 | concluída (EC8, D019): grafo no painel do versículo (Lista/Grafo), posicionamento próprio em `app/static/graph.js`; centros e isolado conferidos nos 5 versículos, 0 rótulos sobrepostos, recentrar 45 ms com cache; só lista abaixo de 760 px |
@@ -484,6 +486,11 @@ difíceis em [EXECUCOES-CRITICAS.md](EXECUCOES-CRITICAS.md) (EC8, EC9).
   cruzada e versículo ↔ comentário do mesmo versículo; medir recall@10.
 - **T32** Indexar versículos e parágrafos de comentário, guardando modelo e
   versão junto dos vetores.
+  Escolha do modelo: BGE-M3 (D021). Armazenamento proposto: tabela `embeddings`
+  com vetor de 1024 valores em float16 (2 KB por item), chave de origem e modelo.
+  Ordem: versículos em português, depois comentários em inglês, em lotes. Tempo
+  esperado a medir: 32 s para 31 mil versículos; os comentários são ~92 mil
+  (amostra de 3 mil em 16 s).
 - **T33** Busca híbrida (palavra + significado) na interface.
 - **T34** "Passagens parecidas" no painel do versículo.
 

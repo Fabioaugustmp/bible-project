@@ -362,3 +362,19 @@ biblioteca padrão até que uma decisão nova diga o contrário.
 
 **Modelos:** o download só acontece depois de o usuário confirmar, para cada
 arquivo, origem e tamanho. O MTEB-BR ainda precisa ter o tamanho confirmado.
+
+## D021 — Modelo de embeddings: BGE-M3 · 2026-11-17
+
+**Decisão:** o modelo de embeddings do projeto é o `BAAI/bge-m3` (licença MIT),
+rodando na GPU com PyTorch CUDA, no ambiente `.venv-bench`.
+
+**Motivo:** medido com dados da própria biblioteca (`bench/eval_embeddings.py`),
+em 300 consultas e 3.000 comentários. No caso central do projeto (versículo em
+português que encontra o comentário em inglês), o BGE-M3 teve recall@10 de
+0,714 contra 0,615 do Qwen3-Embedding-0,6B, e foi mais rápido para indexar
+(32 s contra 81 s para 31 mil versículos). Nas referências cruzadas os dois
+empatam (0,447 contra 0,450).
+
+**Limites:** a amostra é pequena; o MTEB em português não foi usado, porque
+trata de textos gerais e não de texto bíblico. A escolha pode ser revista se o
+conjunto de avaliação crescer.

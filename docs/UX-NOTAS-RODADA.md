@@ -79,3 +79,13 @@ Ordem sugerida pelo agente: 1, depois 3, por último 2.
 - Máximo de 40 versículos por "Adicionar ao estudo".
 - "Anotar" abre o primeiro versículo: a nota não guarda a faixa.
 - A seleção some ao trocar de capítulo.
+
+## Validação responsiva (itens 1 a 3 aplicados)
+
+Validação feita por um agente de revisão (Opus) em 375, 768, 1024 e 1280 px. Os itens 1 a 3 foram aplicados em seguida; o item 4 (painel como folha inferior no celular) fica para depois, por ser um desenho maior.
+
+- **1. Barra de ferramentas:** `.tools` quebra linha (`flex-wrap`); no celular ocupa a largura toda. Medido em 375 px: a página não tem rolagem horizontal (375 = 375) e a barra ocupa duas linhas. No desktop de 1280 px continua numa linha.
+- **2. Botões ligados:** Marcas, Selecionar e Paralelo com `aria-pressed="true"` ficam com o fundo de destaque (medido: `rgb(138, 75, 31)` em Marcas).
+- **3. Alvos de toque:** em telas de toque (`pointer: coarse`), botões, seletores e campos têm 44 px de altura mínima; chips 40 px; × da faixa "Continuar" 44×44. Medido em 375 px: os botões da barra com 44 px. Em desktop com mouse, a altura continua 36 px.
+
+Não verificado: a captura de tela do celular saiu cortada, embora as medidas mostrem que o conteúdo cabe; toque real; tablet e celular em tema escuro.

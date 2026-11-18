@@ -51,6 +51,7 @@ body {
   padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line);
 }
 .nav, .tools { display: flex; align-items: center; gap: 6px; }
+.tools { flex-wrap: wrap; }
 .search { flex: 1 1 220px; min-width: 0; }
 select, input, button {
   font: inherit; color: inherit; background: var(--paper);
@@ -197,6 +198,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   .nav #chapter { flex: 0 0 4.2rem; }
   .search { flex: 1 1 0; }
   .tools button.icon { min-width: 32px; padding: 0 6px; }
+  .tools { flex: 1 1 100%; justify-content: flex-start; }
   .panel { flex-basis: 60%; }
   .panel-head { padding: 10px 14px; }
   .panel-body { padding: 4px 14px 32px; }
@@ -212,7 +214,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 .bridge .why { color: var(--muted); font-size: 11px; }
 
 /* Modo palavras (Strong) */
-#words[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+#words[aria-pressed="true"], .tools button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
 #words { font-size: 12px; }
 .w { border-radius: 3px; cursor: pointer; }
 .w sub {
@@ -443,6 +445,14 @@ kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-w
 .resume[hidden] { display: none; }
 .resume-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
 .resume-close { position: absolute; right: 10px; top: 8px; }
+
+/* Telas de toque: alvos com pelo menos 44 px (recomendação de acessibilidade). */
+@media (pointer: coarse) {
+  select, input, button { min-height: 44px; }
+  .chip { min-height: 40px; }
+  .link { min-height: 44px; padding: 10px 6px; }
+  .resume-close { min-width: 44px; min-height: 44px; top: 0; right: 0; }
+}
 
 /* Você quis dizer? (DESENHO-PESQUISA, fase 4) */
 .suggest { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; }

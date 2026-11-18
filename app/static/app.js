@@ -1085,6 +1085,58 @@ function searchSection(kind, title) {
 
 // Busca em duas abas: "Por palavra" (com filtros por tipo) e "Por sentido".
 // Mostra só uma parte por vez, para não exigir rolagem longa (T33, ajuste de ergonomia).
+// Busca salva e recente (DESENHO-PESQUISA, fase 3). Fica só no navegador, por decisão do usuário.
+function readSearchStore(key) {
+  try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (error) { return []; }
+}
+
+function writeSearchStore(key, list) {
+  try { localStorage.setItem(key, JSON.stringify(list)); } catch (error) { /* navegador sem armazenamento */ }
+}
+
+function currentSearchOptions(query) {
+  return { q: query, scope: state.searchScope || "aberta", modo: state.searchModo || "todas",
+    near: state.searchNear || 5, strong: state.searchStrong || null };
+}
+
+function addRecentSearch(query) {
+  const item = currentSearchOptions(query);
+  const same = (a) => a.q === item.q && a.scope === item.scope && a.modo === item.modo && a.strong === item.strong;
+  const recent = [item, ...readSearchStore("buscas.recentes").filter((a) => !same(a))].slice(0, 10);
+  writeSearchStore("buscas.recentes", recent);
+}
+
+function saveCurrentSearch() {
+  const query = state.lastSearch && state.lastSearch.query;
+  if (!query) return;
+  const item = currentSearchOptions(query);
+  const saved = readSearchStore("buscas.salvas").filter((a) => !(a.q === item.q && a.scope === item.scope && a.modo === item.modo && a.strong === item.strong));
+  writeSearchStore("buscas.salvas", [item, ...saved].slice(0, 30));
+  showToast("Busca salva neste navegador.");
+}
+
+function runSavedSearch(item) {
+  state.searchScope = item.scope;
+  state.searchModo = item.modo;
+  state.searchNear = item.near;
+  state.searchStrong = item.strong;
+  $("#q").value = item.q;
+  showSearch(item.q);
+}
+
+// Copia os versículos da busca (T97), sem os marcadores de destaque.
+async function copySearchResults() {
+  const verses = (state.lastSearch && state.lastSearch.data && state.lastSearch.data.verses) || [];
+  if (!verses.length) { showToast("Não há versículos para copiar."); return; }
+  const text = verses.map((v) => `${refLabel(v.book, v.chapter, v.verse)} (${v.abbr}): ${String(v.hit).replace(/\[\[|\]\]/g, "")}`).join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(`${verses.length} versículos copiados.`);
+  } catch (error) {
+    showToast("Não foi possível copiar neste navegador.");
+  }
+}
+
 // Escopo e modo da busca por palavra (DESENHO-PESQUISA, fase 1). Mudar refaz a busca.
 function searchOptions() {
   const rerun = () => showSearch(state.lastSearch.query);
@@ -1109,6 +1161,18 @@ function searchOptions() {
     distance.value = String(state.searchNear || 5);
     children.push(el("label", {}, "Alcance ", distance, " palavras"));
   }
+  const recent = readSearchStore("buscas.recentes");
+  const saved = readSearchStore("buscas.salvas");
+  const entries = [...saved.map((item) => ({ ...item, label: `★ ${item.q}` })), ...recent.map((item) => ({ ...item, label: item.q }))];
+  if (entries.length) {
+    const list = el("select", { "aria-label": "Buscas salvas e recentes", onchange: (event) => {
+      const item = entries[Number(event.target.value)];
+      if (item) runSavedSearch(item);
+    } }, el("option", { value: "" }, "Recentes e salvas…"), entries.map((item, index) => el("option", { value: String(index) }, item.label)));
+    children.push(list);
+  }
+  children.push(el("button", { class: "link", onclick: copySearchResults }, "Copiar versículos"));
+  children.push(el("button", { class: "link", onclick: saveCurrentSearch }, "Salvar busca"));
   return el("div", { class: "search-opts" }, ...children);
 }
 
@@ -1337,7 +1401,7 @@ async function init() {
     if (!query) return;
     const reference = parseReference(query);
     if (reference) go(reference);
-    else showSearch(query);
+    else { addRecentSearch(query); showSearch(query); }
   });
   $("#text").addEventListener("keydown", (e) => {
     if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("v")) {

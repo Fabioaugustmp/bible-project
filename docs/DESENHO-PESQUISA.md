@@ -127,3 +127,16 @@ está.
 
 **Falta da fase 2:** o modo (todas, qualquer, frase, NEAR) nos comentários e
 dicionários.
+
+## 12. Fase 3: copiar e salvar buscas
+
+**Feito (só no navegador, como você decidiu):**
+- **Copiar versículos:** copia os versículos da busca, com referência e versão,
+  sem os marcadores de destaque. Usa a área de transferência do navegador.
+- **Salvar busca:** guarda a busca com escopo, modo, alcance e Strong, em até 30
+  buscas. Não toca no `user.db`.
+- **Recentes:** as últimas 10 buscas enviadas pelo formulário, numa lista única
+  com as salvas (as salvas têm ★).
+
+**Limite:** tudo fica em `localStorage` deste navegador. Quando houver painel
+autenticado, a busca salva passa para o `user.db` (decisão 3).

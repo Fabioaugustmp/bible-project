@@ -8,6 +8,8 @@ import json
 import mimetypes
 import re
 import sqlite3
+import urllib.error
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -426,6 +428,57 @@ def api_item(con, q):
     return item
 
 
+EMBED_URL = "http://127.0.0.1:8378/search"
+_WORD = re.compile(r"[^\W\d_]{4,}", re.UNICODE)
+SEMANTIC_K = 10
+
+
+def shared_terms(query, text):
+    """Palavras da consulta (4 letras ou mais) que também aparecem no texto: a explicação visível."""
+    words = {w.lower() for w in _WORD.findall(query)}
+    lowered = text.lower()
+    return sorted(w for w in words if w in lowered)[:4]
+
+
+def api_semantic(con, q):
+    """Busca por sentido (T33): pede ao serviço de embeddings os itens mais próximos e os
+    devolve com o texto. Se o serviço não estiver rodando, avisa em vez de falhar."""
+    query = (q.get("q") or "").strip()
+    if not query:
+        return {"available": True, "query": "", "verses": [], "comments": []}
+    body = json.dumps({"q": query, "kinds": ["verse", "comment"], "k": SEMANTIC_K}).encode("utf-8")
+    request = urllib.request.Request(EMBED_URL, data=body, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            results = json.loads(response.read().decode("utf-8"))["results"]
+    except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
+        return {"available": False, "reason": "O serviço de busca por sentido não está rodando. "
+                "Inicie-o com .venv-bench\\Scripts\\python.exe app\\embed_service.py", "detail": str(error)}
+    verse_ids = [r["item_id"] for r in results.get("verse", [])]
+    comment_ids = [r["item_id"] for r in results.get("comment", [])]
+    scores = {("verse", r["item_id"]): r["score"] for r in results.get("verse", [])}
+    scores.update({("comment", r["item_id"]): r["score"] for r in results.get("comment", [])})
+    verses, comments = [], []
+    if verse_ids:
+        marks = ",".join("?" * len(verse_ids))
+        for vid, abbr, book, chapter, verse, text in con.execute(
+            f"select v.id, m.abbr, v.book, v.chapter, v.verse, v.text from verses v"
+            f" join modules m on m.id = v.module_id where v.id in ({marks})", verse_ids):
+            verses.append({"id": vid, "abbr": abbr, "book": book, "chapter": chapter, "verse": verse,
+                           "text": text, "score": scores[("verse", vid)], "shared": shared_terms(query, text)})
+    if comment_ids:
+        marks = ",".join("?" * len(comment_ids))
+        for cid, abbr, lang, book, ref_start, ref_end, text in con.execute(
+            f"select c.id, m.abbr, m.lang, c.book, c.ref_start, c.ref_end, c.text from comments c"
+            f" join modules m on m.id = c.module_id where c.id in ({marks})", comment_ids):
+            comments.append({"id": cid, "abbr": abbr, "lang": lang, "book": book, "ref_start": ref_start,
+                             "ref_end": ref_end, "excerpt": text[:280], "score": scores[("comment", cid)],
+                             "shared": shared_terms(query, text)})
+    order = lambda item: -item["score"]
+    return {"available": True, "query": query, "verses": sorted(verses, key=order),
+            "comments": sorted(comments, key=order)}
+
+
 def api_search(con, q):
     """Busca por palavra. Com `kind` e `offset`, devolve só mais uma página daquele tipo."""
     query = fts_query(q.get("q", ""))
@@ -484,7 +537,7 @@ def api_search(con, q):
 
 
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "word": api_word, "passage": api_passage,
+       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "semantic": api_semantic, "word": api_word, "passage": api_passage,
        "xref-graph": api_xref_graph}
 
 

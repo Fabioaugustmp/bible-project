@@ -1072,11 +1072,13 @@ function renderSearch(keepScroll = false) {
   const scroll = $("#panel-body").scrollTop;
   const total = Object.values(data.totals).reduce((sum, n) => sum + n, 0);
   openPanel("search", `Busca: ${query}`,
+    groupHeader("Por palavra", "Versículos e comentários que contêm os termos digitados."),
     bridgeNote(query, data),
     total ? null : el("p", { class: "empty" }, "Nada encontrado."),
     searchSection("verses", `Bíblia · ${module.abbr}`),
     searchSection("comments", "Comentários"),
-    searchSection("entries", "Dicionários e livros"));
+    searchSection("entries", "Dicionários e livros"),
+    semanticGroup(state.lastSearch.semantic));
   if (keepScroll) $("#panel-body").scrollTop = scroll;
 }
 
@@ -1104,9 +1106,46 @@ function bridgeNote(query, data) {
 }
 
 async function showSearch(query) {
-  const data = await api("search", { q: query, module: state.module, bilingual: state.bilingual ? 1 : 0 });
-  state.lastSearch = { query, data };
+  const [data, semantic] = await Promise.all([
+    api("search", { q: query, module: state.module, bilingual: state.bilingual ? 1 : 0 }),
+    api("semantic", { q: query }).catch(() => ({ available: false, reason: "Não foi possível consultar a busca por sentido." })),
+  ]);
+  state.lastSearch = { query, data, semantic };
   renderSearch();
+}
+
+// Cabeçalho de grupo: deixa claro de que tipo de busca vêm os resultados abaixo (T33).
+function groupHeader(title, note) {
+  return el("div", { class: "search-group" },
+    el("h2", { class: "group-title" }, title),
+    el("p", { class: "group-note" }, note));
+}
+
+// Resultados por sentido: similaridade de embeddings, com os termos em comum quando houver.
+function semanticGroup(sem) {
+  if (!sem) return null;
+  if (!sem.available) return [groupHeader("Por sentido", sem.reason)];
+  const why = (item) => item.shared.length
+    ? `Termos em comum: ${item.shared.join(", ")}`
+    : "Sem termos em comum: achado pelo sentido";
+  const verses = sem.verses.map((v) => el("button", {
+    class: "result", onclick: () => go({ book: v.book, chapter: v.chapter, verse: v.verse }),
+  }, el("div", { class: "source" }, el("b", {}, refLabel(v.book, v.chapter, v.verse)),
+      el("span", {}, `${v.abbr} · similaridade ${v.score.toFixed(2)}`)),
+    el("div", { class: "t" }, v.text),
+    el("div", { class: "origin" }, why(v))));
+  const comments = sem.comments.map((c) => el("button", {
+    class: "result", onclick: () => showItem("comment", c.id),
+  }, el("div", { class: "source" }, el("b", {}, c.abbr),
+      el("span", {}, rangeLabel(c.book, c.ref_start, c.ref_end)), badge(c.lang),
+      el("span", {}, `similaridade ${c.score.toFixed(2)}`)),
+    el("div", { class: "t" }, c.excerpt),
+    el("div", { class: "origin" }, why(c))));
+  return [
+    groupHeader("Por sentido", "Passagens de assunto parecido, mesmo sem as palavras digitadas. A ordem vem da similaridade de sentido (modelo BGE-M3), não de palavras exatas."),
+    section("Versículos", verses.length, verses),
+    section("Comentários", comments.length, comments),
+  ];
 }
 
 // --- Aparência ------------------------------------------------------------------

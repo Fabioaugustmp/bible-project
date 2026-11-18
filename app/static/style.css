@@ -400,3 +400,10 @@ kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-w
 /* Abas do painel do versículo: rótulos numa linha, rolagem horizontal se faltar espaço */
 .verse-tabs { overflow-x: auto; scrollbar-width: thin; }
 .verse-tabs .mode-tab { white-space: nowrap; padding: 8px 7px; font-size: 13px; }
+
+/* Pesquisa por tema (sem IA) */
+.topic-form { display: flex; gap: 8px; max-width: 1200px; margin: 0 auto 12px; }
+.topic-form input { flex: 1; padding: 9px 12px; font: 16px var(--sans); border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.topic-body { max-width: 1200px; margin: 0 auto; }
+.topic-body h2 { font: 600 1.05rem var(--serif); margin: 20px 0 2px; }
+.topic-body mark { background: var(--mark, #f3d27a); color: inherit; border-radius: 2px; }

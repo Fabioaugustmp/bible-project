@@ -536,8 +536,25 @@ def api_search(con, q):
     return result
 
 
+def api_topic(con, q):
+    """Pesquisa por tema, sem IA: versículos que contêm o termo (na versão aberta) e versículos
+    de sentido parecido (BGE-M3), sem repetir os que já aparecem na primeira lista. Só texto bíblico."""
+    text = (q.get("q") or "").strip()
+    if not text:
+        return {"query": "", "literal": [], "meaning": [], "semantic": False, "reason": None}
+    literal = api_search(con, {"q": text, "kind": "verses", "bilingual": "0",
+                               "module": q.get("module")})["verses"]
+    sem = api_semantic(con, {"q": text})
+    seen = {(r["abbr"], r["book"], r["chapter"], r["verse"]) for r in literal}
+    meaning = []
+    if sem.get("available"):
+        meaning = [v for v in sem["verses"] if (v["abbr"], v["book"], v["chapter"], v["verse"]) not in seen]
+    return {"query": text, "literal": literal, "meaning": meaning,
+            "semantic": bool(sem.get("available")), "reason": sem.get("reason")}
+
+
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "semantic": api_semantic, "word": api_word, "passage": api_passage,
+       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "semantic": api_semantic, "topic": api_topic, "word": api_word, "passage": api_passage,
        "xref-graph": api_xref_graph}
 
 

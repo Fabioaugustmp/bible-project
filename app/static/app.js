@@ -1319,6 +1319,54 @@ function showToast(message) {
 
 $("#graph-full-close").addEventListener("click", closeGraphFull);
 
+// --- Pesquisa por tema (sem IA): só texto bíblico --------------------------------
+function markedText(text) {
+  // O servidor marca o termo com [[ e ]]; aqui vira <mark>, sem usar HTML do texto.
+  return String(text).split(/\[\[|\]\]/).map((part, i) => (i % 2 ? el("mark", {}, part) : part));
+}
+
+function openTopics(query = "") {
+  $("#topic-q").value = query;
+  $("#topic-full").hidden = false;
+  $("#topic-q").focus();
+  if (query) runTopic(query);
+}
+
+function closeTopics() {
+  $("#topic-full").hidden = true;
+}
+
+async function runTopic(query) {
+  const body = $("#topic-body");
+  body.replaceChildren(el("p", { class: "empty" }, "Pesquisando…"));
+  const data = await api("topic", { q: query, module: state.module });
+  const verseRow = (v, text, why) => el("button", {
+    class: "result", onclick: () => { closeTopics(); go({ book: v.book, chapter: v.chapter, verse: v.verse }); },
+  }, el("div", { class: "source" }, el("b", {}, refLabel(v.book, v.chapter, v.verse)), el("span", {}, v.abbr)),
+    el("div", { class: "t" }, text),
+    why ? el("div", { class: "origin" }, why) : null);
+  const literal = data.literal.map((v) => verseRow(v, markedText(v.hit)));
+  const meaning = data.meaning.map((v) => verseRow(v, v.text,
+    v.shared.length ? `Termos em comum: ${v.shared.join(", ")}` : "Sem termos em comum: achado pelo sentido"));
+  body.replaceChildren(...[
+    el("h2", {}, "Com o termo"),
+    el("p", { class: "group-note" }, `Versículos que contêm "${data.query}"${data.literal.length >= 60 ? " (os primeiros 60)" : ""}.`),
+    literal.length ? literal : el("p", { class: "empty" }, "Nenhum versículo contém este termo nesta versão."),
+    el("h2", {}, "Sobre o assunto"),
+    el("p", { class: "group-note" }, data.semantic
+      ? "Versículos de sentido parecido, mesmo sem a palavra. Ordem pela proximidade de sentido (texto ARA1993+)."
+      : (data.reason || "Busca por sentido indisponível.")),
+    data.semantic ? meaning : null].flat(Infinity).filter(Boolean));
+}
+
+$("#topic-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const query = $("#topic-q").value.trim();
+  if (query) runTopic(query);
+});
+$("#topic-close").addEventListener("click", closeTopics);
+$("#topics").addEventListener("click", () => openTopics());
+
 // --- Atalhos de teclado (D2): só fora de campos de texto; Esc vale sempre ----------
 
 const SHORTCUTS = [
@@ -1349,7 +1397,8 @@ document.addEventListener("keydown", (event) => {
   if (event.ctrlKey || event.metaKey || event.altKey) return;
   const typing = event.target.closest?.("input, textarea, select, [contenteditable]");
   if (event.key === "Escape") {
-    if (!$("#graph-full").hidden) closeGraphFull();
+    if (!$("#topic-full").hidden) closeTopics();
+    else if (!$("#graph-full").hidden) closeGraphFull();
     else if (!$("#preview").hidden) hidePreview();
     else if (!$("#panel").hidden) $("#panel-close").click();
     return;

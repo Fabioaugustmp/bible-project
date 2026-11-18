@@ -140,3 +140,21 @@ dicionários.
 
 **Limite:** tudo fica em `localStorage` deste navegador. Quando houver painel
 autenticado, a busca salva passa para o `user.db` (decisão 3).
+
+## 13. Fase 4: você quis dizer? (feita)
+
+**Fonte:** o Dicionário em português (Dic Port, 36 mil verbetes) que já está nos
+módulos. Os léxicos de grego e hebraico (LSJ, Dodson, AHLB, LXXHebGreek) não
+servem para grafia de português. A base continua somente leitura.
+
+**Como funciona:** só quando a busca não acha nada. Para cada palavra fora do
+dicionário, o servidor devolve até 3 palavras a até 2 letras de distância. Se a
+palavra só difere por acento (perdao, graca), sugere a forma com acento.
+
+**Limites:** nomes próprios e palavras que não estão no dicionário não recebem
+sugestão. Palavras que o índice acha por causa do acento (por exemplo "perdao",
+que encontra 184 versículos) não chegam a ser sugeridas.
+
+**Testado:** "amorr" → amor, amora, adorar; "perdao" → perdão; "graca" → graça;
+"espirito" → espírito. A tela mostra as sugestões como botões e a busca roda ao
+clicar.

@@ -626,6 +626,68 @@ def api_strong(con, q):
     return {"code": code, "total": total, "verses": verses}
 
 
+SUGGEST_MAX = 2          # distância máxima de digitação
+_VOCAB = None            # chave sem acento -> palavra original, do dicionário em português
+
+
+def _plain(word):
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", word.lower()) if unicodedata.category(c) != "Mn")
+
+
+def _vocab(con):
+    """Palavras do Dicionário em português (Dic Port), uma vez por processo. Só leitura."""
+    global _VOCAB
+    if _VOCAB is None:
+        vocab = {}
+        for (topic,) in con.execute(
+                "select e.topic from entries e join modules m on m.id = e.module_id"
+                " where m.kind = 'dictionary' and m.lang = 'por'"):
+            for word in _WORD.findall((topic or "").lower()):
+                vocab.setdefault(_plain(word), word)
+        _VOCAB = vocab
+    return _VOCAB
+
+
+def _distance(a, b):
+    """Distância de Levenshtein com corte: devolve SUGGEST_MAX + 1 se passar do limite."""
+    if abs(len(a) - len(b)) > SUGGEST_MAX:
+        return SUGGEST_MAX + 1
+    previous = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        current = [i]
+        for j, cb in enumerate(b, 1):
+            current.append(min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (ca != cb)))
+        if min(current) > SUGGEST_MAX:
+            return SUGGEST_MAX + 1
+        previous = current
+    return previous[-1]
+
+
+def api_suggest(con, q):
+    """Sugestões de grafia (DESENHO-PESQUISA, fase 4) a partir do Dicionário em português.
+
+    Para cada palavra digitada que não está no dicionário, devolve até 3 palavras próximas.
+    Palavras que só diferem por acento aparecem com o acento correto.
+    """
+    vocab = _vocab(con)
+    suggestions = {}
+    for typed in _WORD.findall((q.get("q") or "").lower()):
+        key = _plain(typed)
+        if key in vocab and vocab[key] == typed:
+            continue
+        if key in vocab:
+            suggestions[typed] = [vocab[key]]
+            continue
+        scored = []
+        for candidate_key, original in vocab.items():
+            distance = _distance(key, candidate_key)
+            if distance <= SUGGEST_MAX:
+                scored.append((distance, original))
+        suggestions[typed] = [word for _, word in sorted(scored)[:3]]
+    return {"suggestions": suggestions}
+
+
 def api_topic(con, q):
     """Pesquisa por tema, sem IA: versículos que contêm o termo (na versão aberta) e versículos
     de sentido parecido (BGE-M3), sem repetir os que já aparecem na primeira lista. Só texto bíblico."""
@@ -644,7 +706,7 @@ def api_topic(con, q):
 
 
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "semantic": api_semantic, "topic": api_topic, "similar": api_similar, "strong": api_strong, "word": api_word, "passage": api_passage,
+       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "semantic": api_semantic, "topic": api_topic, "similar": api_similar, "strong": api_strong, "suggest": api_suggest, "word": api_word, "passage": api_passage,
        "xref-graph": api_xref_graph}
 
 

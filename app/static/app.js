@@ -1176,6 +1176,19 @@ function searchOptions() {
   return el("div", { class: "search-opts" }, ...children);
 }
 
+// Você quis dizer? (DESENHO-PESQUISA, fase 4): sugestões do Dicionário em português.
+function suggestionBlock(suggest) {
+  const items = Object.entries((suggest && suggest.suggestions) || {}).filter(([, options]) => options.length);
+  if (!items.length) return el("p", { class: "empty" }, "Nada encontrado.");
+  return el("div", { class: "suggest" },
+    el("p", { class: "empty" }, "Nada encontrado. Você quis dizer:"),
+    items.map(([typed, options]) => options.map((option) => el("button", {
+      class: "chip", "aria-label": `Pesquisar ${option}`, onclick: () => {
+        $("#q").value = option; addRecentSearch(option); showSearch(option);
+      },
+    }, option))));
+}
+
 // Ocorrências de um número Strong (DESENHO-PESQUISA, fase 2).
 function strongBody(sr) {
   if (!sr) return [el("p", { class: "empty" }, "Digite um número Strong, como G5485.")];
@@ -1233,7 +1246,7 @@ function renderSearch(keepScroll = false) {
          chip("comments", "Comentários", counts.comments),
          chip("entries", "Dicionários e livros", counts.entries)),
        bridgeNote(query, data),
-       keyword ? null : el("p", { class: "empty" }, "Nada encontrado."),
+       keyword ? null : suggestionBlock(state.lastSearch.suggest),
        show("verses") ? searchSection("verses", `Bíblia · ${module.abbr}`) : null,
        show("comments") ? searchSection("comments", "Comentários") : null,
        show("entries") ? searchSection("entries", "Dicionários e livros") : null];
@@ -1276,7 +1289,9 @@ async function showSearch(query) {
     api("semantic", { q: query }).catch(() => ({ available: false, reason: "Não foi possível consultar a busca por sentido." })),
     state.searchStrong ? api("strong", { code: state.searchStrong }).catch(() => ({ error: "Não foi possível buscar este número Strong. Use G ou H seguido de números." })) : null,
   ]);
-  state.lastSearch = { query, data, semantic, strong };
+  const nothing = !Object.values(data.totals || {}).some((n) => n);
+  const suggest = nothing && !state.searchStrong ? await api("suggest", { q: query }).catch(() => null) : null;
+  state.lastSearch = { query, data, semantic, strong, suggest };
   renderSearch();
 }
 

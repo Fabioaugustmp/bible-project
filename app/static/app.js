@@ -976,6 +976,7 @@ async function showVerse(ref = null) {
   const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook });
   const similar = await api("similar", { book, chapter, verse }).catch(() => ({ available: false, verses: [] }));
   const notesData = await api("user/notes", { book, chapter, verse }).catch(() => ({ notes: [] }));
+  const backlinks = await api("user/backlinks", { book, chapter, verse }).catch(() => ({ notes: [] }));
   refreshCommentaryPins({ book, chapter, verse });
   const bookCounts = data.xrefs_total || xrefBook ? (await api("xref-books", { book, chapter, verse })).books : null;
   if (!ref && (book !== state.book || chapter !== state.chapter || verse !== state.verse)) return;
@@ -1049,7 +1050,7 @@ async function showVerse(ref = null) {
               el("span", { class: "range" }, foreign.map((v) => v.abbr).join(" · "))),
             foreign.map(versionItem))
         : null)],
-    ["notas", "Minhas notas", notesData.notes.length, () => notesTab(book, chapter, verse, notesData.notes)],
+    ["notas", "Minhas notas", notesData.notes.length, () => notesTab(book, chapter, verse, notesData.notes, backlinks.notes)],
     ["parecidas", "Parecidas", similar.verses.length, () => typedSection(["bible"], "Passagens parecidas", similar.verses.length,
       el("p", { class: "group-note" }, similar.available
         ? "Passagens de sentido parecido ao versículo, pela versão ARA1993+. Ordem pela proximidade de sentido."
@@ -1836,7 +1837,7 @@ async function userWrite(action, body) {
   return data;
 }
 
-function notesTab(book, chapter, verse, notes) {
+function notesTab(book, chapter, verse, notes, backlinks = []) {
   const fail = (error) => showToast(`Não foi possível salvar: ${error.message}`);
   const input = el("textarea", { class: "note-input", rows: 4, "aria-label": "Nova nota sobre o versículo",
     placeholder: "Escreva sobre este versículo: o que ele diz, o que você percebe, perguntas." });
@@ -1870,8 +1871,21 @@ function notesTab(book, chapter, verse, notes) {
     el("div", { class: "note-new" }, input, el("div", { class: "note-actions" }, save,
       el("button", { class: "link", onclick: () => addToStudy(book, chapter, verse) }, "Adicionar ao estudo mais recente"))),
     rows.length ? rows : el("p", { class: "empty" }, "Nenhuma nota neste versículo ainda."),
+    backlinkSection(backlinks),
     el("p", { class: "group-note" }, el("a", { href: "/api/user/export", class: "link" }, "Exportar em Markdown"), " · ", el("a", { href: "/api/user/export.docx", class: "link" }, "Exportar em Word")),
   ];
+}
+
+// Backlinks (T81): notas de outros versículos que citam este. Clicar leva ao versículo da nota.
+function backlinkSection(backlinks) {
+  if (!backlinks.length) return null;
+  return el("details", { class: "fold plain", open: true },
+    el("summary", {}, el("b", {}, `Citado em notas (${backlinks.length})`)),
+    el("p", { class: "group-note" }, "Notas que citam este versículo, escritas em outros versículos."),
+    backlinks.map((note) => el("button", {
+      class: "result", onclick: () => go({ book: note.book, chapter: note.chapter, verse: note.verse }),
+    }, el("div", { class: "source" }, el("b", {}, refLabel(note.book, note.chapter, note.verse))),
+      el("div", { class: "t" }, note.excerpt))));
 }
 
 // --- Pesquisa por tema (sem IA): só texto bíblico --------------------------------

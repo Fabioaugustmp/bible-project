@@ -391,7 +391,15 @@ def export_study(con, q, names):
     return "\n".join(lines).rstrip() + "\n"
 
 
-READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study, "marks": list_marks}
+def list_backlinks(con, q):
+    """Notas de outros versículos que citam este (T81)."""
+    import backlinks
+    book, chapter, verse = ref_of(q)
+    return {"notes": backlinks.find(con, book, chapter, verse)}
+
+
+READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study, "marks": list_marks,
+        "backlinks": list_backlinks}
 WRITE = {
     "note/create": create_note, "note/update": update_note, "note/delete": delete_note,
     "study/create": create_study, "study/update": update_study, "study/delete": delete_study,

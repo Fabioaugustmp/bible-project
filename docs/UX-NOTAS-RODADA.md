@@ -118,3 +118,10 @@ Não verificado: o recolhimento das opções com toque real; a leitura em 1100 p
 - Medido em 375 px com "amor de Deus": a faixa ocupa 47 px fechada, e o primeiro resultado começa em y=611 (antes 717).
 - Medido em 1280 px: aberta, como antes, sem rolagem horizontal.
 - Não verificado: toque real.
+
+## T81: backlinks de notas
+
+- No painel do versículo, em "Minhas notas", aparece "Citado em notas (N)": as notas de outros versículos que citam o versículo aberto. Clicar leva ao versículo da nota.
+- Reconhece citações como "João 3:16", "Jo 3.16-18" e "Is 48.6-7", pelo localizador do importador. Intervalos contam, e notas apagadas ficam de fora.
+- Testado no navegador: uma nota em Gênesis 1:1 citando João 3:16 apareceu no painel de João 3:16; a nota de teste foi apagada depois, e a lista voltou a zero.
+- Limites: a varredura lê todas as notas a cada abertura do versículo (aceitável para uso pessoal, mas cresce com o número de notas); não reconhece citações escritas por extenso sem livro abreviado ou com erro de grafia; não testado no celular.

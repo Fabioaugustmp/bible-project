@@ -171,6 +171,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T42 | parcial: todas as notas exportadas em Markdown (`/api/user/export`) e em Word (`/api/user/export.docx`, só biblioteca padrão; pacote validado: 3 partes, XML bem formado); faltam PDF (exige biblioteca externa, D003: decisão sua) e exportação de estudos (D5) |
 | T97 | concluída: na busca por palavra, "Copiar versículos" (com referência) e "Adicionar versículos ao estudo" (um bloco por versículo, até os 49 da busca de teste); a busca traz no máximo 60 versículos por vez, e o aviso diz quando há mais; testado no navegador (49 blocos, toast; cópia sem leitura do clipboard, bloqueada no navegador de teste) |
 | GET `/api/user/study` sem `id` | corrigido: responde 400 em vez de derrubar a conexão; teste em `tests/test_user_study.py` |
+| T81 | concluída: "Citado em notas" dentro de "Minhas notas" do versículo: notas de outros versículos que citam este (inclui intervalos; ignora notas apagadas e as do próprio versículo); citações reconhecidas pelo localizador do importador (`importer/refs.py`, `find_plain`); `app/backlinks.py`, endpoint `/api/user/backlinks`; 5 testes em `tests/test_backlinks.py` (68 no total, OK); testado no navegador com uma nota de teste, apagada depois |
 | T50–T52 (M5) | pendente |
 
 ## M1 — Fechar a importação completa

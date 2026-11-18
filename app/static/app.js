@@ -497,7 +497,7 @@ const layout = {
   renderTabs() {
     const tabs = $("#pin-tabs");
     const panelOpen = !$("#panel").hidden;
-    tabs.replaceChildren(
+    tabs.replaceChildren(...[
       // Em tela estreita, volta ao painel de estudo.
       panelOpen ? el("button", { class: "pin-tab back-to-panel", onclick: () => this.showPinned(false) }, "← Estudo") : null,
       ...this.pins.map((pin) => el("span", { class: "pin-tab" + (pin.id === this.active ? " on" : "") },
@@ -505,7 +505,8 @@ const layout = {
           class: "pin-title", role: "tab", "aria-selected": String(pin.id === this.active),
           title: pin.title, onclick: () => this.activate(pin.id),
         }, pin.title),
-        el("button", { class: "pin-close", "aria-label": `Desafixar ${pin.title}`, onclick: () => this.unpin(pin.id) }, "×"))));
+        el("button", { class: "pin-close", "aria-label": `Desafixar ${pin.title}`, onclick: () => this.unpin(pin.id) }, "×"))),
+    ].filter(Boolean));
     const pin = this.pins.find((item) => item.id === this.active);
     $("#pinned-body").replaceChildren(...(pin ? [pin.body] : []));
   },
@@ -591,6 +592,7 @@ async function renderView(view, target) {
     if (view.type === "verse") await showVerse(view);
     else if (view.type === "item") await showItem(view.kind, view.id);
     else if (view.type === "word") await showWord(view.strong);
+    else if (view.type === "study") await fillStudyPin(view.id, target);
     else if (view.type === "commentary") target.body.replaceChildren(el("p", { class: "empty" }, "Acompanhando a leitura…"));
     else if (view.type === "search") {
       const saved = state.lastSearch;
@@ -1481,11 +1483,13 @@ function openStudies(id = null) {
 }
 
 function closeStudies() {
+  overlayStudyId = null;
   $("#studies-full").hidden = true;
   $("#studies-body").replaceChildren();
 }
 
 async function renderStudyList() {
+  overlayStudyId = null;
   const data = await api("user/studies");
   const input = el("input", { type: "text", placeholder: "Título do novo estudo", "aria-label": "Título do novo estudo" });
   const create = el("form", { class: "topic-form", onsubmit: async (event) => {
@@ -1501,27 +1505,37 @@ async function renderStudyList() {
     ...(rows.length ? rows : [el("p", { class: "empty" }, "Nenhum estudo ainda. Crie um aqui ou use \"Adicionar ao estudo\" no painel de um versículo.")]));
 }
 
+let overlayStudyId = null;   // estudo na tela cheia (null = lista)
+
 async function renderStudy(id) {
+  overlayStudyId = id;
   const data = await api("user/study", { id });
+  $("#studies-body").replaceChildren(...buildStudy(data, false));
+}
+
+// Tela de um estudo: a mesma na tela cheia e na coluna ao lado (pinned).
+// As escritas passam por userWrite, que atualiza as duas (T90, D5 decisão 3).
+function buildStudy(data, pinned) {
   const study = data.study;
   const fail = (error) => showToast(error.message);
+  const redo = () => {};
   const title = el("input", { type: "text", class: "study-title", "aria-label": "Título do estudo" });
   title.value = study.title;
   title.addEventListener("change", async () => {
     try { await userWrite("study/update", { id: study.id, title: title.value }); } catch (error) { fail(error); }
   });
   const status = el("select", { "aria-label": "Estado do estudo", onchange: async () => {
-    try { await userWrite("study/update", { id: study.id, status: status.value }); renderStudy(study.id); } catch (error) { fail(error); }
+    try { await userWrite("study/update", { id: study.id, status: status.value }); redo(); } catch (error) { fail(error); }
   } }, el("option", { value: "rascunho" }, "Rascunho"), el("option", { value: "pronto" }, "Pronto"));
   status.value = study.status;
 
   const blockRow = (block, index) => {
     const move = (direction) => async () => {
-      try { await userWrite("block/move", { id: block.id, direction }); renderStudy(study.id); } catch (error) { fail(error); }
+      try { await userWrite("block/move", { id: block.id, direction }); redo(); } catch (error) { fail(error); }
     };
     const remove = async () => {
       if (!confirm("Remover este bloco do estudo?")) return;
-      try { await userWrite("block/delete", { id: block.id }); renderStudy(study.id); } catch (error) { fail(error); }
+      try { await userWrite("block/delete", { id: block.id }); redo(); } catch (error) { fail(error); }
     };
     const actions = el("div", { class: "note-actions" },
       el("button", { class: "link", "aria-label": "Mover para cima", onclick: move(-1) }, "↑"),
@@ -1547,30 +1561,62 @@ async function renderStudy(id) {
   const addBlock = (kind, source) => async () => {
     const body = source.value.trim();
     if (!body) return;
-    try { await userWrite("block/add", { study_id: study.id, kind, body }); renderStudy(study.id); } catch (error) { fail(error); }
+    try { await userWrite("block/add", { study_id: study.id, kind, body }); redo(); } catch (error) { fail(error); }
   };
   const addCurrent = async () => {
     if (!state.verse) { showToast("Abra um versículo para adicionar a passagem atual."); return; }
     try {
       await userWrite("block/add", { study_id: study.id, kind: "passagem", book: state.book, chapter: state.chapter, verse: state.verse });
-      renderStudy(study.id);
+      redo();
     } catch (error) { fail(error); }
   };
 
-  $("#studies-body").replaceChildren(
+  return [
     el("div", { class: "note-actions" },
-      el("button", { class: "link", onclick: renderStudyList }, "← Meus estudos"),
+      el("button", { class: "link", onclick: () => openStudies() }, "← Meus estudos"),
+      ...(pinned ? [] : [el("button", { class: "link", onclick: () => { closeStudies(); pinStudy(study.id); } }, "Abrir ao lado")]),
       el("a", { href: `/api/user/study/export?id=${study.id}`, class: "link" }, "Exportar em Markdown"),
       el("button", { class: "link", onclick: async () => {
         if (!confirm("Mover este estudo para a lixeira?")) return;
-        try { await userWrite("study/delete", { id: study.id }); renderStudyList(); } catch (error) { fail(error); }
+        try { await userWrite("study/delete", { id: study.id }); unpinStudies(study.id); if (overlayStudyId === study.id) renderStudyList(); } catch (error) { fail(error); }
       } }, "Apagar estudo")),
     el("div", { class: "note-new" }, title, status),
     ...(data.blocks.length ? data.blocks.map(blockRow) : [el("p", { class: "empty" }, "O estudo ainda não tem blocos.")]),
     el("div", { class: "note-new" },
       el("div", { class: "note-actions" }, el("button", { class: "chip", onclick: addCurrent }, "Adicionar a passagem atual")),
       addTitle, el("button", { class: "chip", onclick: addBlock("titulo", addTitle) }, "Adicionar título"),
-      addNote, el("button", { class: "chip on", onclick: addBlock("nota", addNote) }, "Adicionar nota")));
+      addNote, el("button", { class: "chip on", onclick: addBlock("nota", addNote) }, "Adicionar nota"))];
+}
+
+// --- Estudo ao lado (coluna fixada, D5 decisão 3): só quando o usuário abre -----
+async function fillStudyPin(id, pin) {
+  try {
+    const data = await api("user/study", { id });
+    pin.title = `Estudo · ${data.study.title}`;
+    pin.body.replaceChildren(...buildStudy(data, true));
+  } catch (error) {
+    pin.title = pin.title || "Estudo";
+    pin.body.replaceChildren(el("p", { class: "empty" }, "Este estudo não está mais disponível."));
+  }
+}
+
+async function pinStudy(id) {
+  const pin = { body: el("div", { class: "pinned-content" }) };
+  await fillStudyPin(id, pin);
+  layout.add({ type: "study", id }, pin.title, pin.body);
+}
+
+// Recarrega as colunas de estudo (chamado depois de cada escrita em estudo ou bloco).
+async function refreshPinnedStudies() {
+  const pins = layout.pins.filter((pin) => pin.view.type === "study");
+  if (!pins.length) return;
+  await Promise.all(pins.map((pin) => fillStudyPin(pin.view.id, pin)));
+  layout.save();
+  layout.renderTabs();
+}
+
+function unpinStudies(id) {
+  layout.pins.filter((pin) => pin.view.type === "study" && pin.view.id === id).forEach((pin) => layout.unpin(pin.id));
 }
 
 async function addToStudy(book, chapter, verse) {
@@ -1601,6 +1647,10 @@ async function userWrite(action, body) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `erro ${response.status}`);
   if (action.startsWith("note")) render();   // atualiza as marcas do texto
+  if (action.startsWith("study") || action.startsWith("block")) {
+    if (overlayStudyId && action !== "study/create") renderStudy(overlayStudyId).catch(() => {});
+    refreshPinnedStudies();
+  }
   return data;
 }
 

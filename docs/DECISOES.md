@@ -432,3 +432,18 @@ acessíveis a qualquer aparelho do mesmo Wi-Fi.
 senhas. Isso fica para o painel autenticado previsto para depois. O acesso
 funciona só se a rede for do tipo privada e se o Firewall do Windows permitir a
 porta 8377, o que é uma configuração do sistema que deve ser feita pelo usuário.
+
+## D025 — Estudo ao lado do texto, só quando aberto, pela coluna fixada · 2026-11-18
+
+**Decisão:** um estudo pode ser aberto ao lado do texto. O botão "Abrir ao lado",
+na tela do estudo, fixa o estudo na coluna da direita (mesmo mecanismo da T61),
+e ela só aparece quando o usuário abre. Escritas no estudo ou nos blocos
+atualizam a coluna e a tela cheia. Apagar pela coluna a fecha.
+
+**Motivo:** a decisão 3 do desenho D5 (DESENHO-ESTUDOS) recomendava mostrar a
+coluna só quando aberta, para o texto não perder largura sem pedido. Reaproveitar
+a coluna fixada evita um segundo sistema de painéis.
+
+**Limites:** a coluna guarda o estudo no navegador (como os outros itens
+fixados). Ao atualizar, um campo de nota que estava em edição é redesenhado. Em
+tela estreita, o estudo vira uma aba, como os outros itens fixados.

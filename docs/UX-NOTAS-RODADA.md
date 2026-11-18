@@ -15,10 +15,11 @@ Origem: agente de análise (Opus), que leu o código e propôs três sugestões 
    estudo, Copiar com referência). Impacto alto, custo alto. No celular, o toque
    conflita com a rolagem; talvez seja melhor tocar no primeiro e no último
    versículo. Liga-se à citação do D5 e aos cartões (T80).
-3. **Estudo aberto ao lado, como destino visível** (não implementada). Coluna
-   fixada com o estudo atual e campo de nota; no celular, folha inferior. Impacto
-   alto, custo médio. Risco: abaixo de 1099 px, leitor, painel e estudo não cabem
-   juntos.
+3. **Estudo aberto ao lado, como destino visível** (implementada, D025). Botão
+   "Abrir ao lado" na tela do estudo fixa o estudo na coluna da direita, com
+   passagens, títulos e notas. A coluna só aparece quando aberta. Em tela
+   estreita, vira aba (folha inferior não foi feita). Risco: abaixo de 1099 px,
+   leitor, painel e estudo não cabem juntos.
 
 Ordem sugerida pelo agente: 1, depois 3, por último 2.
 
@@ -41,3 +42,23 @@ Ordem sugerida pelo agente: 1, depois 3, por último 2.
 - **Atualização:** salvar uma nota redesenha o capítulo; as marcas de estudo só
   mudam ao navegar de novo.
 - Não testado no celular.
+
+## Testado (sugestão 3)
+
+- Navegador (janela de 800 px de largura, faixa de duas colunas): criei um estudo de teste com a passagem João 3:16 e um
+  título pela API; em "Meus estudos", abri o estudo e cliquei em "Abrir ao lado".
+  A coluna apareceu com o estudo; a aba mostrou "Estudo · Teste ao lado".
+- Pela coluna: adicionei uma nota (apareceu na coluna), renomeei o estudo (a aba
+  mudou) e apaguei (a coluna fechou; o estudo foi para a lixeira).
+- Recarregar a página: a coluna voltou com o estudo, e a barra de abas não mostra
+  mais o texto "null" (corrigido nesta rodada: `replaceChildren` recebia `null`).
+- Testes unitários: 61 passaram.
+
+## Limites da sugestão 3
+
+- Não testado em tela estreita (menos de 760 px), onde o estudo vira aba.
+- Ao salvar uma escrita, a coluna é redesenhada: um campo de nota que estava em
+  edição perde o foco.
+- Uma requisição GET a `/api/user/study` sem `id` derruba a resposta (ERR_EMPTY_RESPONSE,
+  porque `int(q["id"])` levanta KeyError). Não afeta a interface, mas deveria
+  responder 400. Não corrigido nesta rodada.

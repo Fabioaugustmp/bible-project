@@ -11,6 +11,8 @@ import sqlite3
 import time
 from pathlib import Path
 
+import reading
+
 ROOT = Path(__file__).resolve().parent.parent
 USER_DB = ROOT / "data" / "user.db"
 ALLOWED_HOSTS = {"localhost:8377", "127.0.0.1:8377"}   # ajustado pelo servidor ao iniciar
@@ -43,6 +45,13 @@ create table if not exists study_blocks(
     anchor_id integer references anchors(id),
     body text);
 create index if not exists study_blocks_by_study on study_blocks(study_id, pos);
+create table if not exists reading_plans(
+    id integer primary key,
+    title text not null, created_at text not null, deleted_at text);
+create table if not exists reading_days(
+    id integer primary key,
+    plan_id integer not null references reading_plans(id),
+    pos integer not null, book integer not null, chapter integer not null, done_on text);
 create table if not exists imports(
     id integer primary key,
     origin_path text, origin_sha256 text unique,
@@ -391,6 +400,11 @@ def export_study(con, q, names):
     return "\n".join(lines).rstrip() + "\n"
 
 
+def list_reading(con, q):
+    """Leitura de hoje: planos, progresso e notas de hoje (T82)."""
+    return reading.list_plans(con, q)
+
+
 def list_backlinks(con, q):
     """Notas de outros versículos que citam este (T81)."""
     import backlinks
@@ -399,10 +413,11 @@ def list_backlinks(con, q):
 
 
 READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study, "marks": list_marks,
-        "backlinks": list_backlinks}
+        "backlinks": list_backlinks, "reading": list_reading}
 WRITE = {
     "note/create": create_note, "note/update": update_note, "note/delete": delete_note,
     "study/create": create_study, "study/update": update_study, "study/delete": delete_study,
     "block/add": add_block, "block/update": update_block, "block/delete": delete_block,
     "block/move": move_block,
+    "plan/create": reading.create_plan, "plan/mark": reading.mark_day, "plan/delete": reading.delete_plan,
 }

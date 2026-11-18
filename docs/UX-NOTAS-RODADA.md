@@ -125,3 +125,9 @@ Não verificado: o recolhimento das opções com toque real; a leitura em 1100 p
 - Reconhece citações como "João 3:16", "Jo 3.16-18" e "Is 48.6-7", pelo localizador do importador. Intervalos contam, e notas apagadas ficam de fora.
 - Testado no navegador: uma nota em Gênesis 1:1 citando João 3:16 apareceu no painel de João 3:16; a nota de teste foi apagada depois, e a lista voltou a zero.
 - Limites: a varredura lê todas as notas a cada abertura do versículo (aceitável para uso pessoal, mas cresce com o número de notas); não reconhece citações escritas por extenso sem livro abreviado ou com erro de grafia; não testado no celular.
+
+## T82: leitura diária
+
+- Botão "Leitura" abre "Leitura de hoje": planos de capítulos, progresso, próximo capítulo e "Marcar como lido".
+- Testado no navegador: plano de João 1–2, marcar o primeiro capítulo → "1 de 2 capítulos lidos", "Lido hoje ✓", próximo: João 2. Criação pelo formulário também funcionou. Os planos de teste foram apagados depois.
+- Limites: sem intervalos de versículos; sem calendário; não testado no celular nem em tema escuro; o botão "Leitura" aumenta a barra no celular.

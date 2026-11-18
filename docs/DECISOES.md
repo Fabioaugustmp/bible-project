@@ -480,3 +480,19 @@ um app local de uso pessoal.
 
 **Limites:** a informação não passa de um navegador para outro, nem para o
 celular, que tem armazenamento próprio.
+
+## D028 — Leitura diária por capítulo, sem data fixa · 2026-11-18
+
+**Decisão:** o plano de leitura (T82) é uma sequência de capítulos, um por dia,
+sem datas. "Hoje" é o próximo capítulo não lido. Marcar como lido grava a data;
+apagar é lixeira. As tabelas `reading_plans` e `reading_days` ficam em
+`data/user.db`. Desenho em `docs/DESENHO-LEITURA.md`.
+
+**Motivo:** o uso pessoal pede constância mais do que calendário (a pesquisa de
+PESQUISA-MERCADO-ESTUDO, item 9, associa a leitura frequente a desfechos, com
+ressalvas). Capítulos são a unidade mais simples de marcar e de conferir. Sem
+data, um dia perdido não cria atraso artificial.
+
+**Limites:** intervalos de versículos, calendário e planos prontos ficam para
+depois. O módulo `app/reading.py` usa só a biblioteca padrão e a lista de livros
+de `importer/canon.py`.

@@ -1658,6 +1658,56 @@ $("#graph-full-close").addEventListener("click", closeGraphFull);
 
 // --- Meus estudos (D5, primeira fatia): passagem, título e nota -------------------
 
+// --- Leitura diária (T82): planos por capítulo, marcados como lidos --------------
+async function openReading() {
+  const data = await api("user/reading");
+  openPanel("leitura", "Leitura de hoje", readingBody(data));
+}
+
+function readingBody(data) {
+  const fail = (error) => showToast(`Não foi possível salvar: ${error.message}`);
+  const plans = data.plans.map((plan) => el("section", { class: "plan" },
+    el("h3", {}, plan.title),
+    el("p", { class: "group-note" }, `${plan.done} de ${plan.total} capítulos lidos`),
+    plan.next
+      ? el("div", { class: "note-actions" },
+          el("button", { class: "result", onclick: () => go({ book: plan.next.book, chapter: plan.next.chapter, verse: null }) },
+            el("b", {}, `Próximo: ${refLabel(plan.next.book, plan.next.chapter)}`)),
+          plan.read_today
+            ? el("span", { class: "group-note" }, "Lido hoje ✓")
+            : el("button", { class: "chip on", onclick: async () => {
+                try { await userWrite("plan/mark", { id: plan.next.id, done: true }); openReading(); } catch (error) { fail(error); }
+              } }, "Marcar como lido"))
+      : el("p", { class: "group-note" }, "Plano concluído."),
+    el("button", { class: "link", onclick: async () => {
+      if (!confirm("Apagar este plano? O progresso some (as notas continuam).")) return;
+      try { await userWrite("plan/delete", { id: plan.id }); openReading(); } catch (error) { fail(error); }
+    } }, "Apagar plano")));
+
+  const bookSelect = (value) => el("select", { "aria-label": "Livro" },
+    state.books.map((b) => el("option", { value: b.book, selected: b.book === value ? true : null }, b.name)));
+  const startBook = bookSelect(state.book);
+  const startChapter = el("input", { type: "number", min: 1, value: state.chapter, "aria-label": "Capítulo inicial", style: "width:4.5em" });
+  const endBook = bookSelect(state.book);
+  const endChapter = el("input", { type: "number", min: 1, value: state.chapter, "aria-label": "Capítulo final", style: "width:4.5em" });
+  const create = el("section", { class: "plan plan-new" },
+    el("h3", {}, "Novo plano por capítulos"),
+    el("p", { class: "group-note" }, "Um capítulo por dia, na ordem da Bíblia. Marque cada um como lido ao terminar."),
+    el("div", { class: "note-actions" }, startBook, " ", startChapter, " até ", endBook, " ", endChapter),
+    el("div", { class: "note-actions" }, el("button", { class: "chip on", onclick: async () => {
+      try {
+        await userWrite("plan/create", {
+          book: Number(startBook.value), chapter: Number(startChapter.value),
+          to_book: Number(endBook.value), to_chapter: Number(endChapter.value),
+        });
+        openReading();
+      } catch (error) { fail(error); }
+    } }, "Criar plano")));
+
+  const head = el("p", { class: "group-note" }, `Hoje: ${data.date} · notas de hoje: ${data.notes_today}`);
+  return [head, plans.length ? plans : el("p", { class: "empty" }, "Nenhum plano ainda."), create];
+}
+
 function openStudies(id = null) {
   $("#studies-full").hidden = false;
   if (id) renderStudy(id);
@@ -1936,6 +1986,7 @@ $("#topic-form").addEventListener("submit", (event) => {
 $("#topic-close").addEventListener("click", closeTopics);
 $("#topics").addEventListener("click", () => openTopics());
 $("#studies").addEventListener("click", () => openStudies());
+$("#reading").addEventListener("click", () => openReading().catch((error) => showToast(`Não foi possível abrir: ${error.message}`)));
 // Marcas no texto (notas e estudos): liga e desliga; a escolha fica no navegador.
 function applyMarks(on) {
   document.body.classList.toggle("marks-off", !on);

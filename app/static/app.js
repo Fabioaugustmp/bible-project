@@ -829,13 +829,12 @@ async function showVerse(ref = null) {
   // Lista ou grafo (T65). O grafo precisa de largura: em telas estreitas, só a lista.
   const graphFits = matchMedia("(min-width: 760px)").matches;
   const xrefMode = graphFits && store.get("xrefView") === "graph" ? "graph" : "list";
-  const xrefSwitch = graphFits
-    ? el("div", { class: "filters xref-switch", role: "group", "aria-label": "Mostrar referências como" },
-        [["list", "Lista"], ["graph", "Grafo"]].map(([value, text]) => el("button", {
-          class: "chip" + (xrefMode === value ? " on" : ""), "aria-pressed": String(xrefMode === value),
-          onclick: () => { store.set("xrefView", value); showVerse(); },
-        }, text)))
-    : null;
+  const xrefSwitch = el("div", { class: "filters xref-switch", role: "group", "aria-label": "Mostrar referências como" },
+    graphFits ? [["list", "Lista"], ["graph", "Grafo"]].map(([value, text]) => el("button", {
+      class: "chip" + (xrefMode === value ? " on" : ""), "aria-pressed": String(xrefMode === value),
+      onclick: () => { store.set("xrefView", value); showVerse(); },
+    }, text)) : null,
+    el("button", { class: "chip", onclick: () => openGraphFull({ book, chapter, verse }) }, "Grafo em tela cheia"));
   const graph = xrefMode === "graph"
     ? xrefGraph({ book, chapter, verse }, {
         api,
@@ -1279,6 +1278,25 @@ async function init() {
   await restorePins();
 }
 
+function openGraphFull(center) {
+  $("#graph-full-body").replaceChildren(xrefGraph(center, {
+    api,
+    label: (b, c, v) => `${bookOf(b).abbr} ${c}:${v}`,
+    preview: showPreview,
+    hidePreview,
+    open: (ref) => { closeGraphFull(); go(ref); },
+    maxWidth: 1200,
+  }));
+  $("#graph-full").hidden = false;
+  $("#graph-full-close").focus();
+}
+
+function closeGraphFull() {
+  hidePreview();
+  $("#graph-full").hidden = true;
+  $("#graph-full-body").replaceChildren();
+}
+
 function showToast(message) {
   const box = $("#toast");
   if (!box) return;
@@ -1287,6 +1305,8 @@ function showToast(message) {
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => { box.hidden = true; }, 6000);
 }
+
+$("#graph-full-close").addEventListener("click", closeGraphFull);
 
 // --- Atalhos de teclado (D2): só fora de campos de texto; Esc vale sempre ----------
 
@@ -1318,7 +1338,8 @@ document.addEventListener("keydown", (event) => {
   if (event.ctrlKey || event.metaKey || event.altKey) return;
   const typing = event.target.closest?.("input, textarea, select, [contenteditable]");
   if (event.key === "Escape") {
-    if (!$("#preview").hidden) hidePreview();
+    if (!$("#graph-full").hidden) closeGraphFull();
+    else if (!$("#preview").hidden) hidePreview();
     else if (!$("#panel").hidden) $("#panel-close").click();
     return;
   }

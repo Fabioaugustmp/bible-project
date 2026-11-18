@@ -379,3 +379,10 @@ kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-w
 .search-group { margin: 22px 0 8px; padding-top: 14px; border-top: 2px solid var(--line); }
 .search-group .group-title { font: 600 1.05rem var(--serif); margin: 0; }
 .search-group .group-note { font-size: 12px; color: var(--muted); margin: 4px 0 0; line-height: 1.5; }
+
+/* Grafo em tela cheia (T65 ajuste): abre a partir do painel, em qualquer largura */
+.graph-full { position: fixed; inset: 0; z-index: 25; background: var(--paper); overflow: auto; padding: 16px; }
+.graph-full[hidden] { display: none; }
+.graph-full-head { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto 12px; }
+.graph-full-head strong { font: 600 1.1rem var(--serif); }
+.graph-full-body { max-width: 1200px; margin: 0 auto; }

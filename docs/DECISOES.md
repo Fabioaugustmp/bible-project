@@ -378,3 +378,19 @@ empatam (0,447 contra 0,450).
 **Limites:** a amostra é pequena; o MTEB em português não foi usado, porque
 trata de textos gerais e não de texto bíblico. A escolha pode ser revista se o
 conjunto de avaliação crescer.
+
+## D022 — Grafo de referências em tela cheia, em qualquer largura · 2026-11-17
+
+**Decisão:** o grafo de um versículo abre em tela cheia dentro do próprio app
+(botão "Grafo em tela cheia" no painel do versículo). Não é modal pequeno nem
+nova aba do navegador. Esc ou o botão Fechar voltam à leitura, no mesmo
+versículo. Clicar num nó recentra o grafo; clicar no centro abre o versículo.
+O alternador Lista/Grafo do painel continua abaixo de 760 px de largura
+(só a lista), mas o botão de tela cheia aparece em qualquer largura.
+
+**Motivo:** um grafo com dezenas de nós e rótulos fica apertado num modal, e
+uma nova aba perde o contexto da leitura. Em janela estreita o grafo do painel
+não cabia, e o usuário não tinha como vê-lo.
+
+**Limites:** a tela cheia usa largura máxima de 1200 px; em telas muito largas
+o grafo não cresce além disso.

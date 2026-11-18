@@ -518,6 +518,30 @@ difíceis em [EXECUCOES-CRITICAS.md](EXECUCOES-CRITICAS.md) (EC8, EC9).
 Tradução local sob demanda, léxico breve em português, perguntas com resposta
 citada: ver [IDEIAS.md](IDEIAS.md) (B04, B05, B19). Dependem de P3 e P4.
 
+
+### Ideias da pesquisa em background (2026-11-18)
+
+Marcadas como **necessária** (lacuna real frente aos programas) ou **criativa**
+(diferencial a validar com o usuário antes de construir).
+
+- **T91** *Necessária:* importar as **Topic Notes** e o **Journal** do e-Sword com
+  procedência, como a T41 faz com as notas por versículo. Antes: localizar o
+  arquivo de origem (o `study.notx` visto tem só a tabela Verses; os outros
+  dois não foram encontrados nesta visita) e registrar o formato em FORMATOS.
+- **T92** *Necessária:* "Continuar de onde parou": ao abrir o app, mostrar a última
+  passagem lida e o último estudo aberto. Os programas não fazem isso de forma
+  clara; é um ganho pequeno e barato.
+- **T93** *Criativa:* mapa de conexões das notas: o grafo que já existe (graph.js)
+  mostra passagens, tópicos e notas ligados, para o usuário ver quais partes do
+  texto ele mais estuda. Não é texto gerado; é uma visualização do próprio
+  estudo.
+- **T94** *Criativa:* história de estudo por palavra: contar quantas vezes o
+  usuário abriu um Strong (ex.: G3956) e mostrar as notas que o citam. Útil para
+  lembrar o que já estudou sobre um termo.
+- **T95** *Necessária, depende de decisão:* exportar estudos para Google Docs.
+  Exige conta e autorização do usuário; fica com a decisão sobre bibliotecas
+  (D003) e o formato de intercâmbio. Não implementar sem essa aprovação.
+
 ## M8 — Estudo guiado (levantamento dos programas, 2026-11-18)
 
 Origem: `docs/ESTUDO-PROGRAMAS.md`, navegação no theWord e no e-Sword com olhar

@@ -7,6 +7,8 @@ import argparse
 import json
 import mimetypes
 import re
+import secrets
+import socket
 import sqlite3
 import urllib.error
 import urllib.request
@@ -618,8 +620,54 @@ API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cite
        "xref-graph": api_xref_graph}
 
 
+LAN = False          # --lan: escuta na rede local, com código de acesso para outros aparelhos
+TOKEN = None
+TOKEN_FILE = ROOT.parent / "data" / "acesso-celular.txt"
+LOCAL_ADDRESSES = ("127.0.0.1", "::1")
+
+
+def load_token():
+    """Código de acesso para o celular, guardado em data/ (fora do git)."""
+    if TOKEN_FILE.is_file():
+        return TOKEN_FILE.read_text(encoding="utf-8").strip()
+    token = secrets.token_urlsafe(9)
+    TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
+    TOKEN_FILE.write_text(token, encoding="utf-8")
+    return token
+
+
+def lan_ip():
+    """Endereço da rede local (o de saída para a internet, sem enviar nada)."""
+    probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        probe.connect(("192.168.0.1", 80))
+        return probe.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
+    finally:
+        probe.close()
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "BibleProject/0.1"
+
+    def gate(self, url):
+        """True se a conexão pode seguir. Fora do computador, exige o código (cookie ou ?t=)."""
+        if not LAN or self.client_address[0] in LOCAL_ADDRESSES:
+            return True
+        if parse_qs(url.query).get("t", [""])[0] == TOKEN:
+            self.send_response(302)
+            self.send_header("Set-Cookie", f"bp_t={TOKEN}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000")
+            self.send_header("Location", "/")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return False
+        cookies = [part.strip() for part in self.headers.get("Cookie", "").split(";")]
+        if f"bp_t={TOKEN}" in cookies:
+            return True
+        self.send(403, "Acesso negado. Abra o endereço completo com o código de acesso mostrado no computador.".encode("utf-8"),
+                  "text/plain; charset=utf-8")
+        return False
 
     def log_message(self, fmt, *args):
         if args and str(args[1]) != "200":
@@ -695,6 +743,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         """Escrita nas notas (T40): só com Origin e Host deste app; grava só em data/user.db."""
         url = urlparse(self.path)
+        if not self.gate(url):
+            return
         if not url.path.startswith("/api/user/"):
             return self.send_json(404, {"error": "endpoint desconhecido"})
         if not userdata.check_origin(self.headers):
@@ -723,6 +773,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         url = urlparse(self.path)
+        if not self.gate(url):
+            return
         if url.path.startswith("/api/user/"):
             return self.user_get(url)
         if url.path.startswith("/api/"):
@@ -756,14 +808,25 @@ def main():
     global DB_PATH
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--db", default=str(DB_PATH))
+    parser.add_argument("--lan", action="store_true", help="escuta na rede local (celular), com código de acesso")
     parser.add_argument("--port", type=int, default=8377)
     args = parser.parse_args()
     DB_PATH = Path(args.db).resolve()
     if not DB_PATH.is_file():
         raise SystemExit(f"base não encontrada: {DB_PATH}\nrode antes: python importer/build.py PASTA")
-    userdata.ALLOWED_HOSTS = {f"localhost:{args.port}", f"127.0.0.1:{args.port}"}
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+    global LAN, TOKEN
+    hosts = {f"localhost:{args.port}", f"127.0.0.1:{args.port}"}
+    bind = "127.0.0.1"
     print(f"http://localhost:{args.port}  (base: {DB_PATH})", flush=True)
+    if args.lan:
+        LAN, TOKEN = True, load_token()
+        ip = lan_ip()
+        hosts.add(f"{ip}:{args.port}")
+        bind = "0.0.0.0"
+        print(f"celular: http://{ip}:{args.port}/?t={TOKEN}", flush=True)
+        print("o código fica em data/acesso-celular.txt; quem não tiver não entra", flush=True)
+    userdata.ALLOWED_HOSTS = hosts
+    server = ThreadingHTTPServer((bind, args.port), Handler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

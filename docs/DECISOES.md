@@ -414,3 +414,21 @@ depende de o registro ser útil ao estudo, e não de um perfil de usuário.
 **Limites:** a utilidade do registro para o usuário ainda não foi testada.
 Antes de implementar, confirmar com o usuário se o uso é desejado. Isto
 não altera P4 (uso de modelo de linguagem), que segue pendente.
+
+## D024 — Acesso pelo celular na rede local, com código · 2026-11-18
+
+**Decisão:** o app pode escutar na rede local com `python app/server.py --lan`.
+Conexões que não vêm do próprio computador precisam de um código de acesso,
+guardado em `data/acesso-celular.txt` (fora do git). Com o código, o navegador
+recebe um cookie `HttpOnly` e não precisa digitá-lo de novo. A escrita nas notas
+e estudos aceita, fora do computador, só o endereço da rede local com o código.
+Sem a opção `--lan`, o app continua escutando só em 127.0.0.1, como antes.
+
+**Motivo:** o usuário quer usar o projeto no celular. O `user.db` tem notas e
+estudos pessoais, então abrir a porta sem código deixaria esses dados
+acessíveis a qualquer aparelho do mesmo Wi-Fi.
+
+**Limites:** o código é compartilhado e não expira; não há usuários nem
+senhas. Isso fica para o painel autenticado previsto para depois. O acesso
+funciona só se a rede for do tipo privada e se o Firewall do Windows permitir a
+porta 8377, o que é uma configuração do sistema que deve ser feita pelo usuário.

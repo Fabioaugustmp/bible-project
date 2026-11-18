@@ -516,3 +516,33 @@ difíceis em [EXECUCOES-CRITICAS.md](EXECUCOES-CRITICAS.md) (EC8, EC9).
 
 Tradução local sob demanda, léxico breve em português, perguntas com resposta
 citada: ver [IDEIAS.md](IDEIAS.md) (B04, B05, B19). Dependem de P3 e P4.
+
+## M8 — Estudo guiado (levantamento dos programas, 2026-11-18)
+
+Origem: `docs/ESTUDO-PROGRAMAS.md`, navegação no theWord e no e-Sword com olhar
+de estudante. Nada aqui foi implementado ainda; cada item precisa de
+aceitação própria antes de entrar em execução.
+
+- **T80** Memorização e revisão espaçada sobre versículos lidos e notas, com
+  procedência. Referência: "Memorização de versículos" do theWord (cartões e
+  quatro avaliações). Diferencial: os cartões vêm do próprio estudo.
+  Depende de T40 (notas) e de decisão sobre o algoritmo (SM-2 ou Leitner).
+- **T81** Backlinks de notas: no painel do versículo, "notas que citam este
+  versículo", a partir das notas de `user.db`. Diferencial sem equivalente no
+  theWord nem no e-Sword.
+- **T82** Leitura diária ou plano de leitura, com as notas do dia. Referência:
+  "Leitura diária" do theWord.
+- **T83** Comparar com um clique: abrir o paralelo sem etapa de seleção de
+  textos (o theWord pede "Selecionar textos da Bíblia" antes). Já existe T62;
+  falta o atalho e o estado vazio sem atrito.
+- **T84** Rótulos e atalhos visíveis: os atalhos de tecla de função do theWord
+  não aparecem no painel. Nosso `?` já lista os atalhos; falta o menu "Exibir"
+  com rótulos.
+- **T85** Estudo de palavra com ocorrências em contexto, no painel Strong
+  (pelo menos as cinco primeiras, com o trecho). Ponto de comparação: os léxicos
+  do theWord em abas; o nosso painel deve mostrar o termo original e as
+  traduções sem abrir cada léxico.
+- **T86** Concluir o levantamento do e-Sword: menus Ferramentas, Opções e
+  editor de notas. Pendente porque a janela ficou atrás do theWord e a barra de
+  tarefas é bloqueada para cliques. Para retomar, trazer o e-Sword para a frente
+  pelo próprio programa, ou pedir acesso adicional ao sistema de alternância.

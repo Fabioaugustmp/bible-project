@@ -542,6 +542,28 @@ Marcadas como **necessária** (lacuna real frente aos programas) ou **criativa**
   Exige conta e autorização do usuário; fica com a decisão sobre bibliotecas
   (D003) e o formato de intercâmbio. Não implementar sem essa aprovação.
 
+
+### Ideias da rodada 3 do theWord, ponderadas (2026-11-18)
+
+Peso considera escopo, custo, procedência e a regra de biblioteca padrão (D003).
+
+- **T96** NEAR com alcance configurável na busca. *Peso: baixo custo, valor
+  moderado.* O FTS5 já suporta NEAR; falta expor o alcance na interface.
+- **T97** Copiar todos os versículos de uma busca (para o estudo ou para a
+  exportação). *Peso: baixo custo, valor claro.* Liga-se à exportação (T42) e aos
+  estudos (D5).
+- **T98** Conjuntos de referências cruzadas escolhidos e ordenados pelo usuário,
+  em vez da ordem fixa atual (curadas, depois co-citação). *Peso: médio; exige
+  desenho de ordem e de conjuntos; é o que mais aproxima o estudante do seu
+  próprio critério.*
+- **T99** Diário de oração e louvor com datas que se repetem, ligado ao estudo.
+  *Peso: criativo, a validar.* Dados pessoais: ficam só em `user.db`. Relaciona-se
+  com T89 (diário de estudo); pode ser a mesma coleção com uma etiqueta.
+- **T100** Sugestão de ortografia ("você quis dizer?") quando a busca não acha
+  nada. *Peso: baixo, depende de um léxico de palavras; avaliar depois.*
+- **Não copiar:** a densidade de opções ligadas e desligadas (muitas caixas de
+  seleção sem explicação). Se houver opções, cada uma precisa de um rótulo claro.
+
 ## M8 — Estudo guiado (levantamento dos programas, 2026-11-18)
 
 Origem: `docs/ESTUDO-PROGRAMAS.md`, navegação no theWord e no e-Sword com olhar

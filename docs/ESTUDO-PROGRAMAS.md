@@ -155,3 +155,36 @@ Ver a seção "M8 — Estudo guiado" em `docs/BACKLOG.md`.
   por versículo, e não por dia.
 - Ponto de comparação: é um plano com marcação de progresso, sem anotações. Nossa
   versão pode ligar a leitura do dia às notas e estudos (T82).
+
+## theWord: rodada 3, o que faltava (2026-11-18)
+
+### Organizar referências cruzadas
+- Janela com **conjuntos de referências cruzadas**: os do usuário, o padrão
+  (Default Cross-References) e os dos módulos bíblicos (BSB e outros).
+- Ações sobre os conjuntos: Mover, Renomear, Copiar de, Excluir, Importar e
+  Gerenciar arquivos. A ordem dos conjuntos decide qual lista aparece primeiro.
+- Valor: o estudante escolhe **de que fonte** vêm as referências e em que ordem.
+  Hoje nossa ordem é fixa (listas curadas, depois co-citação).
+
+### Janela de pesquisa: aba Opções
+- Opções de exibição: expandir ou retrair resultados, exibir mais resultados,
+  nomes curtos para livros, copiar todos os versículos encontrados, manter a
+  caixa de pesquisa visível o tempo todo.
+- **Operador NEAR** com alcance padrão configurável (em palavras; o padrão
+  mostrado foi 30 para NEAR de versículo e 3 para NEAR de palavras).
+- "E isto o que você está procurando?": sugestão de ortografia quando a busca
+  não acha nada.
+
+### Busca por número Strong
+- Digitar "G3956" na janela de pesquisa não trouxe resultados. A ocorrência por
+  Strong não foi localizada nesta visita (a verificar: provavelmente pelo painel
+  Strong ou pela busca avançada).
+
+### Oração e Louvor (Ferramentas de estudo)
+- Um **livro de oração e louvor**: criar um livro, adicionar louvores, abrir
+  numa janela própria.
+- Datas devocionais que se repetem: "Repita todos os meses", "Em qualquer
+  momento"; ao atribuir uma data, a entrada aparece no dia.
+- Cada página pode ser assinada, guardada por pasta e ligada a um tópico.
+- Valor: o diário pessoal de oração fica perto do estudo, com datas. Não é
+  notas bíblicas; é um registro pessoal.

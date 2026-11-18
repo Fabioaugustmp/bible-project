@@ -4,3 +4,6 @@ data/
 
 __pycache__/
 *.pyc
+
+# Ambiente do benchmark de embeddings (local, nao versionar)
+.venv*/

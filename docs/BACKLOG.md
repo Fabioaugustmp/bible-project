@@ -83,9 +83,9 @@ que depende da resposta P3. T10 (importação incremental) concluída: D017.
 
 | # | Pergunta | Recomendação |
 |---|---|---|
-| P1 | Confirma o posicionamento acima? O projeto será público? | Sim; público muda M5 (assistente de importação, créditos, licença) |
+| P1 | Confirma o posicionamento acima? O projeto será público? | **Respondida (2026-11-17):** primeiro para uso pessoal; se der certo, vira produto |
 | P2 | Ponte português↔inglês (M2) antes dos embeddings (M3)? | **Respondida: sim** (2026-11-17) |
-| P3 | Dependências além da biblioteca padrão são aceitas (necessárias em M3)? | Sim, isoladas no indexador; registrar nova decisão que revê a D003 |
+| P3 | Dependências além da biblioteca padrão são aceitas (necessárias em M3)? | **Respondida: sim**, isoladas em `.venv-bench` (2026-11-17); a D003 é revista pela D020 |
 | P4 | Uso de modelo de linguagem (local ou por API) é aceito? | Só opcional e por último (M6) |
 | P5 | Manter a página do Notion sincronizada? | Não: hoje ela espelha IDEIAS.md e está desatualizada em relação a este arquivo |
 | P6 | Grafo e colunas (M7): escrever o posicionamento por força no próprio projeto ou incluir uma biblioteca pronta? | **Respondida: escrever no projeto** (2026-11-17) |

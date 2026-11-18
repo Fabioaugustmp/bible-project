@@ -339,3 +339,26 @@ posicionamento por força escrito em `app/static/graph.js`, sem biblioteca.
 (1,2 s no pior caso, com a base fria) e 45 ms para recentrar num grafo já visto;
 em Sl 23:1, Is 53:5, Jo 3:16, Gn 1:1 e Rm 8:28, nenhum rótulo sobre outro
 rótulo ou nó, e os centros esperados aparecem como os maiores nós.
+
+## D020 — Respostas à proposta de design e às dependências de embeddings · 2026-11-17
+
+**Decisões do usuário:**
+1. **Primeiro uso pessoal; se der certo, vira produto.** A área Biblioteca e as
+   funções de publicação ficam para depois das fases de estudo pessoal (D1–D6 de
+   `docs/PROPOSTA-DESIGN.md`). Revê a P1 do backlog.
+2. **Endereço com sigla e fixados por chave estável** (refina a D018).
+3. **O servidor grava só em `data/user.db`**, com proteção por `Origin`/`Host` e
+   cópia de segurança diária. A base da biblioteca continua somente leitura.
+4. **Guardar no estudo até 1.000 caracteres do trecho citado**, em base própria
+   (`data/user.db`), fora do git (D007). O usuário quer que isso seja considerado
+   no desenho da base de dados do usuário.
+5. **Fontes com licença OFL no repositório** (Literata, Gentium Plus e uma
+   hebraica), depois de conferir cada licença na página de origem.
+
+**Dependências (revê a D003):** bibliotecas de terceiros são aceitas, mas só no
+ambiente `.venv-bench` (pasta do projeto, ignorada pelo git), usado para o
+benchmark de embeddings. O aplicativo e o importador continuam só com a
+biblioteca padrão até que uma decisão nova diga o contrário.
+
+**Modelos:** o download só acontece depois de o usuário confirmar, para cada
+arquivo, origem e tamanho. O MTEB-BR ainda precisa ter o tamanho confirmado.

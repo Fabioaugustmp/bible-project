@@ -1311,7 +1311,7 @@ async function copySearchResults() {
 }
 
 // Escopo e modo da busca por palavra (DESENHO-PESQUISA, fase 1). Mudar refaz a busca.
-function searchOptions() {
+function searchOptions(filterRow = null) {
   const rerun = () => showSearch(state.lastSearch.query);
   const scope = el("select", { "aria-label": "Escopo da busca", onchange: (event) => {
     state.searchScope = event.target.value; rerun();
@@ -1346,6 +1346,7 @@ function searchOptions() {
   }
   // Opções de busca ficam recolhíveis; no celular começam fechadas, para o primeiro resultado aparecer logo (item 5).
   const config = children.splice(0);
+  if (filterRow) config.unshift(filterRow);
   if (state.searchConfigOpen === undefined) state.searchConfigOpen = !window.matchMedia("(max-width: 560px)").matches;
   const configBox = el("details", { class: "search-config", open: state.searchConfigOpen, ontoggle: (event) => { state.searchConfigOpen = event.target.open; } },
     el("summary", {}, "Opções de busca"),
@@ -1414,17 +1415,18 @@ function renderSearch(keepScroll = false) {
     modeTab("palavra", "Por palavra", keyword),
     modeTab("sentido", "Por sentido", meaning));
   const show = (kind) => filter === "tudo" || filter === kind;
+  // Filtros de tipo ficam dentro de "Opções de busca" (no celular, o primeiro resultado sobe).
+  const filterRow = el("div", { class: "chips" },
+    chip("tudo", "Tudo", keyword),
+    chip("verses", "Versículos", counts.verses),
+    chip("comments", "Comentários", counts.comments),
+    chip("entries", "Dicionários e livros", counts.entries));
   const body = mode === "sentido"
     ? [el("p", { class: "group-note" }, "Passagens de assunto parecido, mesmo sem as palavras digitadas. A ordem vem da similaridade de sentido (modelo BGE-M3)."),
        semanticGroup(semantic)]
     : state.searchStrong ? [searchOptions(), ...strongBody(state.lastSearch.strong)]
     : [el("p", { class: "group-note" }, "Versículos e comentários que contêm os termos digitados."),
-       searchOptions(),
-       el("div", { class: "chips" },
-         chip("tudo", "Tudo", keyword),
-         chip("verses", "Versículos", counts.verses),
-         chip("comments", "Comentários", counts.comments),
-         chip("entries", "Dicionários e livros", counts.entries)),
+       searchOptions(filterRow),
        bridgeNote(query, data),
        keyword ? null : suggestionBlock(state.lastSearch.suggest),
        show("verses") ? searchSection("verses", `Bíblia · ${module.abbr}`) : null,

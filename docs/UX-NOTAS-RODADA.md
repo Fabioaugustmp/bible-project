@@ -105,3 +105,9 @@ Limites: a folha não tem alça para recolher; fecha pelo ×. A barra de ações
 - **6. Desktop entre 1100 e 1399 px:** painel e coluna fixada encolhem com `flex-shrink`, e a leitura tem largura mínima de 34rem. Medido em 1280 px com as duas colunas abertas (larguras salvas no navegador de teste): leitura 544 px, texto 481 px (antes: 448 e 385), sem rolagem horizontal.
 
 Não verificado: o recolhimento das opções com toque real; a leitura em 1100 px exato; outras larguras entre 1100 e 1399.
+
+## Ajuste da busca no celular (fecha o item 5)
+
+- Os filtros de tipo (Tudo, Versículos, Comentários, Dicionários e livros) foram para dentro de "Opções de busca", como a primeira linha do bloco. No desktop o bloco começa aberto, então a aparência continua a mesma.
+- Medido em 375 px, com a busca "amor de Deus": o primeiro resultado começa em y=717 e a folha termina em 812. Ele aparece inteiro, com a parte de baixo no limite. Antes, começava em y=807.
+- Não verificado: toque real; a faixa de ponte (155 px) continua entre as opções e os resultados.

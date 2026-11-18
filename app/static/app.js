@@ -1065,20 +1065,49 @@ function searchSection(kind, title) {
   return section(title, total, items.map(resultBuilders[kind]), more);
 }
 
+// Busca em duas abas: "Por palavra" (com filtros por tipo) e "Por sentido".
+// Mostra só uma parte por vez, para não exigir rolagem longa (T33, ajuste de ergonomia).
 function renderSearch(keepScroll = false) {
-  const { query, data } = state.lastSearch;
+  const { query, data, semantic } = state.lastSearch;
   pendingView = { type: "search", query };
   const module = state.bibles.find((m) => m.id === state.module);
   const scroll = $("#panel-body").scrollTop;
-  const total = Object.values(data.totals).reduce((sum, n) => sum + n, 0);
-  openPanel("search", `Busca: ${query}`,
-    groupHeader("Por palavra", "Versículos e comentários que contêm os termos digitados."),
-    bridgeNote(query, data),
-    total ? null : el("p", { class: "empty" }, "Nada encontrado."),
-    searchSection("verses", `Bíblia · ${module.abbr}`),
-    searchSection("comments", "Comentários"),
-    searchSection("entries", "Dicionários e livros"),
-    semanticGroup(state.lastSearch.semantic));
+  const mode = state.searchMode || "palavra";
+  const filter = state.searchFilter || "tudo";
+  const counts = {
+    verses: data.totals.verses || 0,
+    comments: data.totals.comments || 0,
+    entries: data.totals.entries || 0,
+  };
+  const keyword = counts.verses + counts.comments + counts.entries;
+  const meaning = semantic && semantic.available ? semantic.verses.length + semantic.comments.length : null;
+  const modeTab = (id, label, n) => el("button", {
+    class: "mode-tab" + (mode === id ? " on" : ""),
+    onclick: () => { state.searchMode = id; renderSearch(); },
+  }, label, n === null ? null : el("small", {}, ` ${n}`));
+  const chip = (id, label, n) => (id === "tudo" || n) ? el("button", {
+    class: "chip" + (filter === id ? " on" : ""),
+    onclick: () => { state.searchFilter = id; renderSearch(); },
+  }, label, el("small", {}, ` ${n}`)) : null;
+  const modeBar = el("div", { class: "mode-tabs" },
+    modeTab("palavra", "Por palavra", keyword),
+    modeTab("sentido", "Por sentido", meaning));
+  const show = (kind) => filter === "tudo" || filter === kind;
+  const body = mode === "sentido"
+    ? [el("p", { class: "group-note" }, "Passagens de assunto parecido, mesmo sem as palavras digitadas. A ordem vem da similaridade de sentido (modelo BGE-M3)."),
+       semanticGroup(semantic)]
+    : [el("p", { class: "group-note" }, "Versículos e comentários que contêm os termos digitados."),
+       el("div", { class: "chips" },
+         chip("tudo", "Tudo", keyword),
+         chip("verses", "Versículos", counts.verses),
+         chip("comments", "Comentários", counts.comments),
+         chip("entries", "Dicionários e livros", counts.entries)),
+       bridgeNote(query, data),
+       keyword ? null : el("p", { class: "empty" }, "Nada encontrado."),
+       show("verses") ? searchSection("verses", `Bíblia · ${module.abbr}`) : null,
+       show("comments") ? searchSection("comments", "Comentários") : null,
+       show("entries") ? searchSection("entries", "Dicionários e livros") : null];
+  openPanel("search", `Busca: ${query}`, modeBar, body);
   if (keepScroll) $("#panel-body").scrollTop = scroll;
 }
 
@@ -1124,7 +1153,7 @@ function groupHeader(title, note) {
 // Resultados por sentido: similaridade de embeddings, com os termos em comum quando houver.
 function semanticGroup(sem) {
   if (!sem) return null;
-  if (!sem.available) return [groupHeader("Por sentido", sem.reason)];
+  if (!sem.available) return [el("p", { class: "empty" }, sem.reason)];
   const why = (item) => item.shared.length
     ? `Termos em comum: ${item.shared.join(", ")}`
     : "Sem termos em comum: achado pelo sentido";
@@ -1142,7 +1171,6 @@ function semanticGroup(sem) {
     el("div", { class: "t" }, c.excerpt),
     el("div", { class: "origin" }, why(c))));
   return [
-    groupHeader("Por sentido", "Passagens de assunto parecido, mesmo sem as palavras digitadas. A ordem vem da similaridade de sentido (modelo BGE-M3), não de palavras exatas."),
     section("Versículos", verses.length, verses),
     section("Comentários", comments.length, comments),
   ];

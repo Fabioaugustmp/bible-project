@@ -364,6 +364,17 @@ button.label { padding: 0 10px; font-size: 13px; }
 .shortcuts dd { margin: 0; }
 kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 6px; background: var(--surface); }
 
+/* Abas da busca (ergonomia): por palavra e por sentido, com filtros por tipo */
+.mode-tabs { display: flex; gap: 4px; margin: 6px 0 4px; border-bottom: 1px solid var(--line); }
+.mode-tab { background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 8px 12px; font: 600 14px var(--sans); color: var(--muted); cursor: pointer; }
+.mode-tab.on { color: var(--ink); border-bottom-color: var(--ink); }
+.mode-tab small { font-weight: 400; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 11px; font-size: 13px; cursor: pointer; }
+.chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.chip small { opacity: .75; }
+.group-note { font-size: 12px; color: var(--muted); margin: 6px 0 0; line-height: 1.5; }
+
 /* Grupos da busca: por palavra e por sentido (T33) */
 .search-group { margin: 22px 0 8px; padding-top: 14px; border-top: 2px solid var(--line); }
 .search-group .group-title { font: 600 1.05rem var(--serif); margin: 0; }

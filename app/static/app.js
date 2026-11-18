@@ -1331,6 +1331,123 @@ function showToast(message) {
 
 $("#graph-full-close").addEventListener("click", closeGraphFull);
 
+// --- Meus estudos (D5, primeira fatia): passagem, título e nota -------------------
+
+function openStudies(id = null) {
+  $("#studies-full").hidden = false;
+  if (id) renderStudy(id);
+  else renderStudyList();
+}
+
+function closeStudies() {
+  $("#studies-full").hidden = true;
+  $("#studies-body").replaceChildren();
+}
+
+async function renderStudyList() {
+  const data = await api("user/studies");
+  const input = el("input", { type: "text", placeholder: "Título do novo estudo", "aria-label": "Título do novo estudo" });
+  const create = el("form", { class: "topic-form", onsubmit: async (event) => {
+    event.preventDefault();
+    const title = input.value.trim();
+    if (!title) return;
+    try { const made = await userWrite("study/create", { title }); renderStudy(made.id); } catch (error) { showToast(error.message); }
+  } }, input, el("button", { class: "chip on", type: "submit" }, "Criar estudo"));
+  const rows = data.studies.map((s) => el("button", { class: "result", onclick: () => renderStudy(s.id) },
+    el("div", { class: "source" }, el("b", {}, s.title), el("span", {}, `${s.status} · ${s.blocks} blocos`)),
+    el("div", { class: "origin" }, `atualizado ${s.updated_at.replace("T", " ")}`)));
+  $("#studies-body").replaceChildren(create,
+    ...(rows.length ? rows : [el("p", { class: "empty" }, "Nenhum estudo ainda. Crie um aqui ou use \"Adicionar ao estudo\" no painel de um versículo.")]));
+}
+
+async function renderStudy(id) {
+  const data = await api("user/study", { id });
+  const study = data.study;
+  const fail = (error) => showToast(error.message);
+  const title = el("input", { type: "text", class: "study-title", "aria-label": "Título do estudo" });
+  title.value = study.title;
+  title.addEventListener("change", async () => {
+    try { await userWrite("study/update", { id: study.id, title: title.value }); } catch (error) { fail(error); }
+  });
+  const status = el("select", { "aria-label": "Estado do estudo", onchange: async () => {
+    try { await userWrite("study/update", { id: study.id, status: status.value }); renderStudy(study.id); } catch (error) { fail(error); }
+  } }, el("option", { value: "rascunho" }, "Rascunho"), el("option", { value: "pronto" }, "Pronto"));
+  status.value = study.status;
+
+  const blockRow = (block, index) => {
+    const move = (direction) => async () => {
+      try { await userWrite("block/move", { id: block.id, direction }); renderStudy(study.id); } catch (error) { fail(error); }
+    };
+    const remove = async () => {
+      if (!confirm("Remover este bloco do estudo?")) return;
+      try { await userWrite("block/delete", { id: block.id }); renderStudy(study.id); } catch (error) { fail(error); }
+    };
+    const actions = el("div", { class: "note-actions" },
+      el("button", { class: "link", "aria-label": "Mover para cima", onclick: move(-1) }, "↑"),
+      el("button", { class: "link", "aria-label": "Mover para baixo", onclick: move(1) }, "↓"),
+      el("button", { class: "link", onclick: remove }, "Remover"));
+    if (block.kind === "passagem") {
+      return el("div", { class: "note" },
+        el("div", { class: "note-meta" }, "Passagem"),
+        el("button", { class: "link", onclick: () => { closeStudies(); go({ book: block.book, chapter: block.chapter, verse: block.verse }); } },
+          refLabel(block.book, block.chapter, block.verse)),
+        actions);
+    }
+    const area = el("textarea", { class: "note-input", rows: 3, "aria-label": block.kind === "titulo" ? "Título da seção" : "Nota do estudo" });
+    area.value = block.body;
+    area.addEventListener("change", async () => {
+      try { await userWrite("block/update", { id: block.id, body: area.value }); } catch (error) { fail(error); }
+    });
+    return el("div", { class: "note" }, el("div", { class: "note-meta" }, block.kind === "titulo" ? "Título" : "Nota"), area, actions);
+  };
+
+  const addNote = el("textarea", { class: "note-input", rows: 3, "aria-label": "Nova nota no estudo", placeholder: "Escreva uma nota para este estudo" });
+  const addTitle = el("input", { type: "text", placeholder: "Título de uma seção", "aria-label": "Nova seção" });
+  const addBlock = (kind, source) => async () => {
+    const body = source.value.trim();
+    if (!body) return;
+    try { await userWrite("block/add", { study_id: study.id, kind, body }); renderStudy(study.id); } catch (error) { fail(error); }
+  };
+  const addCurrent = async () => {
+    if (!state.verse) { showToast("Abra um versículo para adicionar a passagem atual."); return; }
+    try {
+      await userWrite("block/add", { study_id: study.id, kind: "passagem", book: state.book, chapter: state.chapter, verse: state.verse });
+      renderStudy(study.id);
+    } catch (error) { fail(error); }
+  };
+
+  $("#studies-body").replaceChildren(
+    el("div", { class: "note-actions" },
+      el("button", { class: "link", onclick: renderStudyList }, "← Meus estudos"),
+      el("a", { href: `/api/user/study/export?id=${study.id}`, class: "link" }, "Exportar em Markdown"),
+      el("button", { class: "link", onclick: async () => {
+        if (!confirm("Mover este estudo para a lixeira?")) return;
+        try { await userWrite("study/delete", { id: study.id }); renderStudyList(); } catch (error) { fail(error); }
+      } }, "Apagar estudo")),
+    el("div", { class: "note-new" }, title, status),
+    ...(data.blocks.length ? data.blocks.map(blockRow) : [el("p", { class: "empty" }, "O estudo ainda não tem blocos.")]),
+    el("div", { class: "note-new" },
+      el("div", { class: "note-actions" }, el("button", { class: "chip", onclick: addCurrent }, "Adicionar a passagem atual")),
+      addTitle, el("button", { class: "chip", onclick: addBlock("titulo", addTitle) }, "Adicionar título"),
+      addNote, el("button", { class: "chip on", onclick: addBlock("nota", addNote) }, "Adicionar nota")));
+}
+
+async function addToStudy(book, chapter, verse) {
+  try {
+    const data = await api("user/studies");
+    if (data.studies.length) {
+      const study = data.studies[0];
+      await userWrite("block/add", { study_id: study.id, kind: "passagem", book, chapter, verse });
+      showToast(`Adicionado a «${study.title}»`);
+    } else {
+      await userWrite("study/create", { title: `Estudo: ${refLabel(book, chapter, verse)}`, book, chapter, verse });
+      showToast("Estudo criado com esta passagem");
+    }
+  } catch (error) {
+    showToast(`Não foi possível adicionar: ${error.message}`);
+  }
+}
+
 // --- Minhas notas (T40): gravadas só em data/user.db pelo servidor --------------
 let editingNoteId = null;
 
@@ -1376,7 +1493,8 @@ function notesTab(book, chapter, verse, notes) {
         } }, "Apagar")));
   });
   return [
-    el("div", { class: "note-new" }, input, el("div", { class: "note-actions" }, save)),
+    el("div", { class: "note-new" }, input, el("div", { class: "note-actions" }, save,
+      el("button", { class: "link", onclick: () => addToStudy(book, chapter, verse) }, "Adicionar ao estudo mais recente"))),
     rows.length ? rows : el("p", { class: "empty" }, "Nenhuma nota neste versículo ainda."),
     el("p", { class: "group-note" }, el("a", { href: "/api/user/export", class: "link" }, "Exportar em Markdown"), " · ", el("a", { href: "/api/user/export.docx", class: "link" }, "Exportar em Word")),
   ];
@@ -1429,6 +1547,8 @@ $("#topic-form").addEventListener("submit", (event) => {
 });
 $("#topic-close").addEventListener("click", closeTopics);
 $("#topics").addEventListener("click", () => openTopics());
+$("#studies").addEventListener("click", () => openStudies());
+$("#studies-close").addEventListener("click", closeStudies);
 
 // --- Atalhos de teclado (D2): só fora de campos de texto; Esc vale sempre ----------
 
@@ -1460,7 +1580,8 @@ document.addEventListener("keydown", (event) => {
   if (event.ctrlKey || event.metaKey || event.altKey) return;
   const typing = event.target.closest?.("input, textarea, select, [contenteditable]");
   if (event.key === "Escape") {
-    if (!$("#topic-full").hidden) closeTopics();
+    if (!$("#studies-full").hidden) closeStudies();
+    else if (!$("#topic-full").hidden) closeTopics();
     else if (!$("#graph-full").hidden) closeGraphFull();
     else if (!$("#preview").hidden) hidePreview();
     else if (!$("#panel").hidden) $("#panel-close").click();

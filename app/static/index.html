@@ -29,7 +29,8 @@
     <div class="tools">
       <button id="smaller" class="icon" aria-label="Diminuir fonte" title="Diminuir fonte">A−</button>
       <button id="larger" class="icon" aria-label="Aumentar fonte" title="Aumentar fonte">A+</button>
-      <button id="topics" class="icon label" title="Pesquisar um tema na Bíblia">Temas</button>
+      <button id="studies" class="icon label" title="Meus estudos">Estudos</button>
+    <button id="topics" class="icon label" title="Pesquisar um tema na Bíblia">Temas</button>
     <button id="browse" class="icon label" title="Folhear dicionários e livros">Dicionários</button>
       <button id="parallel" class="icon label" aria-pressed="false" title="Versões em paralelo (atalho: p)">Paralelo</button>
       <button id="words" class="icon" aria-pressed="false" title="Palavras originais: clique em uma palavra para ver o termo grego ou hebraico" hidden>Strong</button>
@@ -69,6 +70,10 @@
 
   <div id="preview" class="preview" role="tooltip" hidden></div>
   <div id="toast" class="toast" role="alert" hidden></div>
+  <div id="studies-full" class="graph-full" role="dialog" aria-modal="true" aria-label="Meus estudos" hidden>
+    <div class="graph-full-head"><strong>Meus estudos</strong><button id="studies-close" class="chip" aria-label="Fechar meus estudos">Fechar · Esc</button></div>
+    <div id="studies-body" class="topic-body"></div>
+  </div>
   <div id="topic-full" class="graph-full topic-full" role="dialog" aria-modal="true" aria-label="Pesquisa por tema" hidden>
     <div class="graph-full-head"><strong>Pesquisa por tema</strong><button id="topic-close" class="chip" aria-label="Fechar pesquisa por tema">Fechar · Esc</button></div>
     <form id="topic-form" class="topic-form">

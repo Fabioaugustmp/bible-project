@@ -29,6 +29,20 @@ create table if not exists notes(
     created_at text not null, updated_at text not null,
     deleted_at text);
 create index if not exists notes_by_anchor on notes(anchor_id);
+create table if not exists studies(
+    id integer primary key,
+    title text not null,
+    status text not null default 'rascunho',
+    created_at text not null, updated_at text not null,
+    deleted_at text);
+create table if not exists study_blocks(
+    id integer primary key,
+    study_id integer not null references studies(id),
+    pos integer not null,
+    kind text not null,
+    anchor_id integer references anchors(id),
+    body text);
+create index if not exists study_blocks_by_study on study_blocks(study_id, pos);
 create table if not exists imports(
     id integer primary key,
     origin_path text, origin_sha256 text unique,
@@ -197,5 +211,174 @@ def delete_note(con, data):
     return {"ok": cur.rowcount == 1}
 
 
-READ = {"notes": list_notes, "all": list_all}
-WRITE = {"note/create": create_note, "note/update": update_note, "note/delete": delete_note}
+# ---- estudos (D5, primeira fatia: passagem, título e nota) ----------------------
+
+BLOCK_KINDS = ("passagem", "titulo", "nota")
+STATUSES = ("rascunho", "pronto")
+
+
+def _study(con, study_id):
+    row = con.execute("select * from studies where id = ? and deleted_at is null", (study_id,)).fetchone()
+    if not row:
+        raise ValueError("estudo não encontrado")
+    return row
+
+
+def _touch(con, study_id):
+    con.execute("update studies set updated_at = ? where id = ?", (now(), study_id))
+
+
+def _anchor(con, book, chapter, verse):
+    con.execute("insert or ignore into anchors(book, chapter, verse) values (?, ?, ?)", (book, chapter, verse))
+    return con.execute("select id from anchors where book = ? and chapter = ? and verse = ?",
+                       (book, chapter, verse)).fetchone()["id"]
+
+
+def _clean_title(value):
+    title = str(value or "").strip()
+    if not title:
+        raise ValueError("o título está vazio")
+    if len(title) > 200:
+        raise ValueError("o título passa de 200 caracteres")
+    return title
+
+
+def _add_block(con, study_id, kind, data):
+    if kind not in BLOCK_KINDS:
+        raise ValueError("tipo de bloco desconhecido")
+    anchor, body = None, None
+    if kind == "passagem":
+        anchor = _anchor(con, *ref_of(data))
+    else:
+        body = clean_body(data)
+    pos = con.execute("select coalesce(max(pos), 0) + 1 from study_blocks where study_id = ?",
+                      (study_id,)).fetchone()[0]
+    cur = con.execute("insert into study_blocks(study_id, pos, kind, anchor_id, body) values (?, ?, ?, ?, ?)",
+                      (study_id, pos, kind, anchor, body))
+    _touch(con, study_id)
+    return cur.lastrowid
+
+
+def list_studies(con, q):
+    rows = con.execute(
+        "select s.id, s.title, s.status, s.created_at, s.updated_at,"
+        " (select count(*) from study_blocks b where b.study_id = s.id) as blocks"
+        " from studies s where s.deleted_at is null order by s.updated_at desc").fetchall()
+    return {"studies": [dict(r) for r in rows]}
+
+
+def get_study(con, q):
+    study = _study(con, int(q["id"]))
+    blocks = con.execute(
+        "select b.id, b.pos, b.kind, b.body, a.book, a.chapter, a.verse from study_blocks b"
+        " left join anchors a on a.id = b.anchor_id where b.study_id = ? order by b.pos",
+        (study["id"],)).fetchall()
+    return {"study": dict(study), "blocks": [dict(b) for b in blocks]}
+
+
+def create_study(con, data):
+    title = _clean_title(data.get("title") or "Novo estudo")
+    stamp = now()
+    cur = con.execute("insert into studies(title, status, created_at, updated_at) values (?, 'rascunho', ?, ?)",
+                      (title, stamp, stamp))
+    study_id = cur.lastrowid
+    if data.get("book") is not None:
+        _add_block(con, study_id, "passagem", data)
+    con.commit()
+    return {"id": study_id}
+
+
+def update_study(con, data):
+    study = _study(con, int(data["id"]))
+    title = _clean_title(data["title"]) if "title" in data else study["title"]
+    status = data.get("status", study["status"])
+    if status not in STATUSES:
+        raise ValueError("estado inválido")
+    con.execute("update studies set title = ?, status = ?, updated_at = ? where id = ?",
+                (title, status, now(), study["id"]))
+    con.commit()
+    return {"ok": True}
+
+
+def delete_study(con, data):
+    cur = con.execute("update studies set deleted_at = ? where id = ? and deleted_at is null",
+                      (now(), int(data["id"])))
+    con.commit()
+    return {"ok": cur.rowcount == 1}
+
+
+def add_block(con, data):
+    study = _study(con, int(data["study_id"]))
+    kind = data.get("kind", "nota")
+    block_id = _add_block(con, study["id"], kind, data)
+    con.commit()
+    return {"id": block_id}
+
+
+def _block(con, block_id):
+    row = con.execute("select b.*, s.id as study_id from study_blocks b join studies s on s.id = b.study_id"
+                      " where b.id = ? and s.deleted_at is null", (block_id,)).fetchone()
+    if not row:
+        raise ValueError("bloco não encontrado")
+    return row
+
+
+def update_block(con, data):
+    block = _block(con, int(data["id"]))
+    if block["kind"] == "passagem":
+        raise ValueError("passagem não tem texto para editar")
+    cur = con.execute("update study_blocks set body = ? where id = ?", (clean_body(data), block["id"]))
+    _touch(con, block["study_id"])
+    con.commit()
+    return {"ok": cur.rowcount == 1}
+
+
+def delete_block(con, data):
+    block = _block(con, int(data["id"]))
+    con.execute("delete from study_blocks where id = ?", (block["id"],))
+    _touch(con, block["study_id"])
+    con.commit()
+    return {"ok": True}
+
+
+def move_block(con, data):
+    block = _block(con, int(data["id"]))
+    step = -1 if int(data.get("direction", 0)) < 0 else 1
+    other = con.execute(
+        "select id, pos from study_blocks where study_id = ? and pos " + ("<" if step < 0 else ">") + " ?"
+        " order by pos " + ("desc" if step < 0 else "asc") + " limit 1",
+        (block["study_id"], block["pos"])).fetchone()
+    if other:
+        con.execute("update study_blocks set pos = case id when ? then ? when ? then ? end where id in (?, ?)",
+                    (block["id"], other["pos"], other["id"], block["pos"], block["id"], other["id"]))
+        _touch(con, block["study_id"])
+        con.commit()
+    return {"ok": bool(other)}
+
+
+def export_study(con, q, names):
+    """Um estudo em Markdown. A passagem aparece só como referência: o texto fica na biblioteca."""
+    study = _study(con, int(q["id"]))
+    blocks = con.execute(
+        "select b.kind, b.body, a.book, a.chapter, a.verse from study_blocks b"
+        " left join anchors a on a.id = b.anchor_id where b.study_id = ? order by b.pos",
+        (study["id"],)).fetchall()
+    lines = [f"# {study['title']}", "", f"*Estado: {study['status']} · atualizado em {study['updated_at'].replace('T', ' ')}*", ""]
+    for b in blocks:
+        if b["kind"] == "titulo":
+            lines += [f"## {b['body']}", ""]
+        elif b["kind"] == "passagem":
+            name = names.get(b["book"], f"Livro {b['book']}")
+            lines += [f"**Passagem:** {name} {b['chapter']}:{b['verse']}", ""]
+        else:
+            lines += [b["body"], ""]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study}
+WRITE = {
+    "note/create": create_note, "note/update": update_note, "note/delete": delete_note,
+    "study/create": create_study, "study/update": update_study, "study/delete": delete_study,
+    "block/add": add_block, "block/update": update_block, "block/delete": delete_block,
+    "block/move": move_block,
+}

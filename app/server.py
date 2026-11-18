@@ -632,6 +632,20 @@ class Handler(BaseHTTPRequestHandler):
                 con.close()
                 lib.close()
             return self.send(200, text.encode("utf-8"), "text/markdown; charset=utf-8")
+        if action == "study/export":
+            con = userdata.connect()
+            lib = connect()
+            try:
+                names = {r["book"]: r["name"] for r in lib.execute("select book, name from books")}
+                text = userdata.export_study(con, {k: v[0] for k, v in parse_qs(url.query).items()}, names)
+            except ValueError as error:
+                return self.send_json(400, {"error": str(error)})
+            except sqlite3.Error as error:
+                return self.send_json(500, {"error": str(error)})
+            finally:
+                con.close()
+                lib.close()
+            return self.send(200, text.encode("utf-8"), "text/markdown; charset=utf-8")
         if action == "export.docx":
             con = userdata.connect()
             lib = connect()

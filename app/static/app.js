@@ -1085,6 +1085,29 @@ function searchSection(kind, title) {
 
 // Busca em duas abas: "Por palavra" (com filtros por tipo) e "Por sentido".
 // Mostra só uma parte por vez, para não exigir rolagem longa (T33, ajuste de ergonomia).
+// Escopo e modo da busca por palavra (DESENHO-PESQUISA, fase 1). Mudar refaz a busca.
+function searchOptions() {
+  const rerun = () => showSearch(state.lastSearch.query);
+  const scope = el("select", { "aria-label": "Escopo da busca", onchange: (event) => {
+    state.searchScope = event.target.value; rerun();
+  } }, el("option", { value: "aberta" }, "Versão aberta"), el("option", { value: "todas" }, "Todas as versões"));
+  scope.value = state.searchScope || "aberta";
+  const modes = [["todas", "Todas as palavras"], ["qualquer", "Qualquer palavra"], ["frase", "Frase exata"], ["near", "Próximas (NEAR)"]];
+  const mode = el("select", { "aria-label": "Modo da busca", onchange: (event) => {
+    state.searchModo = event.target.value; rerun();
+  } }, modes.map(([value, text]) => el("option", { value }, text)));
+  mode.value = state.searchModo || "todas";
+  const children = [el("label", {}, "Escopo ", scope), el("label", {}, "Modo ", mode)];
+  if ((state.searchModo || "todas") === "near") {
+    const distance = el("input", { type: "number", min: "1", max: "50", "aria-label": "Alcance em palavras", onchange: (event) => {
+      state.searchNear = Math.max(1, Math.min(50, Number(event.target.value) || 5)); rerun();
+    } });
+    distance.value = String(state.searchNear || 5);
+    children.push(el("label", {}, "Alcance ", distance, " palavras"));
+  }
+  return el("div", { class: "search-opts" }, ...children);
+}
+
 function renderSearch(keepScroll = false) {
   const { query, data, semantic } = state.lastSearch;
   pendingView = { type: "search", query };
@@ -1115,6 +1138,7 @@ function renderSearch(keepScroll = false) {
     ? [el("p", { class: "group-note" }, "Passagens de assunto parecido, mesmo sem as palavras digitadas. A ordem vem da similaridade de sentido (modelo BGE-M3)."),
        semanticGroup(semantic)]
     : [el("p", { class: "group-note" }, "Versículos e comentários que contêm os termos digitados."),
+       searchOptions(),
        el("div", { class: "chips" },
          chip("tudo", "Tudo", keyword),
          chip("verses", "Versículos", counts.verses),
@@ -1154,7 +1178,13 @@ function bridgeNote(query, data) {
 
 async function showSearch(query) {
   const [data, semantic] = await Promise.all([
-    api("search", { q: query, module: state.module, bilingual: state.bilingual ? 1 : 0 }),
+    api("search", {
+      q: query,
+      module: state.searchScope === "todas" ? null : state.module,
+      bilingual: state.bilingual ? 1 : 0,
+      modo: state.searchModo || "todas",
+      near: state.searchNear || 5,
+    }),
     api("semantic", { q: query }).catch(() => ({ available: false, reason: "Não foi possível consultar a busca por sentido." })),
   ]);
   state.lastSearch = { query, data, semantic };

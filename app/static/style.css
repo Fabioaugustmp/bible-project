@@ -419,3 +419,8 @@ kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-w
 /* Meus estudos (D5, primeira fatia) */
 .study-title { width: 100%; font: 600 1.1rem var(--serif); padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
 .note-new select { justify-self: start; padding: 4px 8px; border-radius: 8px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+
+/* Escopo e modo da busca (DESENHO-PESQUISA, fase 1) */
+.search-opts { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+.search-opts select, .search-opts input { padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
+.search-opts input { width: 4.5em; }

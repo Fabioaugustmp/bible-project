@@ -94,3 +94,20 @@ uma folha que se abre por um botão.
 
 - Resumo ou resposta gerada por modelo de linguagem: fora, por pedido seu.
 - Busca em texto criptografado: fora, pela regra D008.
+
+## 10. Estado da implementação
+
+**Fase 1 (escopo e modo): feita.** Decisões do usuário aplicadas: escopo padrão
+é a versão aberta (1); Strong nos resultados fica para a fase 2 (2); a busca salva
+será no navegador por enquanto e depois no painel autenticado (3); a ordem é
+escopo e modo (4).
+
+- Modo na Bíblia: todas as palavras, qualquer palavra, frase exata e próximas
+  (NEAR, alcance de 1 a 50 palavras). Testado: "graça verdade" dá 9 (todas), 516
+  (qualquer), 0 (frase exata), 7 (NEAR 5) e 1 (NEAR 1), em ARA.
+- Escopo: versão aberta ou todas as versões.
+- **Limite:** o modo vale para os versículos. Comentários e dicionários continuam
+  em todas as palavras (com a ponte por Strong). Estender o modo a eles é parte
+  da fase 2.
+- Não implementado ainda: Strong nos resultados (fase 2), copiar e salvar buscas
+  (fase 3) e sugestão de ortografia (fase 4).

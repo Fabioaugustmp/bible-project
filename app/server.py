@@ -58,6 +58,26 @@ def fts_query(text: str) -> str:
     return " ".join(quote(value) for _, value in parse_query(text))
 
 
+def fts_by_mode(text: str, modo: str = "todas", near=5) -> str:
+    """Consulta FTS5 conforme o modo escolhido (DESENHO-PESQUISA, fase 1).
+
+    todas: todas as palavras (padrão atual); qualquer: alguma palavra (OR);
+    frase: as palavras como uma frase exata; near: as palavras a até n palavras uma da outra.
+    """
+    values = [value for _, value in parse_query(text)]
+    if not values:
+        return ""
+    words = [w for value in values for w in (value if isinstance(value, list) else [value])]
+    if modo == "qualquer":
+        return " OR ".join(quote(value) for value in values)
+    if modo == "frase":
+        return quote(words)
+    if modo == "near":
+        n = max(1, min(50, int(near)))
+        return f"NEAR({' '.join(quote(value) for value in values)}, {n})"
+    return fts_query(text)
+
+
 def bilingual_query(con, text: str):
     """Consulta com a ponte por Strong: cada palavra vira (palavra OR tradução inglesa).
 
@@ -483,7 +503,7 @@ def api_semantic(con, q):
 
 def api_search(con, q):
     """Busca por palavra. Com `kind` e `offset`, devolve só mais uma página daquele tipo."""
-    query = fts_query(q.get("q", ""))
+    query = fts_by_mode(q.get("q", ""), q.get("modo", "todas"), q.get("near", 5))
     empty = {"query": "", "verses": [], "comments": [], "entries": [], "totals": {}, "expansions": []}
     if not query:
         return empty

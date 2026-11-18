@@ -98,3 +98,10 @@ Não verificado: a captura de tela do celular saiu cortada, embora as medidas mo
 - Em 1280 px, o painel continua estático e a barra continua pegajosa (sticky), sem mudança.
 
 Limites: a folha não tem alça para recolher; fecha pelo ×. A barra de ações tem 155 px porque os botões de 44 px quebram em duas linhas; pode ser reduzida depois. Não testei gestos de arrastar nem toque real.
+
+## Itens 5 e 6: busca no celular e largura no desktop
+
+- **5. Busca no celular:** "Opções de busca" (Strong, escopo, modo, alcance e recentes) virou um bloco recolhível. Em até 560 px começa fechado; acima disso, aberto. A linha de ações (Copiar, Adicionar ao estudo, Salvar) fica numa linha de rolagem horizontal. Medido em 375 px: o primeiro resultado começa em y=807, com a folha terminando em 812, ou seja, no limite. Para ele aparecer inteiro sem rolar ainda faltam cerca de 40 px (a faixa de filtros e o aviso de ponte ocupam o resto).
+- **6. Desktop entre 1100 e 1399 px:** painel e coluna fixada encolhem com `flex-shrink`, e a leitura tem largura mínima de 34rem. Medido em 1280 px com as duas colunas abertas (larguras salvas no navegador de teste): leitura 544 px, texto 481 px (antes: 448 e 385), sem rolagem horizontal.
+
+Não verificado: o recolhimento das opções com toque real; a leitura em 1100 px exato; outras larguras entre 1100 e 1399.

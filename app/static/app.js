@@ -1344,10 +1344,16 @@ function searchOptions() {
     } }, el("option", { value: "" }, "Recentes e salvas…"), entries.map((item, index) => el("option", { value: String(index) }, item.label)));
     children.push(list);
   }
+  // Opções de busca ficam recolhíveis; no celular começam fechadas, para o primeiro resultado aparecer logo (item 5).
+  const config = children.splice(0);
+  if (state.searchConfigOpen === undefined) state.searchConfigOpen = !window.matchMedia("(max-width: 560px)").matches;
+  const configBox = el("details", { class: "search-config", open: state.searchConfigOpen, ontoggle: (event) => { state.searchConfigOpen = event.target.open; } },
+    el("summary", {}, "Opções de busca"),
+    el("div", { class: "search-opts" }, ...config));
   children.push(el("button", { class: "link", onclick: copySearchResults }, "Copiar versículos"));
   children.push(el("button", { class: "link", onclick: addSearchToStudy }, "Adicionar versículos ao estudo"));
   children.push(el("button", { class: "link", onclick: saveCurrentSearch }, "Salvar busca"));
-  return el("div", { class: "search-opts" }, ...children);
+  return el("div", { class: "search-opts-wrap" }, configBox, el("div", { class: "search-opts search-actions" }, ...children));
 }
 
 // Você quis dizer? (DESENHO-PESQUISA, fase 4): sugestões do Dicionário em português.

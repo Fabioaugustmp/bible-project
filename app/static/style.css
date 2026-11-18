@@ -446,6 +446,22 @@ kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-w
 .resume-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
 .resume-close { position: absolute; right: 10px; top: 8px; }
 
+/* Opções de busca recolhíveis (celular começa fechado) */
+.search-config { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+.search-config summary { cursor: pointer; padding: 6px 0; font-weight: 600; color: var(--ink); }
+.search-config > .search-opts { margin: 6px 0 0; }
+@media (max-width: 560px) {
+  .search-actions { flex-wrap: nowrap; overflow-x: auto; gap: 6px; }
+  .search-actions .link { white-space: nowrap; flex: none; }
+}
+
+/* Entre 1100 e 1399 px, painel e coluna fixada cabem com o texto legível (item 6) */
+@media (min-width: 1100px) and (max-width: 1399px) {
+  .reader { min-width: 34rem; }   /* a leitura nunca fica abaixo disso, mesmo com larguras salvas */
+  .panel { flex: 0 1 var(--panel-w, min(26rem, 28vw)); }
+  .pinned { flex: 0 1 var(--pinned-w, min(24rem, 26vw)); }
+}
+
 /* Celular (até 560 px): painel e coluna fixada viram folha inferior sobre o texto.
    Durante a seleção, a folha some para o texto e a barra de ações ficarem visíveis. */
 @media (max-width: 560px) {

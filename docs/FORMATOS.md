@@ -203,3 +203,15 @@ versículo a versículo e usa versículo 0 para algumas marcas de capítulo
 inteiro sem link correspondente no texto. Nos módulos com
 `compressed.search.data = 1` (Biblical Illustrator) a lista vem compactada e não
 é lida; para eles, a lista de citados passa a vir das citações encontradas no texto.
+
+## Notas do e-Sword (`study.notx`) — verificado em 2026-11-17
+
+- É um SQLite 3 com uma única tabela: `Verses(Book INT, Chapter INT, Verse INT, Notes TEXT)`.
+  `Book` segue a ordem canônica (43 = João), como nas Bíblias do e-Sword.
+- `Notes` é RTF (`{\rtf1 ...}`) com acentos em `\'xx` (cp1252) e `\loch\af1\dbch...`
+  de fonte. O conversor de `importer/rtf.py` decodifica os `\'xx` corretamente
+  (`\'e9` vira `é`, verificado).
+- Pasta: `Documentos\e-Sword\study.notx` (1 nota) e `Documentos\e-Sword\e-Sword\study.notx`
+  (vazio). Só a primeira tem conteúdo.
+- O texto pode começar com caracteres que o próprio usuário digitou (ex.: `x'No verso...`);
+  isso é dado original e não é removido pela importação.

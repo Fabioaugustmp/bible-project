@@ -29,6 +29,10 @@ create table if not exists notes(
     created_at text not null, updated_at text not null,
     deleted_at text);
 create index if not exists notes_by_anchor on notes(anchor_id);
+create table if not exists imports(
+    id integer primary key,
+    origin_path text, origin_sha256 text unique,
+    imported_at text, notes_count integer);
 """
 
 
@@ -37,7 +41,10 @@ def connect():
     con = sqlite3.connect(USER_DB)
     con.row_factory = sqlite3.Row
     con.executescript(SCHEMA)
-    con.execute("insert or ignore into meta(key, value) values ('schema_version', '1')")
+    columns = [row[1] for row in con.execute("pragma table_info(notes)")]
+    if "import_id" not in columns:   # migração: notas importadas guardam a origem (T41)
+        con.execute("alter table notes add column import_id integer references imports(id)")
+    con.execute("insert or ignore into meta(key, value) values ('schema_version', '2')")
     con.commit()
     return con
 

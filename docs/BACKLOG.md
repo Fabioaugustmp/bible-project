@@ -169,6 +169,8 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T90 | parcial (D5, primeira fatia, decisões do usuário aprovadas): área Meus estudos (botão Estudos), estudos com blocos de passagem, título e nota; "Adicionar ao estudo mais recente" no painel do versículo; reordenar, editar, remover e exportar em Markdown; estudos vão para a lixeira; testado: API (origem falsa recusada), criação a partir do painel e edição no navegador. Faltam citação e palavra (D5, próxima fatia), coluna ao lado do Ler (decisão 3, só quando aberta: feita com "Abrir ao lado", D025; testada com criar, nota, renomear e apagar pela coluna; não testada em tela estreita) |
 | T41 | concluída: notas do e-Sword (`study.notx`, RTF) importadas para `data/user.db` com procedência (tabela `imports`, SHA-256, `import_id` em cada nota); reimportar o mesmo arquivo não duplica (testado); 1 nota importada (João 3:16) conferida na interface |
 | T42 | parcial: todas as notas exportadas em Markdown (`/api/user/export`) e em Word (`/api/user/export.docx`, só biblioteca padrão; pacote validado: 3 partes, XML bem formado); faltam PDF (exige biblioteca externa, D003: decisão sua) e exportação de estudos (D5) |
+| T97 | concluída: na busca por palavra, "Copiar versículos" (com referência) e "Adicionar versículos ao estudo" (um bloco por versículo, até os 49 da busca de teste); a busca traz no máximo 60 versículos por vez, e o aviso diz quando há mais; testado no navegador (49 blocos, toast; cópia sem leitura do clipboard, bloqueada no navegador de teste) |
+| GET `/api/user/study` sem `id` | corrigido: responde 400 em vez de derrubar a conexão; teste em `tests/test_user_study.py` |
 | T50–T52 (M5) | pendente |
 
 ## M1 — Fechar a importação completa

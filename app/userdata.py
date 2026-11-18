@@ -282,6 +282,8 @@ def list_studies(con, q):
 
 
 def get_study(con, q):
+    if "id" not in q:
+        raise ValueError("id do estudo é obrigatório")
     study = _study(con, int(q["id"]))
     blocks = con.execute(
         "select b.id, b.pos, b.kind, b.body, a.book, a.chapter, a.verse from study_blocks b"

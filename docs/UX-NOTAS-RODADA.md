@@ -60,7 +60,8 @@ Ordem sugerida pelo agente: 1, depois 3, por último 2.
   edição perde o foco.
 - Uma requisição GET a `/api/user/study` sem `id` derruba a resposta (ERR_EMPTY_RESPONSE,
   porque `int(q["id"])` levanta KeyError). Não afeta a interface, mas deveria
-  responder 400. Não corrigido nesta rodada.
+  responder 400. **Corrigido depois:** agora responde 400 (teste em
+  `tests/test_user_study.py`).
 
 ## Testado (sugestão 2)
 

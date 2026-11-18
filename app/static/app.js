@@ -324,24 +324,47 @@ async function addRangeToStudy(range) {
   const numbers = Array.from({ length: range.to - range.from + 1 }, (_, i) => range.from + i);
   if (numbers.length > MAX_SELECTION_STUDY) { showToast(`Seleção grande demais: máximo de ${MAX_SELECTION_STUDY} versículos por vez.`); return; }
   const { book, chapter } = state;
+  const added = await addPassagesToStudy(numbers.map((verse) => ({ book, chapter, verse })));
+  if (added) setSelectMode(false);
+}
+
+// Adiciona passagens (uma por bloco) ao estudo mais recente, ou cria um estudo com a primeira.
+// Devolve true se deu certo.
+async function addPassagesToStudy(passages, note = "") {
+  if (!passages.length) { showToast("Não há versículos para adicionar."); return false; }
   try {
     const data = await api("user/studies");
-    let studyId, title, todo = numbers;
+    let studyId, title, todo = passages;
     if (data.studies.length) {
       studyId = data.studies[0].id;
       title = data.studies[0].title;
     } else {
-      const made = await userWrite("study/create", { title: `Estudo: ${refLabel(book, chapter, range.from)}`, book, chapter, verse: range.from });
+      const first = passages[0];
+      const name = `Estudo: ${refLabel(first.book, first.chapter, first.verse)}`;
+      const made = await userWrite("study/create", { title: name, book: first.book, chapter: first.chapter, verse: first.verse });
       studyId = made.id;
-      title = `Estudo: ${refLabel(book, chapter, range.from)}`;
-      todo = numbers.slice(1);   // o estudo novo já tem a primeira passagem
+      title = name;
+      todo = passages.slice(1);   // o estudo novo já tem a primeira passagem
     }
-    for (const verse of todo) await userWrite("block/add", { study_id: studyId, kind: "passagem", book, chapter, verse });
-    showToast(`${numbers.length} passagem(ns) adicionada(s) a «${title}»`);
-    setSelectMode(false);
+    for (const p of todo) await userWrite("block/add", { study_id: studyId, kind: "passagem", book: p.book, chapter: p.chapter, verse: p.verse });
+    showToast(`${passages.length} passagem(ns) adicionada(s) a «${title}»${note}`);
+    return true;
   } catch (error) {
     showToast(`Não foi possível adicionar: ${error.message}`);
+    return false;
   }
+}
+
+// Adiciona à mesma lista de estudo os versículos da busca exibida (T97).
+function addSearchToStudy() {
+  const verses = (state.lastSearch && state.lastSearch.data && state.lastSearch.data.verses) || [];
+  addPassagesToStudy(verses.map((v) => ({ book: v.book, chapter: v.chapter, verse: v.verse })), partialSearchNote(verses.length));
+}
+
+// A busca devolve no máximo 60 versículos por vez; avisa quando há mais no total.
+function partialSearchNote(shown) {
+  const total = (state.lastSearch && state.lastSearch.data && state.lastSearch.data.totals && state.lastSearch.data.totals.verses) || 0;
+  return total > shown ? ` (só os primeiros ${shown} de ${total})` : "";
 }
 
 // Anotar: as notas são de um versículo, então abre "Minhas notas" do primeiro da seleção.
@@ -1274,14 +1297,14 @@ function runSavedSearch(item) {
   showSearch(item.q);
 }
 
-// Copia os versículos da busca (T97), sem os marcadores de destaque.
+// Copia os versículos da busca exibida (T97), sem os marcadores de destaque.
 async function copySearchResults() {
   const verses = (state.lastSearch && state.lastSearch.data && state.lastSearch.data.verses) || [];
   if (!verses.length) { showToast("Não há versículos para copiar."); return; }
   const text = verses.map((v) => `${refLabel(v.book, v.chapter, v.verse)} (${v.abbr}): ${String(v.hit).replace(/\[\[|\]\]/g, "")}`).join("\n");
   try {
     await navigator.clipboard.writeText(text);
-    showToast(`${verses.length} versículos copiados.`);
+    showToast(`${verses.length} versículos copiados${partialSearchNote(verses.length)}.`);
   } catch (error) {
     showToast("Não foi possível copiar neste navegador.");
   }
@@ -1322,6 +1345,7 @@ function searchOptions() {
     children.push(list);
   }
   children.push(el("button", { class: "link", onclick: copySearchResults }, "Copiar versículos"));
+  children.push(el("button", { class: "link", onclick: addSearchToStudy }, "Adicionar versículos ao estudo"));
   children.push(el("button", { class: "link", onclick: saveCurrentSearch }, "Salvar busca"));
   return el("div", { class: "search-opts" }, ...children);
 }

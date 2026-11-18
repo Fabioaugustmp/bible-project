@@ -1378,7 +1378,7 @@ function notesTab(book, chapter, verse, notes) {
   return [
     el("div", { class: "note-new" }, input, el("div", { class: "note-actions" }, save)),
     rows.length ? rows : el("p", { class: "empty" }, "Nenhuma nota neste versículo ainda."),
-    el("p", { class: "group-note" }, el("a", { href: "/api/user/export", class: "link" }, "Exportar todas as notas (Markdown)")),
+    el("p", { class: "group-note" }, el("a", { href: "/api/user/export", class: "link" }, "Exportar em Markdown"), " · ", el("a", { href: "/api/user/export.docx", class: "link" }, "Exportar em Word")),
   ];
 }
 

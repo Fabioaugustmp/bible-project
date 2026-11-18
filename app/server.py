@@ -632,6 +632,18 @@ class Handler(BaseHTTPRequestHandler):
                 con.close()
                 lib.close()
             return self.send(200, text.encode("utf-8"), "text/markdown; charset=utf-8")
+        if action == "export.docx":
+            con = userdata.connect()
+            lib = connect()
+            try:
+                names = {r["book"]: r["name"] for r in lib.execute("select book, name from books")}
+                data = userdata.export_docx(con, names)
+            except sqlite3.Error as error:
+                return self.send_json(500, {"error": str(error)})
+            finally:
+                con.close()
+                lib.close()
+            return self.send(200, data, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
         handler = userdata.READ.get(action)
         if not handler:
             return self.send_json(404, {"error": "endpoint desconhecido"})

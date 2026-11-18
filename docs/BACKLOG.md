@@ -167,7 +167,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T62 | concluída (Haiku; o roteiro previa Sonnet, mas não houve condição de parada): botão '‖' liga o modo paralelo; até 4 versões lado a lado, alinhadas por versículo (linhas com a mesma altura), hebraico com dir=rtl; escolha guardada. Testado com ARA + ACF + KJV (João 3:16), ARA + WLC (Sl 23:1) e limite de 4. Sem títulos de seção nem Strong nesse modo; em tela estreita, as colunas empilham |
 | T40 | parcial: `data/user.db` com notas presas a passagens (criar, editar, apagar para a lixeira); aba "Minhas notas" no painel do versículo; escrita só pelo servidor, com conferência de Origin e Host (testada: origem falsa recusada, 403); faltam marcações, etiquetas, estudos (D5) e a conferência de que a reimportação não altera as notas (critério da D4) |
 | T41 | concluída: notas do e-Sword (`study.notx`, RTF) importadas para `data/user.db` com procedência (tabela `imports`, SHA-256, `import_id` em cada nota); reimportar o mesmo arquivo não duplica (testado); 1 nota importada (João 3:16) conferida na interface |
-| T42 | parcial: exportação de todas as notas em Markdown (`/api/user/export`); faltam Word, PDF e estudos |
+| T42 | parcial: todas as notas exportadas em Markdown (`/api/user/export`) e em Word (`/api/user/export.docx`, só biblioteca padrão; pacote validado: 3 partes, XML bem formado); faltam PDF (exige biblioteca externa, D003: decisão sua) e exportação de estudos (D5) |
 | T50–T52 (M5) | pendente |
 
 ## M1 — Fechar a importação completa

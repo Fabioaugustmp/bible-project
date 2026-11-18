@@ -116,6 +116,56 @@ def export_markdown(con, names):
     return "\n".join(lines).rstrip() + "\n"
 
 
+def export_docx(con, names):
+    """As mesmas notas em .docx (T42), só com a biblioteca padrão: um zip com document.xml."""
+    import io
+    import zipfile
+    from xml.sax.saxutils import escape
+
+    rows = con.execute(
+        "select n.body, n.created_at, a.book, a.chapter, a.verse from notes n"
+        " join anchors a on a.id = n.anchor_id where n.deleted_at is null"
+        " order by a.book, a.chapter, a.verse, n.created_at").fetchall()
+    paras = []
+
+    def para(text, bold=False, size=None):
+        props = ""
+        if bold or size:
+            props = "<w:rPr>" + ("<w:b/>" if bold else "") + (f'<w:sz w:val="{size}"/>' if size else "") + "</w:rPr>"
+        paras.append(f'<w:p><w:r>{props}<w:t xml:space="preserve">{escape(text)}</w:t></w:r></w:p>')
+
+    para("Minhas notas", bold=True, size=36)
+    current = None
+    for r in rows:
+        ref = (r["book"], r["chapter"], r["verse"])
+        if ref != current:
+            current = ref
+            name = names.get(r["book"], "Livro " + str(r["book"]))
+            para(f"{name} {r['chapter']}:{r['verse']}", bold=True, size=28)
+        for line in r["body"].split("\n"):
+            para(line)
+        para(r["created_at"].replace("T", " "), size=18)
+    doc = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+           '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+           + "".join(paras) + "<w:sectPr/></w:body></w:document>")
+    content_types = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                     '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                     '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                     '<Default Extension="xml" ContentType="application/xml"/>'
+                     '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+                     '</Types>')
+    rels = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+            '</Relationships>')
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", content_types)
+        z.writestr("_rels/.rels", rels)
+        z.writestr("word/document.xml", doc)
+    return buffer.getvalue()
+
+
 # ---- escrita ----------------------------------------------------------------
 
 def create_note(con, data):

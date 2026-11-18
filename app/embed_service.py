@@ -65,6 +65,17 @@ class Index:
             out[kind] = [{"item_id": int(ids[i]), "score": round(float(scores[i]), 4)} for i in top]
         return out
 
+    def similar(self, kind, item_id, k):
+        """Itens mais parecidos a um item já indexado, pelo vetor guardado (sem o modelo)."""
+        ids, matrix = self.kinds[kind]
+        i = int(np.searchsorted(ids, item_id))
+        if i >= len(ids) or ids[i] != item_id:
+            return None
+        scores = matrix @ matrix[i]
+        scores[i] = -1.0
+        top = np.argsort(-scores)[:k]
+        return [{"item_id": int(ids[j]), "score": round(float(scores[j]), 4)} for j in top]
+
 
 INDEX = None
 
@@ -90,6 +101,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(404, {"error": "não encontrado"})
 
     def do_POST(self):
+        if self.path == "/similar":
+            return self.similar_reply()
         if self.path != "/search":
             return self.reply(404, {"error": "não encontrado"})
         length = int(self.headers.get("Content-Length", 0))
@@ -103,6 +116,26 @@ class Handler(BaseHTTPRequestHandler):
         if not text:
             return self.reply(400, {"error": "consulta vazia"})
         self.reply(200, {"results": INDEX.search(text, kinds, k)})
+
+
+def _similar_reply(self):
+    length = int(self.headers.get("Content-Length", 0))
+    try:
+        data = json.loads(self.rfile.read(length).decode("utf-8"))
+        kind = data.get("kind", "verse")
+        item_id = int(data["item_id"])
+        k = max(1, min(50, int(data.get("k", 10))))
+    except (ValueError, KeyError, TypeError):
+        return self.reply(400, {"error": "pedido inválido"})
+    if kind not in ("verse", "comment"):
+        return self.reply(400, {"error": "tipo inválido"})
+    results = INDEX.similar(kind, item_id, k)
+    if results is None:
+        return self.reply(404, {"error": "fora do índice"})
+    self.reply(200, {"results": results})
+
+
+Handler.similar_reply = _similar_reply
 
 
 def main():

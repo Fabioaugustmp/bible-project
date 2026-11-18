@@ -536,6 +536,44 @@ def api_search(con, q):
     return result
 
 
+SIMILAR_URL = "http://127.0.0.1:8378/similar"
+SIMILAR_K = 10
+
+
+def api_similar(con, q):
+    """Passagens parecidas a um versículo (T34), pela versão ARA1993+ indexada. Sem o serviço, avisa."""
+    try:
+        book, chapter, verse = int(q["book"]), int(q["chapter"]), int(q["verse"])
+    except (KeyError, ValueError):
+        return {"available": True, "verses": []}
+    row = con.execute(
+        "select v.id from verses v join modules m on m.id = v.module_id"
+        " where m.abbr = 'ARA1993+' and v.book = ? and v.chapter = ? and v.verse = ?",
+        (book, chapter, verse)).fetchone()
+    if not row:
+        return {"available": True, "verses": []}
+    body = json.dumps({"kind": "verse", "item_id": row[0], "k": SIMILAR_K}).encode("utf-8")
+    request = urllib.request.Request(SIMILAR_URL, data=body, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            results = json.loads(response.read().decode("utf-8"))["results"]
+    except urllib.error.HTTPError:
+        return {"available": True, "verses": []}
+    except (urllib.error.URLError, OSError, ValueError, KeyError):
+        return {"available": False, "verses": [],
+                "reason": "O serviço de busca por sentido não está rodando."}
+    if not results:
+        return {"available": True, "verses": []}
+    scores = {r["item_id"]: r["score"] for r in results}
+    ids = list(scores)
+    marks = ",".join("?" * len(ids))
+    found = con.execute(
+        f"select v.id, v.book, v.chapter, v.verse, v.text from verses v where v.id in ({marks})", ids).fetchall()
+    verses = [{"id": vid, "abbr": "ARA1993+", "book": b, "chapter": c, "verse": vs, "text": t, "score": scores[vid]}
+              for vid, b, c, vs, t in found]
+    return {"available": True, "verses": sorted(verses, key=lambda v: -v["score"])}
+
+
 def api_topic(con, q):
     """Pesquisa por tema, sem IA: versículos que contêm o termo (na versão aberta) e versículos
     de sentido parecido (BGE-M3), sem repetir os que já aparecem na primeira lista. Só texto bíblico."""
@@ -554,7 +592,7 @@ def api_topic(con, q):
 
 
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "semantic": api_semantic, "topic": api_topic, "word": api_word, "passage": api_passage,
+       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "semantic": api_semantic, "topic": api_topic, "similar": api_similar, "word": api_word, "passage": api_passage,
        "xref-graph": api_xref_graph}
 
 

@@ -801,6 +801,7 @@ async function showVerse(ref = null) {
   const verseKey = `${book}.${chapter}.${verse}`;
   if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; xrefBook = null; versionsOpen = false; }
   const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook });
+  const similar = await api("similar", { book, chapter, verse }).catch(() => ({ available: false, verses: [] }));
   refreshCommentaryPins({ book, chapter, verse });
   const bookCounts = data.xrefs_total || xrefBook ? (await api("xref-books", { book, chapter, verse })).books : null;
   if (!ref && (book !== state.book || chapter !== state.chapter || verse !== state.verse)) return;
@@ -874,6 +875,15 @@ async function showVerse(ref = null) {
               el("span", { class: "range" }, foreign.map((v) => v.abbr).join(" · "))),
             foreign.map(versionItem))
         : null)],
+    ["parecidas", "Parecidas", similar.verses.length, () => typedSection(["bible"], "Passagens parecidas", similar.verses.length,
+      el("p", { class: "group-note" }, similar.available
+        ? "Passagens de sentido parecido ao versículo, pela versão ARA1993+. Ordem pela proximidade de sentido."
+        : similar.reason),
+      similar.verses.map((v) => el("button", {
+        class: "result", onclick: () => go({ book: v.book, chapter: v.chapter, verse: v.verse }),
+      }, el("div", { class: "source" }, el("b", {}, refLabel(v.book, v.chapter, v.verse)),
+          el("span", {}, `similaridade ${v.score.toFixed(2)}`)),
+        el("div", { class: "t" }, v.text))))],
     ["referencias", "Referências", data.xrefs_total, () => typedSection(["xref"], "Referências cruzadas", data.xrefs_total, xrefSwitch,
       graph || [strip, xrefs.length ? xrefs : el("p", { class: "empty" }, "Nenhuma referência neste livro."), moreXrefs])],
     ["comentarios", "Comentários", data.comments.length, () => [

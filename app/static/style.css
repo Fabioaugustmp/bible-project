@@ -229,7 +229,7 @@ a.ref {
 }
 a.ref:hover, a.ref:focus-visible { text-decoration-style: solid; background: var(--accent-soft); }
 .preview {
-  position: fixed; z-index: 10; padding: 10px 12px; border-radius: 8px;
+  position: fixed; z-index: 30; padding: 10px 12px; border-radius: 8px;
   background: var(--surface); border: 1px solid var(--line);
   box-shadow: 0 8px 24px rgb(0 0 0 / .18); pointer-events: none;
 }

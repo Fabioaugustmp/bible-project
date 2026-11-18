@@ -394,3 +394,23 @@ não cabia, e o usuário não tinha como vê-lo.
 
 **Limites:** a tela cheia usa largura máxima de 1200 px; em telas muito largas
 o grafo não cresce além disso.
+
+## D023 — Revisão do descarte do montador de sermões · 2026-11-17
+
+**Decisão:** o descarte do "montador de sermões" feito na PESQUISA-FEATURES
+(a premissa "nada no plano indica que o usuário prega") fica revisto. A
+função entra no backlog como candidata, depois de T40 (notas), com escopo
+limitado a: registrar o que foi ensinado (data, passagem, local, notas) e
+ligar esse registro ao versículo no leitor. Não entra geração de texto de
+sermão nem resumo produzido por modelo de linguagem; o conteúdo vem sempre
+dos textos e comentários da própria base, com procedência.
+
+**Motivo:** a PESQUISA-MERCADO-ESTUDO mostra que, entre os produtos
+pesquisados, nenhum liga o sermão ou a aula ao versículo no leitor, e que o
+registro do ensino é um uso com demanda real de quem ensina [I]. A premissa
+de que o usuário não prega não foi confirmada pelo usuário; a revisão
+depende de o registro ser útil ao estudo, e não de um perfil de usuário.
+
+**Limites:** a utilidade do registro para o usuário ainda não foi testada.
+Antes de implementar, confirmar com o usuário se o uso é desejado. Isto
+não altera P4 (uso de modelo de linguagem), que segue pendente.

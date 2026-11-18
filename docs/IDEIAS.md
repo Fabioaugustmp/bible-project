@@ -68,4 +68,4 @@ registrar a decisão em [DECISOES.md](DECISOES.md).
 | Abrir módulos criptografados | Contorna proteção de conteúdo licenciado (D008) |
 | Loja ou baixador de módulos de terceiros | Situação de direito autoral incerta |
 | NLLB-200 como tradutor | Licença não comercial trava distribuição futura |
-| Montador de sermões | Fora do objetivo; a exportação de M4 cobre o essencial |
+| Registro de sermões e aulas, ligado ao versículo | Revisto na D023: entra depois de T40, sem geração de texto; confirmar o uso com o usuário antes |

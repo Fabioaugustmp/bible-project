@@ -754,6 +754,8 @@ function citedGroup(group) {
 }
 
 let xrefLimit = 12, xrefVerse = null;
+let verseTab = "versoes";   // aba do painel do versículo (ergonomia)
+let versionsOpen = false; // mostra todas as versões em português
 let xrefBook = null;   // livro escolhido na faixa (T66); null = todos
 
 // Grupos da faixa por livro (T66), na ordem da Bíblia.
@@ -797,7 +799,7 @@ function bookStrip(counts) {
 async function showVerse(ref = null) {
   const { book, chapter, verse } = ref || state;
   const verseKey = `${book}.${chapter}.${verse}`;
-  if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; xrefBook = null; }
+  if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; xrefBook = null; versionsOpen = false; }
   const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook });
   refreshCommentaryPins({ book, chapter, verse });
   const bookCounts = data.xrefs_total || xrefBook ? (await api("xref-books", { book, chapter, verse })).books : null;
@@ -856,41 +858,46 @@ async function showVerse(ref = null) {
   const citedTotal = cited.reduce((sum, group) => sum + group.count, 0);
   const of = (visible, all) => (visible.length === all.length ? String(all.length) : `${visible.length} de ${all.length}`);
 
-  // Atalhos para as seções: com a biblioteca inteira o painel fica longo.
-  const jump = (label, title) => el("button", {
-    class: "chip", onclick: () => {
-      const heading = [...document.querySelectorAll("#panel-body h3")].find((h) => h.textContent.startsWith(title));
-      heading?.scrollIntoView({ block: "start", behavior: "smooth" });
-    },
-  }, label);
-  const jumps = el("nav", { class: "jumps", "aria-label": "Seções do painel" },
-    data.xrefs.length ? jump(`Referências ${data.xrefs_total}`, "Referências cruzadas") : null,
-    jump(`Comentários ${data.comments.length}`, "Comentários"),
-    data.cited.length ? jump(`Citado em ${data.cited.reduce((sum, g) => sum + g.count, 0)}`, "Citado em") : null);
-
-  openPanel("verse", refLabel(book, chapter, verse),
-    backToSearch(),
-    jumps,
-    typedSection(["bible"], "Versões", data.versions.length,
-      native.map(versionItem),
+  // Abas do painel (ergonomia): uma seção por vez, com a contagem no nome.
+  const versionShown = versionsOpen ? native : native.slice(0, 6);
+  const citedCount = data.cited.reduce((sum, g) => sum + g.count, 0);
+  const tabsDef = [
+    ["versoes", "Versões", data.versions.length, () => typedSection(["bible"], "Versões", data.versions.length,
+      versionShown.map(versionItem),
+      !versionsOpen && native.length > 6
+        ? el("button", { class: "more", onclick: () => { versionsOpen = true; showVerse(); } },
+            `Mostrar todas as versões em português (${native.length})`)
+        : null,
       foreign.length
         ? el("details", { class: "fold plain", open: native.length === 0 },
             el("summary", {}, el("b", {}, `Outros idiomas (${foreign.length})`),
               el("span", { class: "range" }, foreign.map((v) => v.abbr).join(" · "))),
             foreign.map(versionItem))
-        : null),
-    data.xrefs.length || xrefBook
-      ? typedSection(["xref"], "Referências cruzadas", data.xrefs_total, xrefSwitch,
-          graph || [strip, xrefs.length ? xrefs : el("p", { class: "empty" }, "Nenhuma referência neste livro."), moreXrefs])
-      : null,
-    filterBar(showVerse),
-    typedSection(["commentary"], "Comentários", of(comments, data.comments),
-      comments.length ? comments.map((c) => commentRow(book, c))
-        : el("p", { class: "empty" }, data.comments.length ? "Nenhum neste idioma." : "Nenhum comentário cobre este versículo.")),
-    data.cited.length
-      ? typedSection(cited.map((g) => itemType(g.kind, g.abbr, g.module_id)), "Citado em",
-          `${citedTotal} em ${cited.length} obras`, cited.map(citedGroup))
-      : null);
+        : null)],
+    ["referencias", "Referências", data.xrefs_total, () => typedSection(["xref"], "Referências cruzadas", data.xrefs_total, xrefSwitch,
+      graph || [strip, xrefs.length ? xrefs : el("p", { class: "empty" }, "Nenhuma referência neste livro."), moreXrefs])],
+    ["comentarios", "Comentários", data.comments.length, () => [
+      filterBar(showVerse),
+      typedSection(["commentary"], "Comentários", of(comments, data.comments),
+        comments.length ? comments.map((c) => commentRow(book, c))
+          : el("p", { class: "empty" }, data.comments.length ? "Nenhum neste idioma." : "Nenhum comentário cobre este versículo."))]],
+    ["citado", "Citado em", citedCount, () => [
+      filterBar(showVerse),
+      typedSection(cited.map((g) => itemType(g.kind, g.abbr, g.module_id)), "Citado em",
+        `${citedTotal} em ${cited.length} obras`, cited.map(citedGroup))]],
+  ];
+  const shown = tabsDef.filter(([id, , count]) => id === "versoes" || count);
+  const active = shown.find(([id]) => id === verseTab) || shown[0];
+  const tabBar = el("div", { class: "mode-tabs verse-tabs", role: "tablist" },
+    shown.map(([id, label, count]) => el("button", {
+      class: "mode-tab" + (id === active[0] ? " on" : ""), role: "tab", "aria-selected": String(id === active[0]),
+      onclick: () => { verseTab = id; showVerse(); },
+    }, label, el("small", {}, ` ${count}`))));
+
+  openPanel("verse", refLabel(book, chapter, verse),
+    backToSearch(),
+    tabBar,
+    active[3]());
 }
 
 async function showItem(kind, id) {

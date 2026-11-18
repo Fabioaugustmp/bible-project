@@ -396,3 +396,7 @@ kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-w
 .graph-full-head { align-items: flex-start; gap: 12px; }
 .graph-full-head strong { display: block; margin-bottom: 4px; }
 .graph-full-head .xg-key { font-size: 12px; }
+
+/* Abas do painel do versículo: rótulos numa linha, rolagem horizontal se faltar espaço */
+.verse-tabs { overflow-x: auto; scrollbar-width: thin; }
+.verse-tabs .mode-tab { white-space: nowrap; padding: 8px 7px; font-size: 13px; }

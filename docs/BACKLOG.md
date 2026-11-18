@@ -542,7 +542,15 @@ aceitação própria antes de entrar em execução.
   (pelo menos as cinco primeiras, com o trecho). Ponto de comparação: os léxicos
   do theWord em abas; o nosso painel deve mostrar o termo original e as
   traduções sem abrir cada léxico.
-- **T86** Concluir o levantamento do e-Sword: menus Ferramentas, Opções e
-  editor de notas. Pendente porque a janela ficou atrás do theWord e a barra de
-  tarefas é bloqueada para cliques. Para retomar, trazer o e-Sword para a frente
-  pelo próprio programa, ou pedir acesso adicional ao sistema de alternância.
+- **T86** Levantamento do e-Sword: **concluído** na segunda visita (menus Tools,
+  Options e Download; Super Search; Topic Notes). Ver `docs/ESTUDO-PROGRAMAS.md`.
+- **T87** Notas por tópico, além das notas por versículo: o e-Sword tem a aba
+  Topic Notes, em que a anotação segue um assunto escolhido (ex.: "ansiedade"),
+  e não uma passagem. Diferencial para a área de Estudos: um tópico pode reunir
+  notas de várias passagens. Depende de T40 e do desenho D5.
+- **T88** Busca avançada com escopo escolhido antes de buscar (toda a biblioteca,
+  uma obra, um livro) e modo de palavras (todas, qualquer, frase). Referência:
+  Super Search do e-Sword. A nossa busca já tem ponte e filtros; falta o escopo
+  explícito.
+- **T89** Diário de estudo separado das notas por versículo. Referência: Journal
+  Notes do e-Sword. Pode ser uma coleção de notas sem passagem em `user.db`.

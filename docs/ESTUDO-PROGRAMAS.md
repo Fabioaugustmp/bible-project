@@ -5,12 +5,11 @@ usuário, feita em 2026-11-18, sem alterar dados nem pastas dos programas. Foi
 feita com o papel de um estudante bíblico que quer ler, comparar, estudar uma
 palavra e registrar o que aprende.
 
-**Cobertura:** o theWord foi percorrido nos fluxos principais (leitura,
-Strong, pesquisa, menus, memorização, comparação). O e-Sword foi visto só na
-tela principal, com os painéis já abertos: a janela ficou atrás do theWord e
-não pude trazê-la para a frente (a barra de tarefas é bloqueada para cliques).
-Os menus do e-Sword ainda não foram percorridos. Fica como pendência (ver
-T86 no backlog).
+**Cobertura:** os dois programas foram percorridos nos fluxos principais
+(leitura, Strong, pesquisa, menus, memorização, comparação, notas). Na primeira
+visita, o e-Sword ficou atrás do theWord; na segunda, foi trazido para a frente
+com Alt+Tab e percorrido nos menus Tools, Options e Download, na Super Search e
+na aba Topic Notes. Nada foi alterado nos dados dos programas.
 
 ## theWord (versão 7)
 
@@ -62,6 +61,35 @@ T86 no backlog).
   diálogo de atualização antes de a janela ficar pronta.
 - A janela de texto é densa: o espaço de tela para o próprio texto é pequeno
   quando os painéis de léxico e pesquisa estão abertos.
+
+## e-Sword
+
+### Menus (percorridos na segunda visita)
+- **Tools:** Super Search; Bible Reading (leitura por plano); Daily Devotional;
+  Reference Library.
+- **Options:** Display Settings; Font Settings; App Theme; App Language;
+  Resource Settings; Custom Categories; Highlight Captions; Editor Options;
+  Scripture Tooltip e Strong's # Tooltip; e três opções marcadas por padrão:
+  mostrar tooltips de versículo, mostrar tooltips de Strong e **Save Search
+  Terms** (salva os termos pesquisados).
+- **Download:** Bibles, Commentaries, Devotionals, Dictionaries, Lexicons,
+  Reference Books e Proxy Settings. O programa baixa módulos a partir daqui.
+
+### Super Search
+- Janela própria com campo de busca, escopo ("Entire Library", ou seja, toda a
+  biblioteca), modo de palavras ("All Words") e um botão de operadores. Os
+  resultados aparecem numa lista à esquerda e o texto do resultado à direita.
+- Diferença para o nosso modelo: a busca avançada é uma janela à parte, com
+  escopo escolhido antes de buscar.
+
+### Editors: Journal Notes, Study Notes, Topic Notes
+- Três abas de anotação. **Study Notes** prende a nota a um versículo (Revelation
+  com seletor de livro, capítulo e versículo). **Topic Notes** organiza a nota
+  por **tópico**, com um seletor no topo: o usuário escolhe o assunto e escreve
+  sobre ele, sem vincular a um versículo.
+- **Journal Notes** é o diário de estudo, separado das notas por versículo.
+- Ponto forte: três formas de anotar (diário, versículo, tópico) na mesma área.
+  Ponto de atrito: a aba vazia não explica a diferença entre elas.
 
 ## e-Sword (tela principal, vista de relance)
 

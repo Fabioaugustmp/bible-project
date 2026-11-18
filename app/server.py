@@ -598,6 +598,34 @@ def api_similar(con, q):
     return {"available": True, "verses": sorted(verses, key=lambda v: -v["score"])}
 
 
+STRONG_RE = re.compile(r"^[GH]\d{1,5}$")
+
+
+def api_strong(con, q):
+    """Ocorrências de um número Strong (fase 2 da busca): versículos onde a palavra original aparece.
+
+    Só as versões com marcação de Strong (tokens): ARA1993+, KJV, TR e BSB. A ARA não tem.
+    """
+    code = (q.get("code") or "").strip().upper()
+    if not STRONG_RE.match(code):
+        raise ValueError("número Strong inválido: use G ou H seguido de números")
+    module = int(q["module"]) if q.get("module") else None
+    filt = " and t.module_id = ?" if module else ""
+    params = (code, module) if module else (code,)
+    total = con.execute(
+        f"select count(*) from (select 1 from tokens t where t.strong = ?{filt}"
+        " group by t.module_id, t.book, t.chapter, t.verse)", params).fetchone()[0]
+    verses = rows(
+        con,
+        "select v.module_id, m.abbr, v.book, v.chapter, v.verse, v.text,"
+        " group_concat(t.surface, ' · ') as words from tokens t"
+        " join verses v on v.module_id = t.module_id and v.book = t.book and v.chapter = t.chapter and v.verse = t.verse"
+        f" join modules m on m.id = v.module_id where t.strong = ?{filt}"
+        " group by t.module_id, t.book, t.chapter, t.verse order by t.book, t.chapter, t.verse limit ?",
+        (*params, PAGE["verses"]))
+    return {"code": code, "total": total, "verses": verses}
+
+
 def api_topic(con, q):
     """Pesquisa por tema, sem IA: versículos que contêm o termo (na versão aberta) e versículos
     de sentido parecido (BGE-M3), sem repetir os que já aparecem na primeira lista. Só texto bíblico."""
@@ -616,7 +644,7 @@ def api_topic(con, q):
 
 
 API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cited": api_cited,
-       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "semantic": api_semantic, "topic": api_topic, "similar": api_similar, "word": api_word, "passage": api_passage,
+       "item": api_item, "titles": api_titles, "xref-books": api_xref_books, "commentary": api_commentary, "search": api_search, "semantic": api_semantic, "topic": api_topic, "similar": api_similar, "strong": api_strong, "word": api_word, "passage": api_passage,
        "xref-graph": api_xref_graph}
 
 

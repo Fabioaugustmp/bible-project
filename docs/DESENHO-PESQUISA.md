@@ -111,3 +111,19 @@ escopo e modo (4).
   da fase 2.
 - Não implementado ainda: Strong nos resultados (fase 2), copiar e salvar buscas
   (fase 3) e sugestão de ortografia (fase 4).
+
+## 11. Fase 2 (parcial): Strong
+
+**Feito:** campo "Strong" na aba Por palavra (G ou H seguido de números). O
+endpoint `/api/strong` lista os versículos onde a palavra original aparece, com o
+texto, a palavra original de cada versão e a versão. Testado: G5485 tem 147
+versículos em ARA1993+ (0,31 s) e 735 no total entre as versões com Strong.
+
+**Limite:** a ARA não tem marcação de Strong na base (só ARA1993+, KJV, TR e BSB).
+Por isso a busca por Strong ignora o escopo "versão aberta" e mostra todas as
+versões com a marcação, com a versão indicada em cada resultado. Uma opção a
+decidir: escolher uma versão com Strong como padrão desse modo, ou deixar como
+está.
+
+**Falta da fase 2:** o modo (todas, qualquer, frase, NEAR) nos comentários e
+dicionários.

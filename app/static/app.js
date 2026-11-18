@@ -1097,7 +1097,11 @@ function searchOptions() {
     state.searchModo = event.target.value; rerun();
   } }, modes.map(([value, text]) => el("option", { value }, text)));
   mode.value = state.searchModo || "todas";
-  const children = [el("label", {}, "Escopo ", scope), el("label", {}, "Modo ", mode)];
+  const strongField = el("input", { type: "text", placeholder: "G5485 ou H…", "aria-label": "Número Strong", onchange: (event) => {
+    state.searchStrong = event.target.value.trim().toUpperCase() || null; rerun();
+  } });
+  strongField.value = state.searchStrong || "";
+  const children = [el("label", {}, "Strong ", strongField), el("label", {}, "Escopo ", scope), el("label", {}, "Modo ", mode)];
   if ((state.searchModo || "todas") === "near") {
     const distance = el("input", { type: "number", min: "1", max: "50", "aria-label": "Alcance em palavras", onchange: (event) => {
       state.searchNear = Math.max(1, Math.min(50, Number(event.target.value) || 5)); rerun();
@@ -1106,6 +1110,25 @@ function searchOptions() {
     children.push(el("label", {}, "Alcance ", distance, " palavras"));
   }
   return el("div", { class: "search-opts" }, ...children);
+}
+
+// Ocorrências de um número Strong (DESENHO-PESQUISA, fase 2).
+function strongBody(sr) {
+  if (!sr) return [el("p", { class: "empty" }, "Digite um número Strong, como G5485.")];
+  if (sr.error) return [el("p", { class: "empty" }, sr.error)];
+  return [
+    el("p", { class: "group-note" },
+      `${sr.code}: ${sr.total} versículo(s) nas versões com marcação de Strong (ARA1993+, KJV, TR, BSB). A ARA não tem essa marcação.`),
+    sr.verses.map((v) => el("button", {
+      class: "result", onclick: () => { closeTopicsSafe(); go({ book: v.book, chapter: v.chapter, verse: v.verse }); },
+    }, el("div", { class: "source" }, el("b", {}, refLabel(v.book, v.chapter, v.verse)), el("span", {}, v.abbr)),
+      el("div", { class: "t" }, v.text),
+      el("div", { class: "origin" }, `no original: ${v.words}`))),
+  ];
+}
+
+function closeTopicsSafe() {
+  if (typeof closeStudies === "function") closeStudies();
 }
 
 function renderSearch(keepScroll = false) {
@@ -1137,6 +1160,7 @@ function renderSearch(keepScroll = false) {
   const body = mode === "sentido"
     ? [el("p", { class: "group-note" }, "Passagens de assunto parecido, mesmo sem as palavras digitadas. A ordem vem da similaridade de sentido (modelo BGE-M3)."),
        semanticGroup(semantic)]
+    : state.searchStrong ? [searchOptions(), ...strongBody(state.lastSearch.strong)]
     : [el("p", { class: "group-note" }, "Versículos e comentários que contêm os termos digitados."),
        searchOptions(),
        el("div", { class: "chips" },
@@ -1177,7 +1201,7 @@ function bridgeNote(query, data) {
 }
 
 async function showSearch(query) {
-  const [data, semantic] = await Promise.all([
+  const [data, semantic, strong] = await Promise.all([
     api("search", {
       q: query,
       module: state.searchScope === "todas" ? null : state.module,
@@ -1186,8 +1210,9 @@ async function showSearch(query) {
       near: state.searchNear || 5,
     }),
     api("semantic", { q: query }).catch(() => ({ available: false, reason: "Não foi possível consultar a busca por sentido." })),
+    state.searchStrong ? api("strong", { code: state.searchStrong }).catch(() => ({ error: "Não foi possível buscar este número Strong. Use G ou H seguido de números." })) : null,
   ]);
-  state.lastSearch = { query, data, semantic };
+  state.lastSearch = { query, data, semantic, strong };
   renderSearch();
 }
 

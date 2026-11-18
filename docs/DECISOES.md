@@ -447,3 +447,21 @@ a coluna fixada evita um segundo sistema de painéis.
 **Limites:** a coluna guarda o estudo no navegador (como os outros itens
 fixados). Ao atualizar, um campo de nota que estava em edição é redesenhado. Em
 tela estreita, o estudo vira uma aba, como os outros itens fixados.
+
+## D026 — Seleção de versículos por dois toques, em modo próprio · 2026-11-18
+
+**Decisão:** o botão "Selecionar" liga um modo de seleção no capítulo normal. Em
+modo ligado, o primeiro toque marca o início, o segundo marca o fim (a faixa vai
+do menor ao maior) e um terceiro toque começa outra seleção. Um toque não abre
+mais o painel do versículo. A barra de ações tem Copiar com referência,
+Adicionar ao estudo (um bloco de passagem por versículo, no estudo mais recente,
+ou num estudo novo) e Anotar (abre Minhas notas do primeiro versículo). Esc ou
+"Sair da seleção" desliga o modo. No paralelo, o modo não funciona.
+
+**Motivo:** a sugestão 2 do agente Opus (UX-NOTAS-RODADA) pedia seleção como gesto
+de estudo. Um modo separado evita o conflito entre toque e rolagem no celular, e
+não muda o comportamento normal (abrir o painel) de quem não liga o modo.
+
+**Limites:** no máximo 40 versículos por vez no estudo. As notas são de um
+versículo, então "Anotar" não guarda a faixa. A seleção não sobrevive a troca
+de capítulo.

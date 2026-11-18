@@ -30,6 +30,7 @@
       <button id="smaller" class="icon" aria-label="Diminuir fonte" title="Diminuir fonte">A−</button>
       <button id="larger" class="icon" aria-label="Aumentar fonte" title="Aumentar fonte">A+</button>
       <button id="marks" class="icon label" aria-pressed="true" title="Mostrar no texto os versículos com notas ou em estudos">Marcas</button>
+      <button id="select" class="icon label" aria-pressed="false" title="Selecionar versículos: toque no primeiro e no último (Esc sai)">Selecionar</button>
     <button id="studies" class="icon label" title="Meus estudos">Estudos</button>
     <button id="topics" class="icon label" title="Pesquisar um tema na Bíblia">Temas</button>
     <button id="browse" class="icon label" title="Folhear dicionários e livros">Dicionários</button>
@@ -45,6 +46,7 @@
       <h1 id="title"></h1>
       <div id="text" class="text"></div>
       <p id="hint" class="hint">Clique em um versículo para ver versões, comentários e citações.</p>
+      <div id="selbar" class="selbar" role="toolbar" aria-label="Ações da seleção" hidden></div>
     </main>
 
     <div id="split-panel" class="splitter" role="separator" aria-orientation="vertical" tabindex="0"

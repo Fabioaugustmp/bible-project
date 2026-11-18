@@ -10,11 +10,10 @@ Origem: agente de análise (Opus), que leu o código e propôs três sugestões 
    aba "Minhas notas". Botão **Marcas** na barra liga e desliga; a escolha fica no
    navegador. Custo baixo; prepara backlinks (T81), marcações e "continuar de onde
    parou" (T92).
-2. **Selecionar um trecho como gesto de estudo** (não implementada). Seleção de
-   versículos (shift-clique ou arrastar) com barra de ações (Anotar, Adicionar ao
-   estudo, Copiar com referência). Impacto alto, custo alto. No celular, o toque
-   conflita com a rolagem; talvez seja melhor tocar no primeiro e no último
-   versículo. Liga-se à citação do D5 e aos cartões (T80).
+2. **Selecionar um trecho como gesto de estudo** (implementada, D026). Botão
+   "Selecionar": o modo marca o início e o fim com dois toques (funciona no
+   celular, sem conflito com a rolagem) e mostra uma barra com Copiar com
+   referência, Adicionar ao estudo e Anotar. Não usou shift-clique nem arrastar.
 3. **Estudo aberto ao lado, como destino visível** (implementada, D025). Botão
    "Abrir ao lado" na tela do estudo fixa o estudo na coluna da direita, com
    passagens, títulos e notas. A coluna só aparece quando aberta. Em tela
@@ -62,3 +61,20 @@ Ordem sugerida pelo agente: 1, depois 3, por último 2.
 - Uma requisição GET a `/api/user/study` sem `id` derruba a resposta (ERR_EMPTY_RESPONSE,
   porque `int(q["id"])` levanta KeyError). Não afeta a interface, mas deveria
   responder 400. Não corrigido nesta rodada.
+
+## Testado (sugestão 2)
+
+- Navegador (800 px, João 1): dois toques marcaram 3 a 5 (barra "João 1:3–5 · 3
+  versículos"); um terceiro toque começou outra seleção; sem painel aberto.
+- Adicionar ao estudo: criou o estudo "Estudo: João 1:5" e, com um estudo
+  existente, adicionou 3 blocos (3, 4 e 5). Estudo de teste apagado pela API.
+- Copiar: a mensagem de confirmação apareceu. O conteúdo do clipboard não foi
+  lido (o navegador bloqueou a leitura).
+- Anotar: abriu "Minhas notas" do versículo 16 com a seleção desligada.
+- Não testado no celular nem em tela estreita.
+
+## Limites da sugestão 2
+
+- Máximo de 40 versículos por "Adicionar ao estudo".
+- "Anotar" abre o primeiro versículo: a nota não guarda a faixa.
+- A seleção some ao trocar de capítulo.

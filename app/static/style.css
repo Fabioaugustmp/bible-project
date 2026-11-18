@@ -82,6 +82,15 @@ h1 { font: 600 2.1rem/1.15 var(--serif); margin-top: 0; margin-bottom: 28px; tex
 .v { cursor: pointer; border-radius: 4px; padding: 2px 0; }
 .v:hover { background: var(--accent-soft); }
 .v.selected { background: var(--accent-soft); box-shadow: 0 0 0 3px var(--accent-soft); }
+/* Seleção de versículos (sugestão 2): faixa marcada e barra de ações */
+.v.in-range { background: var(--accent-soft); box-shadow: 0 0 0 3px var(--accent-soft); }
+body.selecting .v { cursor: pointer; }
+.selbar {
+  position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  margin-top: 18px; padding: 10px 0; background: var(--paper); border-top: 1px solid var(--line);
+}
+.selbar[hidden] { display: none; }
+.selbar-label { font: 600 .9rem var(--sans); color: var(--ink); margin-right: auto; }
 .v sup {
   font: 600 .58em var(--sans); color: var(--accent); margin-right: .3em;
   vertical-align: .55em; line-height: 0; user-select: none;

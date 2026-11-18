@@ -137,6 +137,11 @@ function step(direction) {
 let renderToken = 0;
 let shown = { module: null, book: null, chapter: null };
 
+// --- Seleção de versículos (sugestão 2 do agente Opus): toque no primeiro e no último ---
+let chapterVerses = [];                                  // versículos do capítulo aberto
+const selection = { on: false, start: null, end: null }; // só existe no capítulo normal
+const MAX_SELECTION_STUDY = 40;                          // cada versículo vira um bloco do estudo
+
 async function render() {
   const token = ++renderToken;
   const module = state.bibles.find((m) => m.id === state.module);
@@ -163,6 +168,8 @@ async function render() {
     if (token !== renderToken) return; // navegação mais nova já em andamento
     const marks = await api("user/marks", { book: state.book, chapter: state.chapter }).catch(() => ({ notes: {}, studies: {} }));
     shown = { module: state.module, book: state.book, chapter: state.chapter, words: state.words };
+    chapterVerses = verses;
+    selection.start = selection.end = null;   // outro capítulo: a seleção antiga não vale
     document.title = `${refLabel(state.book, state.chapter)} · ${module.abbr}`;
     $("#kicker").textContent = module.title || module.abbr;
     $("#title").textContent = refLabel(state.book, state.chapter);
@@ -179,6 +186,7 @@ async function render() {
           title: [marks.notes[v.verse] ? `${marks.notes[v.verse]} nota(s)` : null,
             marks.studies[v.verse] ? `em ${marks.studies[v.verse]} estudo(s)` : null].filter(Boolean).join(" · ") || null,
           onclick: (event) => {
+            if (selection.on) { tapVerse(v.verse); return; }
             const word = event.target.closest(".w");
             if (word && state.words) {
               event.stopPropagation();
@@ -208,6 +216,103 @@ async function render() {
   } else if (panelMode === "verse") {
     closePanel();
   }
+  applySelection();
+}
+
+// --- Seleção de versículos: funções ------------------------------------------------
+
+function tapVerse(verse) {
+  if (selection.start === null || selection.end !== null) { selection.start = verse; selection.end = null; }
+  else selection.end = verse;
+  applySelection();
+}
+
+function selectedRange() {
+  if (selection.start === null) return null;
+  const a = selection.start, b = selection.end ?? selection.start;
+  return { from: Math.min(a, b), to: Math.max(a, b) };
+}
+
+function applySelection() {
+  const range = selection.on ? selectedRange() : null;
+  document.body.classList.toggle("selecting", selection.on);
+  $("#select").setAttribute("aria-pressed", String(selection.on));
+  document.querySelectorAll("#text .v").forEach((node) => {
+    const n = Number(node.dataset.verse);
+    node.classList.toggle("in-range", !!range && n >= range.from && n <= range.to);
+  });
+  renderSelBar(range);
+}
+
+function setSelectMode(on) {
+  selection.on = on;
+  selection.start = selection.end = null;
+  if (on && state.parallel) { state.parallel = false; store.set("parallel", "0"); render(); return; }
+  applySelection();
+}
+
+function renderSelBar(range) {
+  const bar = $("#selbar");
+  bar.hidden = !selection.on;
+  if (!selection.on) { bar.replaceChildren(); return; }
+  if (!range) {
+    bar.replaceChildren(el("span", { class: "selbar-label" }, "Toque no primeiro versículo e depois no último."),
+      el("button", { class: "link", onclick: () => setSelectMode(false) }, "Sair da seleção"));
+    return;
+  }
+  const count = range.to - range.from + 1;
+  const label = refLabel(state.book, state.chapter, range.from) + (count > 1 ? `–${range.to}` : "");
+  bar.replaceChildren(
+    el("span", { class: "selbar-label" }, `${label} · ${count} ${count > 1 ? "versículos" : "versículo"}`),
+    el("button", { class: "chip", onclick: () => copyRange(range) }, "Copiar com referência"),
+    el("button", { class: "chip", onclick: () => addRangeToStudy(range) }, "Adicionar ao estudo"),
+    el("button", { class: "chip", onclick: () => annotateRange(range) }, "Anotar"),
+    el("button", { class: "link", onclick: () => setSelectMode(false) }, "Sair da seleção"));
+}
+
+async function copyRange(range) {
+  const verses = chapterVerses.filter((v) => v.verse >= range.from && v.verse <= range.to);
+  const module = state.bibles.find((m) => m.id === state.module);
+  const head = refLabel(state.book, state.chapter, range.from) + (range.to > range.from ? `–${range.to}` : "") + ` (${module.abbr})`;
+  const text = [head, ...verses.map((v) => `${v.verse} ${v.text}`)].join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(`${verses.length} versículo(s) copiados com a referência.`);
+  } catch (error) {
+    showToast("Não foi possível copiar neste navegador.");
+  }
+}
+
+// Um bloco de passagem por versículo (o esquema do estudo guarda um versículo por bloco).
+async function addRangeToStudy(range) {
+  const numbers = Array.from({ length: range.to - range.from + 1 }, (_, i) => range.from + i);
+  if (numbers.length > MAX_SELECTION_STUDY) { showToast(`Seleção grande demais: máximo de ${MAX_SELECTION_STUDY} versículos por vez.`); return; }
+  const { book, chapter } = state;
+  try {
+    const data = await api("user/studies");
+    let studyId, title, todo = numbers;
+    if (data.studies.length) {
+      studyId = data.studies[0].id;
+      title = data.studies[0].title;
+    } else {
+      const made = await userWrite("study/create", { title: `Estudo: ${refLabel(book, chapter, range.from)}`, book, chapter, verse: range.from });
+      studyId = made.id;
+      title = `Estudo: ${refLabel(book, chapter, range.from)}`;
+      todo = numbers.slice(1);   // o estudo novo já tem a primeira passagem
+    }
+    for (const verse of todo) await userWrite("block/add", { study_id: studyId, kind: "passagem", book, chapter, verse });
+    showToast(`${numbers.length} passagem(ns) adicionada(s) a «${title}»`);
+    setSelectMode(false);
+  } catch (error) {
+    showToast(`Não foi possível adicionar: ${error.message}`);
+  }
+}
+
+// Anotar: as notas são de um versículo, então abre "Minhas notas" do primeiro da seleção.
+function annotateRange(range) {
+  setSelectMode(false);
+  pendingTab = "notas";
+  go({ verse: range.from });
 }
 
 // --- Versões em paralelo (T62) -----------------------------------------------------
@@ -1399,7 +1504,9 @@ async function init() {
   $("#browse").addEventListener("click", () => {
     if (browseState.module) showBrowse(); else browseHome();
   });
+  $("#select").addEventListener("click", () => setSelectMode(!selection.on));
   $("#parallel").addEventListener("click", () => {
+    selection.on = false; selection.start = selection.end = null;   // a seleção é só do capítulo normal
     state.parallel = !state.parallel;
     store.set("parallel", state.parallel ? "1" : "0");
     render();
@@ -1430,6 +1537,7 @@ async function init() {
   $("#text").addEventListener("keydown", (e) => {
     if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("v")) {
       e.preventDefault();
+      if (selection.on) { tapVerse(Number(e.target.dataset.verse)); return; }
       go({ verse: Number(e.target.dataset.verse) });
     }
   });
@@ -1788,6 +1896,7 @@ document.addEventListener("keydown", (event) => {
     else if (!$("#graph-full").hidden) closeGraphFull();
     else if (!$("#preview").hidden) hidePreview();
     else if (!$("#panel").hidden) $("#panel-close").click();
+    else if (selection.on) setSelectMode(false);
     return;
   }
   if (typing) return;

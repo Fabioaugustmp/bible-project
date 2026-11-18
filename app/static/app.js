@@ -26,8 +26,7 @@ function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props)) {
     if (key === "class") node.className = value;
-    else if (key === "onclick") node.addEventListener("click", value);
-    else if (key === "ontoggle") node.addEventListener("toggle", value);
+    else if (key.startsWith("on") && typeof value === "function") node.addEventListener(key.slice(2), value);
     else if (value !== null && value !== undefined && value !== false) node.setAttribute(key, value === true ? "" : value);
   }
   node.append(...children.flat(Infinity).filter((child) => child !== null && child !== undefined && child !== false));
@@ -454,7 +453,7 @@ function followReading() {
       .map((entry) => Number(entry.target.dataset.verse)).sort((a, b) => a - b)[0];
     if (verse) refreshCommentaryPins({ book: state.book, chapter: state.chapter, verse });
   }, { root: $("#reader"), rootMargin: "-45% 0px -50% 0px" });
-  $("#text").querySelectorAll(".v").forEach((node) => readingObserver.observe(node));
+  $("#text").querySelectorAll(".v, .prow[data-verse]").forEach((node) => readingObserver.observe(node));
 }
 
 // --- Colunas: painel, itens fixados e divisórias (T61) ----------------------------
@@ -1212,6 +1211,20 @@ async function init() {
   layout.applyWidths();
   await restorePins();
 }
+
+function showToast(message) {
+  const box = $("#toast");
+  if (!box) return;
+  box.textContent = message;
+  box.hidden = false;
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => { box.hidden = true; }, 6000);
+}
+
+window.addEventListener("unhandledrejection", (event) => {
+  console.error(event.reason);
+  showToast("Não foi possível concluir a ação. Verifique se o servidor da biblioteca está rodando.");
+});
 
 init().catch((error) => {
   console.error(error);

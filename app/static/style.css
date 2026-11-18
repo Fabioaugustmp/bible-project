@@ -25,7 +25,6 @@
     --type-bible: #8dbde8; --type-commentary: #a8d67c; --type-dictionary: #e09ad0;
     --type-lexicon: #6fd3c6; --type-book: #e6bf5c; --type-xref: #f09aa6;
   --ot: #e3a35c; --nt: #8dbde8;
-    --ot: #e3a35c; --nt: #8dbde8;
     color-scheme: dark;
   }
 }
@@ -35,6 +34,7 @@
   --type-bible: #8dbde8; --type-commentary: #a8d67c; --type-dictionary: #e09ad0;
   --type-lexicon: #6fd3c6; --type-book: #e6bf5c; --type-xref: #f09aa6;
   color-scheme: dark;
+  --ot: #e3a35c; --nt: #8dbde8;
 }
 
 * { box-sizing: border-box; }
@@ -348,3 +348,11 @@ i.kind {
 .pcell sup { font: 600 .6em var(--sans); color: var(--accent); margin-right: .25em; }
 .pempty { color: var(--muted); }
 @media (max-width: 560px) { .prow { grid-template-columns: 1fr !important; } }
+
+/* Aviso de erro (D1) */
+.toast {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 20;
+  max-width: min(92vw, 30rem); padding: 10px 14px; border-radius: 8px;
+  background: var(--ink); color: var(--paper); font-size: 14px; box-shadow: 0 6px 20px rgb(0 0 0 / .25);
+}
+.toast[hidden] { display: none; }

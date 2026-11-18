@@ -528,7 +528,7 @@ Marcadas como **necessária** (lacuna real frente aos programas) ou **criativa**
   procedência, como a T41 faz com as notas por versículo. Antes: localizar o
   arquivo de origem (o `study.notx` visto tem só a tabela Verses; os outros
   dois não foram encontrados nesta visita) e registrar o formato em FORMATOS.
-- **T92** *Necessária:* "Continuar de onde parou": ao abrir o app, mostrar a última
+- **T92** *Necessária.* **Concluída** (2026-11-18): faixa "Continuar de onde parou" ao abrir sem endereço, com a última leitura e o último estudo (guardados só no navegador). Testada: abrir, voltar à leitura e ao estudo. Descrição original: ao abrir o app, mostrar a última
   passagem lida e o último estudo aberto. Os programas não fazem isso de forma
   clara; é um ganho pequeno e barato.
 - **T93** *Criativa:* mapa de conexões das notas: o grafo que já existe (graph.js)

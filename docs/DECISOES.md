@@ -465,3 +465,18 @@ não muda o comportamento normal (abrir o painel) de quem não liga o modo.
 **Limites:** no máximo 40 versículos por vez no estudo. As notas são de um
 versículo, então "Anotar" não guarda a faixa. A seleção não sobrevive a troca
 de capítulo.
+
+## D027 — Continuar de onde parou: faixa só sem endereço, guardada no navegador · 2026-11-18
+
+**Decisão:** ao abrir o app sem endereço (`#/...`), uma faixa oferece a última
+leitura e o último estudo aberto. A faixa some ao clicar em Abrir ou em ×. Esses
+dois dados ficam no `localStorage` do navegador, como as outras preferências.
+Abrir sem endereço não grava a leitura padrão por cima da última.
+
+**Motivo:** T92 (ideia necessária da pesquisa). Mostrar a faixa com um endereço
+já presente atrapalharia quem chegou por um link. Guardar no servidor exigiria
+um campo novo em `user.db` para uma preferência de navegador, sem ganho para
+um app local de uso pessoal.
+
+**Limites:** a informação não passa de um navegador para outro, nem para o
+celular, que tem armazenamento próprio.

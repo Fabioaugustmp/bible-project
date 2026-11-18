@@ -142,8 +142,44 @@ let chapterVerses = [];                                  // versículos do capí
 const selection = { on: false, start: null, end: null }; // só existe no capítulo normal
 const MAX_SELECTION_STUDY = 40;                          // cada versículo vira um bloco do estudo
 
+// --- Continuar de onde parou (T92): última leitura e último estudo, só no navegador ---
+function readStored(key) {
+  try { return JSON.parse(store.get(key) || "null"); } catch { return null; }
+}
+
+// Ao abrir sem endereço (#/...), oferece a última leitura e o último estudo.
+function resumeInfo() {
+  const read = readStored("ultimaLeitura");
+  const study = readStored("ultimoEstudo");
+  if (!read && !study) return null;
+  return { read, study };
+}
+
+function showResume(info) {
+  const box = $("#resume");
+  const hide = () => { box.hidden = true; };
+  const items = [];
+  if (info.read) {
+    const module = state.bibles.some((m) => m.id === info.read.module) ? info.read.module : state.module;
+    items.push(el("span", {}, `Última leitura: ${refLabel(info.read.book, info.read.chapter, info.read.verse)}`),
+      el("button", { class: "chip on", onclick: () => { hide(); go({ ...info.read, module }); } }, "Abrir"));
+  }
+  if (info.study) {
+    items.push(el("span", {}, `Último estudo: ${info.study.title}`),
+      el("button", { class: "chip", onclick: () => { hide(); openStudies(info.study.id); } }, "Abrir estudo"));
+  }
+  box.replaceChildren(el("div", { class: "resume-row" }, el("strong", {}, "Continuar de onde parou"), ...items),
+    el("button", { class: "link resume-close", "aria-label": "Fechar", onclick: hide }, "×"));
+  box.hidden = false;
+}
+
+function saveLastRead() {
+  store.set("ultimaLeitura", JSON.stringify({ module: state.module, book: state.book, chapter: state.chapter, verse: state.verse }));
+}
+
 async function render() {
   const token = ++renderToken;
+  if (location.hash) saveLastRead();   // a abertura sem endereço não apaga a última leitura
   const module = state.bibles.find((m) => m.id === state.module);
   $("#version").value = state.module;
   $("#book").value = state.book;
@@ -1488,6 +1524,7 @@ async function init() {
   state.parallel = store.get("parallel") === "1";
   try { state.parallelIds = JSON.parse(store.get("parallelIds") || "[]"); } catch { state.parallelIds = []; }
   let fontSize = setFontSize(Number(store.get("fontSize")) || 20);
+  const resume = location.hash ? null : resumeInfo();   // antes de render() gravar a leitura atual
   readHash();
 
   $("#version").addEventListener("change", (e) => {
@@ -1544,6 +1581,7 @@ async function init() {
   window.addEventListener("hashchange", () => { readHash(); render(); });
 
   render();
+  if (resume) showResume(resume);
   layout.applyWidths();
   await restorePins();
 }
@@ -1625,6 +1663,7 @@ async function renderStudy(id) {
 // As escritas passam por userWrite, que atualiza as duas (T90, D5 decisão 3).
 function buildStudy(data, pinned) {
   const study = data.study;
+  store.set("ultimoEstudo", JSON.stringify({ id: study.id, title: study.title }));   // T92
   const fail = (error) => showToast(error.message);
   const redo = () => {};
   const title = el("input", { type: "text", class: "study-title", "aria-label": "Título do estudo" });

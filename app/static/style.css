@@ -434,6 +434,16 @@ kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-w
 .search-opts select, .search-opts input { padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
 .search-opts input { width: 4.5em; }
 
+/* Continuar de onde parou (T92) */
+.resume {
+  position: relative; display: flex; align-items: center; gap: 10px; margin: 0 0 18px;
+  padding: 10px 40px 10px 14px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); font: .95rem var(--sans); color: var(--ink);
+}
+.resume[hidden] { display: none; }
+.resume-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.resume-close { position: absolute; right: 10px; top: 8px; }
+
 /* Você quis dizer? (DESENHO-PESQUISA, fase 4) */
 .suggest { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; }
 .suggest .empty { width: 100%; margin: 0; }

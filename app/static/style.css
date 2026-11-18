@@ -209,6 +209,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   margin: 12px 0 4px; padding: 10px 12px; border-radius: 8px;
   background: var(--accent-soft); font-size: 13px;
 }
+.bridge summary { cursor: pointer; padding: 4px 0; font-weight: 600; color: var(--ink); }
 .bridge ul { margin: 6px 0; padding-left: 18px; }
 .bridge li { margin: 2px 0; }
 .bridge .why { color: var(--muted); font-size: 11px; }

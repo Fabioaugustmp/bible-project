@@ -1446,7 +1446,10 @@ function bridgeNote(query, data) {
     return el("div", { class: "bridge" }, "Buscando só os termos digitados. ", toggle(true, "Incluir termos em inglês"));
   }
   if (!data.expansions.length) return null;
-  return el("div", { class: "bridge" },
+  // Recolhível (item 5 do ajuste): no celular começa fechado, para os resultados subirem.
+  if (state.bridgeOpen === undefined) state.bridgeOpen = !window.matchMedia("(max-width: 560px)").matches;
+  return el("details", { class: "bridge", open: state.bridgeOpen, ontoggle: (event) => { state.bridgeOpen = event.target.open; } },
+    el("summary", {}, `Termos em inglês incluídos (${data.expansions.length})`),
     el("div", {}, "Nos comentários e dicionários também busquei:"),
     el("ul", {}, data.expansions.map((item) => el("li", {},
       el("b", {}, item.word), " → ",

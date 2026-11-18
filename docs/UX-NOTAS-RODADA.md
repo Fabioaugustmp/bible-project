@@ -111,3 +111,10 @@ Não verificado: o recolhimento das opções com toque real; a leitura em 1100 p
 - Os filtros de tipo (Tudo, Versículos, Comentários, Dicionários e livros) foram para dentro de "Opções de busca", como a primeira linha do bloco. No desktop o bloco começa aberto, então a aparência continua a mesma.
 - Medido em 375 px, com a busca "amor de Deus": o primeiro resultado começa em y=717 e a folha termina em 812. Ele aparece inteiro, com a parte de baixo no limite. Antes, começava em y=807.
 - Não verificado: toque real; a faixa de ponte (155 px) continua entre as opções e os resultados.
+
+## Faixa de ponte recolhível
+
+- A lista "Termos em inglês incluídos (N)" virou um bloco recolhível. No celular (até 560 px) começa fechado; no desktop começa aberto.
+- Medido em 375 px com "amor de Deus": a faixa ocupa 47 px fechada, e o primeiro resultado começa em y=611 (antes 717).
+- Medido em 1280 px: aberta, como antes, sem rolagem horizontal.
+- Não verificado: toque real.

@@ -1221,6 +1221,57 @@ function showToast(message) {
   showToast.timer = setTimeout(() => { box.hidden = true; }, 6000);
 }
 
+// --- Atalhos de teclado (D2): só fora de campos de texto; Esc vale sempre ----------
+
+const SHORTCUTS = [
+  ["/", "buscar"],
+  ["[ e ]", "capítulo anterior e seguinte"],
+  ["j e k", "versículo seguinte e anterior"],
+  ["f", "fixar o que o painel mostra"],
+  ["p", "liga ou desliga o paralelo"],
+  ["Esc", "fecha a prévia ou o painel"],
+  ["?", "mostra esta lista"],
+];
+
+function showShortcuts() {
+  openPanel("help", "Atalhos de teclado",
+    el("dl", { class: "shortcuts" }, SHORTCUTS.flatMap(([keys, action]) => [
+      el("dt", {}, el("kbd", {}, keys)), el("dd", {}, action),
+    ])));
+}
+
+function moveVerse(delta) {
+  const count = bookOf(state.book).chapters[state.chapter - 1];
+  const next = state.verse ? state.verse + delta : (delta > 0 ? 1 : count);
+  if (next < 1 || next > count) return;
+  go({ verse: next });
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  const typing = event.target.closest?.("input, textarea, select, [contenteditable]");
+  if (event.key === "Escape") {
+    if (!$("#preview").hidden) hidePreview();
+    else if (!$("#panel").hidden) $("#panel-close").click();
+    return;
+  }
+  if (typing) return;
+  const keys = {
+    "/": () => $("#q").focus(),
+    "[": () => step(-1),
+    "]": () => step(1),
+    j: () => moveVerse(1),
+    k: () => moveVerse(-1),
+    p: () => $("#parallel").click(),
+    f: () => { if (currentView) pinCurrent(); },
+    "?": showShortcuts,
+  };
+  const action = keys[event.key];
+  if (!action) return;
+  event.preventDefault();
+  action();
+});
+
 window.addEventListener("unhandledrejection", (event) => {
   console.error(event.reason);
   showToast("Não foi possível concluir a ação. Verifique se o servidor da biblioteca está rodando.");

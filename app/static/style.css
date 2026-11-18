@@ -356,3 +356,10 @@ i.kind {
   background: var(--ink); color: var(--paper); font-size: 14px; box-shadow: 0 6px 20px rgb(0 0 0 / .25);
 }
 .toast[hidden] { display: none; }
+
+/* Barra com rótulos (D2) e lista de atalhos */
+button.label { padding: 0 10px; font-size: 13px; }
+.shortcuts { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 4px 0; }
+.shortcuts dt { color: var(--muted); }
+.shortcuts dd { margin: 0; }
+kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 6px; background: var(--surface); }

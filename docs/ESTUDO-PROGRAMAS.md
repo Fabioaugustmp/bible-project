@@ -133,3 +133,25 @@ na aba Topic Notes. Nada foi alterado nos dados dos programas.
 ## Itens para o backlog
 
 Ver a seção "M8 — Estudo guiado" em `docs/BACKLOG.md`.
+
+## theWord: ferramentas de estudo (segunda rodada, 2026-11-18)
+
+### Vocabulário (Ferramentas de estudo)
+- Mesmo sistema de cartões da memorização, mas o conteúdo são palavras e verbetes.
+- Aba **Adicionar** com três caminhos: "Consultar dicionários e glossários",
+  "Adicionar o verbete atual do dicionário" e "Entre meu próprio texto...".
+- O texto da tela diz que os cartões **mantêm referências ao módulo**: as
+  respostas são carregadas quando necessário e não são copiadas para a biblioteca
+  de cartões. Mesma decisão de procedência que tomamos na base do usuário
+  (`docs/PROPOSTA-DESIGN.md`, seção 5).
+
+### Leitura diária
+- Tela "Leitura de hoje", com data do dia e três blocos: Planos de Leitura para
+  hoje, Plano de Leitura sem datas e Leitura de Devocionais.
+- Ações: criar um novo plano de leitura da Bíblia; escolher devocionais para leitura
+  diária; opção "Mostrar somente não lidos".
+- Instrução na própria tela: clicar no plano ou no devocional para abrir e clicar
+  num intervalo de versículos para marcá-lo como lido. A leitura fica registrada
+  por versículo, e não por dia.
+- Ponto de comparação: é um plano com marcação de progresso, sem anotações. Nossa
+  versão pode ligar a leitura do dia às notas e estudos (T82).

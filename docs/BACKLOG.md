@@ -548,14 +548,14 @@ Origem: `docs/ESTUDO-PROGRAMAS.md`, navegação no theWord e no e-Sword com olha
 de estudante. Nada aqui foi implementado ainda; cada item precisa de
 aceitação própria antes de entrar em execução.
 
-- **T80** Memorização e revisão espaçada sobre versículos lidos e notas, com
+- **T80** (confirmado na rodada 2: o Vocabulário do theWord guarda referência ao módulo, não cópia) Memorização e revisão espaçada sobre versículos lidos e notas, com
   procedência. Referência: "Memorização de versículos" do theWord (cartões e
   quatro avaliações). Diferencial: os cartões vêm do próprio estudo.
   Depende de T40 (notas) e de decisão sobre o algoritmo (SM-2 ou Leitner).
 - **T81** Backlinks de notas: no painel do versículo, "notas que citam este
   versículo", a partir das notas de `user.db`. Diferencial sem equivalente no
   theWord nem no e-Sword.
-- **T82** Leitura diária ou plano de leitura, com as notas do dia. Referência:
+- **T82** Leitura diária ou plano de leitura, com marcação de intervalo de versículos como lido e as notas do dia. Referência:
   "Leitura diária" do theWord.
 - **T83** Comparar com um clique: abrir o paralelo sem etapa de seleção de
   textos (o theWord pede "Selecionar textos da Bíblia" antes). Já existe T62;

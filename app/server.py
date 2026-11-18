@@ -14,6 +14,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+import userdata
+
 from bridge import BRIDGE, is_stopword
 from xrefs import graph as xref_graph
 from xrefs import ranked as ranked_xrefs
@@ -615,8 +617,68 @@ class Handler(BaseHTTPRequestHandler):
         self.send(status, json.dumps(payload, ensure_ascii=False).encode("utf-8"),
                   "application/json; charset=utf-8")
 
+    def user_get(self, url):
+        """Leitura e exportação das notas (T40). Só lê data/user.db e data/library.db."""
+        action = url.path[len("/api/user/"):]
+        if action == "export":
+            con = userdata.connect()
+            lib = connect()
+            try:
+                names = {r["book"]: r["name"] for r in lib.execute("select book, name from books")}
+                text = userdata.export_markdown(con, names)
+            except sqlite3.Error as error:
+                return self.send_json(500, {"error": str(error)})
+            finally:
+                con.close()
+                lib.close()
+            return self.send(200, text.encode("utf-8"), "text/markdown; charset=utf-8")
+        handler = userdata.READ.get(action)
+        if not handler:
+            return self.send_json(404, {"error": "endpoint desconhecido"})
+        query = {k: v[0] for k, v in parse_qs(url.query).items()}
+        con = userdata.connect()
+        try:
+            return self.send_json(200, handler(con, query))
+        except ValueError as error:
+            return self.send_json(400, {"error": str(error)})
+        except sqlite3.Error as error:
+            return self.send_json(500, {"error": str(error)})
+        finally:
+            con.close()
+
+    def do_POST(self):
+        """Escrita nas notas (T40): só com Origin e Host deste app; grava só em data/user.db."""
+        url = urlparse(self.path)
+        if not url.path.startswith("/api/user/"):
+            return self.send_json(404, {"error": "endpoint desconhecido"})
+        if not userdata.check_origin(self.headers):
+            return self.send_json(403, {"error": "origem não permitida"})
+        handler = userdata.WRITE.get(url.path[len("/api/user/"):])
+        if not handler:
+            return self.send_json(404, {"error": "endpoint desconhecido"})
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            if length > 200000:
+                return self.send_json(413, {"error": "pedido grande demais"})
+            data = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
+        except (ValueError, UnicodeDecodeError):
+            return self.send_json(400, {"error": "pedido inválido"})
+        if not isinstance(data, dict):
+            return self.send_json(400, {"error": "pedido inválido"})
+        con = userdata.connect()
+        try:
+            return self.send_json(200, handler(con, data))
+        except ValueError as error:
+            return self.send_json(400, {"error": str(error)})
+        except sqlite3.Error as error:
+            return self.send_json(500, {"error": str(error)})
+        finally:
+            con.close()
+
     def do_GET(self):
         url = urlparse(self.path)
+        if url.path.startswith("/api/user/"):
+            return self.user_get(url)
         if url.path.startswith("/api/"):
             handler = API.get(url.path[5:])
             if not handler:
@@ -653,6 +715,7 @@ def main():
     DB_PATH = Path(args.db).resolve()
     if not DB_PATH.is_file():
         raise SystemExit(f"base não encontrada: {DB_PATH}\nrode antes: python importer/build.py PASTA")
+    userdata.ALLOWED_HOSTS = {f"localhost:{args.port}", f"127.0.0.1:{args.port}"}
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"http://localhost:{args.port}  (base: {DB_PATH})", flush=True)
     try:

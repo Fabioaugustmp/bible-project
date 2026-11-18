@@ -165,7 +165,9 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T66 | concluída (Haiku): faixa com 66 barras por livro, agrupadas em 8 grupos; clique filtra a lista; contagem pelo mesmo ranqueamento da lista (`/api/xref-books`); Sl 23:1 mostra Ez 29, Jo 34, Is 19, 1Pe 3; Gn 1:1 mostra Sl 43, Pv 13, Jo 19. Só no modo Lista |
 | T63 | concluída (Haiku): 'Acompanhar na leitura' em cada comentário do painel fixa um comentário que troca o trecho ao mudar de versículo (85 a 265 ms, critério 0,3 s) e ao rolar o texto (versículo do meio da tela); citações clicáveis; sobrevive a recarregar. `/api/commentary` (2 a 5 ms). JFB em Rm 8 |
 | T62 | concluída (Haiku; o roteiro previa Sonnet, mas não houve condição de parada): botão '‖' liga o modo paralelo; até 4 versões lado a lado, alinhadas por versículo (linhas com a mesma altura), hebraico com dir=rtl; escolha guardada. Testado com ARA + ACF + KJV (João 3:16), ARA + WLC (Sl 23:1) e limite de 4. Sem títulos de seção nem Strong nesse modo; em tela estreita, as colunas empilham |
-| T40–T42 (M4) | pendente |
+| T40 | parcial: `data/user.db` com notas presas a passagens (criar, editar, apagar para a lixeira); aba "Minhas notas" no painel do versículo; escrita só pelo servidor, com conferência de Origin e Host (testada: origem falsa recusada, 403); faltam marcações, etiquetas, estudos (D5) e a conferência de que a reimportação não altera as notas (critério da D4) |
+| T41 | pendente |
+| T42 | parcial: exportação de todas as notas em Markdown (`/api/user/export`); faltam Word, PDF e estudos |
 | T50–T52 (M5) | pendente |
 
 ## M1 — Fechar a importação completa

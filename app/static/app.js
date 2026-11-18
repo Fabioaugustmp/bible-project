@@ -802,6 +802,7 @@ async function showVerse(ref = null) {
   if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; xrefBook = null; versionsOpen = false; }
   const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook });
   const similar = await api("similar", { book, chapter, verse }).catch(() => ({ available: false, verses: [] }));
+  const notesData = await api("user/notes", { book, chapter, verse }).catch(() => ({ notes: [] }));
   refreshCommentaryPins({ book, chapter, verse });
   const bookCounts = data.xrefs_total || xrefBook ? (await api("xref-books", { book, chapter, verse })).books : null;
   if (!ref && (book !== state.book || chapter !== state.chapter || verse !== state.verse)) return;
@@ -875,6 +876,7 @@ async function showVerse(ref = null) {
               el("span", { class: "range" }, foreign.map((v) => v.abbr).join(" · "))),
             foreign.map(versionItem))
         : null)],
+    ["notas", "Minhas notas", notesData.notes.length, () => notesTab(book, chapter, verse, notesData.notes)],
     ["parecidas", "Parecidas", similar.verses.length, () => typedSection(["bible"], "Passagens parecidas", similar.verses.length,
       el("p", { class: "group-note" }, similar.available
         ? "Passagens de sentido parecido ao versículo, pela versão ARA1993+. Ordem pela proximidade de sentido."
@@ -896,7 +898,7 @@ async function showVerse(ref = null) {
       typedSection(cited.map((g) => itemType(g.kind, g.abbr, g.module_id)), "Citado em",
         `${citedTotal} em ${cited.length} obras`, cited.map(citedGroup))]],
   ];
-  const shown = tabsDef.filter(([id, , count]) => id === "versoes" || count);
+  const shown = tabsDef.filter(([id, , count]) => id === "versoes" || id === "notas" || count);
   const active = shown.find(([id]) => id === verseTab) || shown[0];
   const tabBar = el("div", { class: "mode-tabs verse-tabs", role: "tablist" },
     shown.map(([id, label, count]) => el("button", {
@@ -1328,6 +1330,57 @@ function showToast(message) {
 }
 
 $("#graph-full-close").addEventListener("click", closeGraphFull);
+
+// --- Minhas notas (T40): gravadas só em data/user.db pelo servidor --------------
+let editingNoteId = null;
+
+async function userWrite(action, body) {
+  const response = await fetch(`/api/user/${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `erro ${response.status}`);
+  return data;
+}
+
+function notesTab(book, chapter, verse, notes) {
+  const fail = (error) => showToast(`Não foi possível salvar: ${error.message}`);
+  const input = el("textarea", { class: "note-input", rows: 4, "aria-label": "Nova nota sobre o versículo",
+    placeholder: "Escreva sobre este versículo: o que ele diz, o que você percebe, perguntas." });
+  const save = el("button", { class: "chip on", onclick: async () => {
+    const text = input.value.trim();
+    if (!text) return;
+    try { await userWrite("note/create", { book, chapter, verse, body: text }); showVerse(); } catch (error) { fail(error); }
+  } }, "Salvar nota");
+  const rows = notes.map((note) => {
+    if (editingNoteId === note.id) {
+      const edit = el("textarea", { class: "note-input", rows: 5, "aria-label": "Editar nota" });
+      edit.value = note.body;
+      return el("div", { class: "note" }, edit,
+        el("div", { class: "note-actions" },
+          el("button", { class: "chip on", onclick: async () => {
+            try { await userWrite("note/update", { id: note.id, body: edit.value }); editingNoteId = null; showVerse(); } catch (error) { fail(error); }
+          } }, "Salvar"),
+          el("button", { class: "link", onclick: () => { editingNoteId = null; showVerse(); } }, "Cancelar")));
+    }
+    return el("div", { class: "note" },
+      el("div", { class: "note-body" }, note.body),
+      el("div", { class: "note-meta" }, note.updated_at.replace("T", " ")),
+      el("div", { class: "note-actions" },
+        el("button", { class: "link", onclick: () => { editingNoteId = note.id; showVerse(); } }, "Editar"),
+        el("button", { class: "link", onclick: async () => {
+          if (!confirm("Mover esta nota para a lixeira?")) return;
+          try { await userWrite("note/delete", { id: note.id }); showVerse(); } catch (error) { fail(error); }
+        } }, "Apagar")));
+  });
+  return [
+    el("div", { class: "note-new" }, input, el("div", { class: "note-actions" }, save)),
+    rows.length ? rows : el("p", { class: "empty" }, "Nenhuma nota neste versículo ainda."),
+    el("p", { class: "group-note" }, el("a", { href: "/api/user/export", class: "link" }, "Exportar todas as notas (Markdown)")),
+  ];
+}
 
 // --- Pesquisa por tema (sem IA): só texto bíblico --------------------------------
 function markedText(text) {

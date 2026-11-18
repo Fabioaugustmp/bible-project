@@ -97,9 +97,9 @@ function overlaps(a, b) {
 
 // Componente: desenha o grafo de um versículo e permite recentrar e voltar.
 // `api`, `label` e `preview` vêm de app.js (para não duplicar código).
-export function xrefGraph({ book, chapter, verse }, { api, label, preview, hidePreview, open, maxWidth = 640 }) {
+export function xrefGraph({ book, chapter, verse }, { api, label, preview, hidePreview, open, maxWidth = 640, aspect = 0.8, full = false }) {
   const root = document.createElement("div");
-  root.className = "xgraph";
+  root.className = full ? "xgraph full" : "xgraph";
   const history = [];
   let current = { book, chapter, verse };
 
@@ -109,7 +109,7 @@ export function xrefGraph({ book, chapter, verse }, { api, label, preview, hideP
     const data = await api("xref-graph", center);
     root.removeAttribute("aria-busy");
     const width = Math.max(300, Math.min(root.clientWidth || 420, maxWidth));
-    const height = Math.round(width * 0.8);
+    const height = Math.round(width * aspect);
     const pos = layout(data.nodes, data.edges, width, height);
     const maxDegree = Math.max(1, ...data.nodes.map((n) => n.degree));
     const items = data.nodes.map((node, i) => ({

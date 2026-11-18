@@ -1279,13 +1279,17 @@ async function init() {
 }
 
 function openGraphFull(center) {
+  const label = (b, c, v) => `${bookOf(b).abbr} ${c}:${v}`;
+  // Altura ajustada à janela: o grafo e a legenda cabem sem rolar.
+  const width = Math.min(innerWidth - 32, 1200);
+  const aspect = Math.min(0.85, Math.max(0.45, (innerHeight - 200) / width));
+  $("#graph-full-title").textContent = `Referências de ${label(center.book, center.chapter, center.verse)}`;
   $("#graph-full-body").replaceChildren(xrefGraph(center, {
-    api,
-    label: (b, c, v) => `${bookOf(b).abbr} ${c}:${v}`,
+    api, label,
     preview: showPreview,
     hidePreview,
     open: (ref) => { closeGraphFull(); go(ref); },
-    maxWidth: 1200,
+    maxWidth: 1200, aspect, full: true,
   }));
   $("#graph-full").hidden = false;
   $("#graph-full-close").focus();

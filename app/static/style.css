@@ -386,3 +386,13 @@ kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-w
 .graph-full-head { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto 12px; }
 .graph-full-head strong { font: 600 1.1rem var(--serif); }
 .graph-full-body { max-width: 1200px; margin: 0 auto; }
+
+.graph-full .xgraph.full { margin: 0 auto; }
+.graph-full .xg-node text { font-size: 14px; }
+.graph-full .xg-node.center text { font-size: 16px; font-weight: 700; }
+.graph-full .xg-edge { stroke-opacity: .32; }
+.graph-full .xg-edge.to-center { stroke-opacity: .45; stroke-dasharray: none; }
+.graph-full .xg-node.center circle { stroke-width: 3; }
+.graph-full-head { align-items: flex-start; gap: 12px; }
+.graph-full-head strong { display: block; margin-bottom: 4px; }
+.graph-full-head .xg-key { font-size: 12px; }

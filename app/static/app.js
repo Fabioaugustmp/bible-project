@@ -1,4 +1,4 @@
-import { xrefGraph } from "./graph.js";
+import { xrefGraph, layout as graphLayout } from "./graph.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -1691,6 +1691,82 @@ async function openReading() {
   openPanel("leitura", "Leitura de hoje", readingBody(data));
 }
 
+// --- Mapa de estudo e linha do tempo (T93, D033) -----------------------------------
+
+async function openStudyMap(tab = "mapa") {
+  const [map, timeline] = await Promise.all([api("user/map"), api("user/timeline")]);
+  const tabs = el("div", { class: "pbar", role: "tablist" },
+    [["mapa", "Mapa"], ["tempo", "Linha do tempo"]].map(([key, label]) => el("button", {
+      class: "chip" + (key === tab ? " on" : ""), role: "tab", "aria-selected": String(key === tab),
+      onclick: () => openStudyMap(key).catch(refSetFail),
+    }, label)));
+  openPanel("mapa", "Mapa de estudo", [tabs, tab === "mapa" ? studyMapBody(map) : timelineBody(timeline)]);
+}
+
+function studyMapBody(map) {
+  if (!map.nodes.length) return el("p", { class: "empty" }, "Ainda não há notas, tópicos ou estudos para desenhar.");
+  const width = 640, height = 480;
+  // o nó mais estudado vai para o centro (índice 0), como no grafo de referências
+  const drawn = map.nodes.filter((n) => n.kind === "passage" || n.linked).sort((x, y) => y.weight - x.weight);
+  const remap = new Map(drawn.map((n, i) => [n.id, i]));
+  const edges = map.edges.filter((e) => remap.has(e.from) && remap.has(e.to))
+    .map((e) => ({ a: remap.get(e.from), b: remap.get(e.to), weight: e.weight }));
+  const positions = drawn.length > 1 ? graphLayout(drawn, edges, width, height) : [{ x: width / 2, y: height / 2 }];
+  const labelOf = (n) => n.kind === "passage" ? refLabel(n.book, n.chapter, n.verse) : n.name;
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("class", "study-map");
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Mapa de estudo: passagens, tópicos e estudos ligados");
+  edges.forEach((e) => {
+    const line = document.createElementNS(NS, "line");
+    line.setAttribute("x1", positions[e.a].x); line.setAttribute("y1", positions[e.a].y);
+    line.setAttribute("x2", positions[e.b].x); line.setAttribute("y2", positions[e.b].y);
+    line.setAttribute("class", "map-edge");
+    line.setAttribute("stroke-width", String(1 + Math.min(4, e.weight)));
+    svg.append(line);
+  });
+  drawn.forEach((n, i) => {
+    const g = document.createElementNS(NS, "g");
+    g.setAttribute("class", `map-node map-${n.kind}`);
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", positions[i].x); c.setAttribute("cy", positions[i].y);
+    c.setAttribute("r", String(6 + Math.min(10, n.weight * 2)));
+    const t = document.createElementNS(NS, "text");
+    t.setAttribute("x", positions[i].x); t.setAttribute("y", positions[i].y - 12 - Math.min(10, n.weight * 2));
+    t.setAttribute("text-anchor", "middle");
+    t.textContent = labelOf(n);
+    g.append(c, t);
+    if (n.kind === "passage") {
+      g.style.cursor = "pointer";
+      g.addEventListener("click", () => go({ book: n.book, chapter: n.chapter, verse: n.verse }));
+    }
+    svg.append(g);
+  });
+  const legend = el("p", { class: "group-note" },
+    `Passagens: ${map.passages_total} (mostrando as ${map.passages_shown} mais estudadas). Clique numa passagem para abri-la. Tópicos e estudos são os nós com nome.`);
+  return [legend, svg];
+}
+
+function timelineBody(timeline) {
+  if (!timeline.events.length) return el("p", { class: "empty" }, "Nenhum evento datado ainda.");
+  const kindLabel = { nota: "Nota", tópico: "Tópico", diário: "Diário", estudo: "Estudo", memorização: "Memorização", conjunto: "Conjunto", leitura: "Leitura" };
+  let day = null;
+  const out = [];
+  for (const ev of timeline.events) {
+    const d = brDate(ev.at);
+    if (d !== day) { day = d; out.push(el("h3", { class: "tl-day" }, d)); }
+    const ref = ev.book ? refLabel(ev.book, ev.chapter, ev.verse) : null;
+    out.push(el("div", { class: "tl-item" },
+      el("span", { class: "group-note" }, kindLabel[ev.label] || ev.label),
+      ev.title ? el("b", {}, ` ${ev.title}`) : null,
+      ref ? el("button", { class: "link", onclick: () => go({ book: ev.book, chapter: ev.chapter, verse: ev.verse }) }, ref) : null,
+      ev.text ? el("div", { class: "journal-text" }, ev.text) : null));
+  }
+  return out;
+}
+
 // --- Conjuntos de referências (T98, D032): passagens ordenadas pelo usuário ---------
 
 const refSetFail = (error) => showToast(`Não foi possível salvar: ${error.message}`);
@@ -2359,6 +2435,7 @@ function showView() {
       row("Alternar tema claro e escuro", null, () => $("#theme").click()),
       row("Buscar ou ir para uma referência", "/", () => $("#q").focus()),
       row("Conjuntos de referências", null, () => openRefSets().catch(refSetFail)),
+      row("Mapa de estudo e linha do tempo", null, () => openStudyMap().catch(refSetFail)),
       row("Atalhos de teclado", "?", () => showShortcuts())));
 }
 

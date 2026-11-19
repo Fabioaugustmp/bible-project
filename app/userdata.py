@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 
 import reading
+import studymap
 
 ROOT = Path(__file__).resolve().parent.parent
 USER_DB = ROOT / "data" / "user.db"
@@ -771,7 +772,8 @@ def list_backlinks(con, q):
 READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study, "marks": list_marks,
         "backlinks": list_backlinks, "reading": list_reading, "journal": list_journal,
         "topics": list_topics, "topic": get_topic, "memo": list_memo,
-        "sets": list_ref_sets, "set": get_ref_set}
+        "sets": list_ref_sets, "set": get_ref_set,
+        "map": studymap.map_data, "timeline": studymap.timeline}
 WRITE = {
     "set/create": create_ref_set, "set/delete": delete_ref_set, "set/add": add_ref_item,
     "set/move": move_ref_item, "set/remove": remove_ref_item,

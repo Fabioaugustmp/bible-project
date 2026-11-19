@@ -361,6 +361,16 @@ i.kind {
 .pempty { color: var(--muted); }
 .pnote { margin: -6px 0 12px; font-size: 14px; color: var(--muted); }
 
+/* Mapa de estudo e linha do tempo (T93) */
+.study-map { width: 100%; height: auto; display: block; }
+.map-edge { stroke: var(--line); }
+.map-node circle { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.map-node.map-topic circle { fill: var(--surface); stroke: var(--type-dictionary, var(--accent)); }
+.map-node.map-study circle { fill: var(--surface); stroke: var(--type-book, var(--accent)); }
+.map-node text { font: 12px var(--sans); fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 3px; }
+.tl-day { font: 600 13px var(--sans); margin: 14px 0 4px; color: var(--accent); }
+.tl-item { display: grid; gap: 2px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+
 /* Referências e conjuntos (T98): a passagem ocupa a largura; os controles ficam à direita */
 .xref-row { display: flex; gap: 6px; align-items: stretch; }
 .xref-row > .result { flex: 1; min-width: 0; }

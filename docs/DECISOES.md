@@ -552,3 +552,18 @@ não muda. Acesso pelo menu Exibir.
 próprio critério. Um conjunto guarda essa escolha sem alterar a lista automática.
 
 **Limites:** sem reordenar a lista automática; sem notas por item; sem exportação.
+
+## D033 — Mapa de estudo e linha do tempo, lidos dos dados guardados · 2026-11-19
+
+**Decisão:** o mapa (T93) liga passagens a tópicos e estudos, com as notas, notas de tópico
+e blocos de estudo como ligações; mostra as 40 passagens mais estudadas. A linha do tempo
+junta eventos com data (notas, tópicos, diário, estudos, memorização, conjuntos e leituras).
+Não há tabela nova: os dois são lidos das tabelas que já guardam as datas, então nunca
+ficam diferentes do que está guardado. Acesso pelo menu Exibir.
+
+**Motivo:** o grafo de referências (graph.js) já mostra ligações; o mapa reaproveita o mesmo
+posicionamento e mostra o próprio estudo. Guardar uma cópia por dia criaria duas fontes de
+verdade.
+
+**Limites:** sem instantâneos históricos (a linha do tempo mostra o estado atual com as datas
+de criação); sem filtro por período; sem ligação entre passagens que estão no mesmo estudo.

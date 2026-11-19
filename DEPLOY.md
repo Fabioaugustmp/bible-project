@@ -78,7 +78,6 @@ aviso, e a busca por palavra continua funcionando.
 | `BIBLE_ALLOWED_HOSTS` | vazio | web | nomes extras aceitos no cabeçalho Host, separados por vírgula (ex.: `meu-host:8377`) |
 | `BIBLE_PUBLIC_ORIGIN` | vazio | web (`.env`) | endereço público com https; vazio = uso local. Com ele, todo pedido exige o código |
 | `BIBLE_ACCESS_TOKEN` | vazio (usa `data/acesso-celular.txt`) | web (`.env`) | código de acesso, pelo menos 16 caracteres |
-| `CLOUDFLARE_TUNNEL_TOKEN` | vazio | tunnel (`.env`) | token do túnel da Cloudflare (perfil `tunnel`) |
 | `BIBLE_EMBED_URL` | `http://127.0.0.1:8378` | web | endereço do serviço de sentido |
 | `BIBLE_EMBED_HOST`, `BIBLE_EMBED_PORT` | `127.0.0.1`, `8378` | embed | escuta do serviço de sentido |
 
@@ -109,37 +108,36 @@ tabelas novas são criadas sozinhas (`create table if not exists`).
 
 ## Publicação (https://biblia.famptech.com.br, pelo túnel da Cloudflare)
 
-Decisão D034. Frontend e API ficam no mesmo serviço `web` (um processo Python, rotas
-`/` e `/api/*`); o túnel encaminha tudo para ele. Nada precisa de porta aberta no
-roteador: o `cloudflared` só faz saída para a Cloudflare.
+Decisão D034. O túnel já existe no servidor: o contêiner `cloudflared-default`, na rede
+`general-network`. A aplicação entra nessa mesma rede pelo serviço `web`, com o nome
+`biblioteca-web`. Frontend e API ficam no mesmo processo (`/` e `/api/*`). Nada precisa
+de porta aberta: o `cloudflared` só faz saída para a Cloudflare.
 
 Passos (uma vez):
 
-1. No servidor, na pasta do projeto, copie o modelo e preencha:
+1. Na pasta do projeto, crie o `.env` com o código de acesso:
 
    ```bash
    cp .env.example .env
    python3 -c "import secrets; print(secrets.token_urlsafe(24))"
+   nano .env
    ```
 
-   Cole o resultado em `BIBLE_ACCESS_TOKEN` (pelo menos 16 caracteres). Em
-   `CLOUDFLARE_TUNNEL_TOKEN`, cole o token do túnel (passo 2).
+   Preencha `BIBLE_ACCESS_TOKEN` com o código gerado (pelo menos 16 caracteres).
 
-2. No painel Zero Trust da Cloudflare, em Networks > Tunnels, abra o túnel
-   existente. Em **Public Hostname**, crie ou ajuste a rota:
-   - Subdomain/domain: `biblia` / `famptech.com.br`
-   - Service: `HTTP` e `web:8377`
+2. No painel Zero Trust da Cloudflare, em Networks > Tunnels, abra o túnel que o
+   `cloudflared-default` usa. Em **Public Hostname**, crie a rota:
+   - Subdomain: `biblia`
+   - Domain: `famptech.com.br`
+   - Service: `HTTP`, com a URL `http://biblioteca-web:8377`
 
-   Se o túnel já roda como serviço no próprio servidor (fora do Docker), a
-   rota pode apontar para `http://localhost:8377`: o `web` publica essa porta
-   em `127.0.0.1`. Nesse caso não suba o perfil `tunnel`, para não ter dois
-   conectores com o mesmo token.
-
-3. Suba a aplicação com o túnel:
+3. Suba a aplicação:
 
    ```bash
-   docker compose --profile tunnel up -d --build
+   docker compose up -d --build web
    ```
+
+   O servidor precisa ter a rede `general-network` (ela já existe, porque o túnel a usa).
 
 4. Abra https://biblia.famptech.com.br/?t=SEU_CODIGO uma vez. O navegador guarda
    um cookie `HttpOnly` e `Secure`, e a partir daí o `?t=` não é mais necessário.
@@ -148,11 +146,13 @@ Conferir:
 
 ```bash
 docker compose ps
-docker compose logs tunnel --tail 20
-curl -s -o /dev/null -w "%{http_code}\n" https://biblia.famptech.com.br/
+docker network inspect general-network --format '{{range .Containers}}{{.Name}} {{end}}'
+curl -s -o /dev/null -w "%{http_code}
+" https://biblia.famptech.com.br/
 ```
 
-Sem o código, a resposta é `403`. Com ele, a página abre.
+A rede deve listar `biblioteca-web` e `cloudflared-default`. Sem o código, a resposta
+é `403`. Com ele, a página abre.
 
 Como funciona a segurança:
 

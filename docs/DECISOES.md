@@ -571,9 +571,10 @@ de criação); sem filtro por período; sem ligação entre passagens que estão
 ## D034 — Publicação em biblia.famptech.com.br pelo túnel da Cloudflare, com código de acesso · 2026-11-19
 
 **Decisão:** a aplicação roda em um servidor Linux, em contêineres Docker, e é publicada pelo
-túnel da Cloudflare que já existe, no endereço https://biblia.famptech.com.br. O serviço
-`tunnel` do compose (perfil `tunnel`, imagem `cloudflare/cloudflared` fixada em 2026.10.7) leva o
-pedido até `http://web:8377`. Com `BIBLE_PUBLIC_ORIGIN` definido (ou `--public-origin`), o
+túnel da Cloudflare que já existe, no endereço https://biblia.famptech.com.br. O túnel já
+existe no servidor (contêiner `cloudflared-default`, rede `general-network`); o serviço `web` entra
+nessa rede com o nome `biblioteca-web`, e a rota pública aponta para `http://biblioteca-web:8377`.
+Não há um segundo conector no compose. Com `BIBLE_PUBLIC_ORIGIN` definido (ou `--public-origin`), o
 servidor exige o código de acesso em **todo** pedido, inclusive os que vêm do túnel; o código vem
 de `BIBLE_ACCESS_TOKEN` (no `.env`, fora do git) ou de `data/acesso-celular.txt`. A comparação é
 em tempo constante e o cookie recebe `Secure`. O endereço público só aceita origem `https`

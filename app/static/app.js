@@ -1598,6 +1598,7 @@ async function init() {
   });
   $("#select").addEventListener("click", () => setSelectMode(!selection.on));
   $("#view").addEventListener("click", showView);
+  $("#topics-notes").addEventListener("click", () => openTopicNotes().catch((error) => showToast(`Não foi possível abrir os tópicos: ${error.message}`)));
   $("#journal").addEventListener("click", () => openJournal().catch((error) => showToast(`Não foi possível abrir o diário: ${error.message}`)));
   $("#parallel").addEventListener("click", () => {
     selection.on = false; selection.start = selection.end = null;   // a seleção é só do capítulo normal
@@ -1683,6 +1684,100 @@ $("#graph-full-close").addEventListener("click", closeGraphFull);
 async function openReading() {
   const data = await api("user/reading");
   openPanel("leitura", "Leitura de hoje", readingBody(data));
+}
+
+// --- Notas por tópico (T87, D030) -------------------------------------------------
+
+async function openTopicNotes() {
+  const data = await api("user/topics");
+  openPanel("topicos", "Notas por tópico", topicNotesListBody(data));
+}
+
+async function openTopicNote(id) {
+  const topic = await api("user/topic", { id });
+  openPanel("topico", topic.name, topicNoteBody(topic));
+}
+
+function topicNotesListBody(data) {
+  const fail = (error) => showToast(`Não foi possível salvar: ${error.message}`);
+  const name = el("input", { type: "text", placeholder: "Nome do tópico, ex.: ansiedade", "aria-label": "Nome do novo tópico" });
+  const create = el("section", { class: "plan plan-new" },
+    el("h3", {}, "Novo tópico"),
+    el("div", { class: "note-actions" }, name, el("button", { class: "chip on", onclick: async () => {
+      try { await userWrite("topic/create", { name: name.value }); openTopicNotes(); } catch (error) { fail(error); }
+    } }, "Criar")));
+  const list = data.topics.map((t) => el("button", { class: "result", onclick: () => openTopicNote(t.id).catch(fail) },
+    el("b", {}, t.name), " ", el("span", { class: "group-note" }, `${t.notes} ${t.notes === 1 ? "nota" : "notas"}`)));
+  return [
+    el("p", { class: "group-note" }, "Um assunto reúne notas de várias passagens. Para anotar só um versículo, use as notas dele."),
+    create,
+    list.length ? list : el("p", { class: "empty" }, "Nenhum tópico ainda."),
+  ];
+}
+
+function topicNoteBody(topic) {
+  const fail = (error) => showToast(`Não foi possível salvar: ${error.message}`);
+  const reopen = () => openTopicNote(topic.id).catch(fail);
+
+  const noteCard = (note) => {
+    const card = el("section", { class: "plan journal-entry" });
+    const where = note.book ? refLabel(note.book, note.chapter, note.verse) : "Sem passagem";
+    const showCard = () => card.replaceChildren(
+      el("p", { class: "group-note" }, where),
+      el("div", { class: "journal-text" }, note.body),
+      el("div", { class: "note-actions" },
+        el("button", { class: "link", onclick: editCard }, "Editar"),
+        el("button", { class: "link", onclick: async () => {
+          if (!confirm("Apagar esta nota do tópico? Ela vai para a lixeira.")) return;
+          try { await userWrite("topic/note/delete", { id: note.id }); reopen(); } catch (error) { fail(error); }
+        } }, "Apagar")));
+    const editCard = () => {
+      const area = el("textarea", { rows: 5, "aria-label": "Texto da nota" });
+      area.value = note.body;
+      card.replaceChildren(area, el("div", { class: "note-actions" },
+        el("button", { class: "chip on", onclick: async () => {
+          try { await userWrite("topic/note/update", { id: note.id, body: area.value }); reopen(); } catch (error) { fail(error); }
+        } }, "Salvar"),
+        el("button", { class: "link", onclick: showCard }, "Cancelar")));
+      area.focus();
+    };
+    showCard();
+    return card;
+  };
+
+  const bookSelect = el("select", { "aria-label": "Passagem da nota" },
+    el("option", { value: "" }, "Sem passagem"),
+    state.books.map((b) => el("option", { value: b.book }, b.name)));
+  const chapter = el("input", { type: "number", min: 1, placeholder: "cap.", "aria-label": "Capítulo da nota", style: "width:4.5em" });
+  const verse = el("input", { type: "number", min: 1, placeholder: "vers.", "aria-label": "Versículo da nota", style: "width:4.5em" });
+  const area = el("textarea", { rows: 4, placeholder: "O que a Bíblia diz sobre este assunto?", "aria-label": "Nova nota do tópico" });
+  const add = el("section", { class: "plan plan-new" },
+    el("h3", {}, "Nova nota"),
+    area,
+    el("div", { class: "note-actions" }, bookSelect, " ", chapter, " ", verse),
+    el("div", { class: "note-actions" }, el("button", { class: "chip on", onclick: async () => {
+      if (!area.value.trim()) return fail(new Error("a nota está vazia"));
+      const hasBook = bookSelect.value !== "";
+      try {
+        await userWrite("topic/note/add", {
+          topic_id: topic.id, body: area.value,
+          book: hasBook ? Number(bookSelect.value) : null,
+          chapter: hasBook ? Number(chapter.value) : null,
+          verse: hasBook ? Number(verse.value) : null,
+        });
+        reopen();
+      } catch (error) { fail(error); }
+    } }, "Adicionar nota")));
+
+  return [
+    el("button", { class: "link back", onclick: () => openTopicNotes().catch(fail) }, "← Tópicos"),
+    add,
+    topic.notes.length ? topic.notes.map(noteCard) : el("p", { class: "empty" }, "Nenhuma nota neste tópico ainda."),
+    el("div", { class: "note-actions" }, el("button", { class: "link", onclick: async () => {
+      if (!confirm(`Apagar o tópico "${topic.name}" e todas as suas notas? Vai para a lixeira.`)) return;
+      try { await userWrite("topic/delete", { id: topic.id }); openTopicNotes(); } catch (error) { fail(error); }
+    } }, "Apagar tópico")),
+  ];
 }
 
 // --- Diário de estudo (T89, D029) -------------------------------------------------

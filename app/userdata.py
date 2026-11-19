@@ -57,6 +57,19 @@ create table if not exists journal(
     body text not null,
     created_at text not null, updated_at text not null,
     deleted_at text);
+create table if not exists topics(
+    id integer primary key,
+    name text not null,
+    created_at text not null, updated_at text not null,
+    deleted_at text);
+create table if not exists topic_notes(
+    id integer primary key,
+    topic_id integer not null references topics(id),
+    anchor_id integer references anchors(id),
+    body text not null,
+    created_at text not null, updated_at text not null,
+    deleted_at text);
+create index if not exists topic_notes_by_topic on topic_notes(topic_id);
 create table if not exists imports(
     id integer primary key,
     origin_path text, origin_sha256 text unique,
@@ -274,6 +287,114 @@ def delete_journal(con, data):
     return {"ok": cur.rowcount == 1}
 
 
+# ---- notas por tópico (T87, D030): um assunto reúne notas de várias passagens ----------
+
+MAX_TOPIC = 80
+
+
+def _topic(con, topic_id):
+    row = con.execute("select id, name from topics where id = ? and deleted_at is null", (topic_id,)).fetchone()
+    if not row:
+        raise ValueError("tópico não encontrado")
+    return row
+
+
+def _topic_name(con, data, current_id=None):
+    name = " ".join(str(data.get("name", "")).split())
+    if not name:
+        raise ValueError("o nome do tópico está vazio")
+    if len(name) > MAX_TOPIC:
+        raise ValueError(f"o nome passa de {MAX_TOPIC} caracteres")
+    clash = con.execute("select id from topics where deleted_at is null and lower(name) = lower(?)"
+                        " and id is not ?", (name, current_id)).fetchone()
+    if clash:
+        raise ValueError("já existe um tópico com este nome")
+    return name
+
+
+def _optional_anchor(con, data):
+    """Passagem opcional da nota de tópico: sem livro, a nota vale para o tópico todo."""
+    if data.get("book") in (None, ""):
+        return None
+    book, chapter, verse = ref_of(data)
+    if not (1 <= book <= 66 and 1 <= chapter <= len(reading.VERSES[book - 1])
+            and 1 <= verse <= reading.VERSES[book - 1][chapter - 1]):
+        raise ValueError("passagem inexistente")
+    return _anchor(con, book, chapter, verse)
+
+
+def list_topics(con, q):
+    rows = con.execute(
+        "select t.id, t.name, t.updated_at, count(n.id) as notes from topics t"
+        " left join topic_notes n on n.topic_id = t.id and n.deleted_at is null"
+        " where t.deleted_at is null group by t.id order by lower(t.name)").fetchall()
+    return {"topics": [dict(r) for r in rows]}
+
+
+def get_topic(con, q):
+    try:
+        topic_id = int(q["id"])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("tópico inválido")
+    topic = _topic(con, topic_id)
+    rows = con.execute(
+        "select n.id, n.body, n.created_at, n.updated_at, a.book, a.chapter, a.verse from topic_notes n"
+        " left join anchors a on a.id = n.anchor_id"
+        " where n.topic_id = ? and n.deleted_at is null order by a.book is null, a.book, a.chapter, a.verse, n.created_at",
+        (topic_id,)).fetchall()
+    return {"id": topic["id"], "name": topic["name"], "notes": [dict(r) for r in rows]}
+
+
+def create_topic(con, data):
+    name = _topic_name(con, data)
+    stamp = now()
+    cur = con.execute("insert into topics(name, created_at, updated_at) values (?, ?, ?)", (name, stamp, stamp))
+    con.commit()
+    return {"id": cur.lastrowid}
+
+
+def delete_topic(con, data):
+    topic_id = int(data["id"])
+    _topic(con, topic_id)
+    stamp = now()
+    con.execute("update topic_notes set deleted_at = ? where topic_id = ? and deleted_at is null", (stamp, topic_id))
+    con.execute("update topics set deleted_at = ? where id = ?", (stamp, topic_id))
+    con.commit()
+    return {"ok": True}
+
+
+def add_topic_note(con, data):
+    topic_id = int(data["topic_id"])
+    _topic(con, topic_id)
+    body = clean_body(data)
+    anchor = _optional_anchor(con, data)
+    stamp = now()
+    cur = con.execute("insert into topic_notes(topic_id, anchor_id, body, created_at, updated_at)"
+                      " values (?, ?, ?, ?, ?)", (topic_id, anchor, body, stamp, stamp))
+    _touch_topic(con, topic_id)
+    con.commit()
+    return {"id": cur.lastrowid}
+
+
+def update_topic_note(con, data):
+    body = clean_body(data)
+    cur = con.execute("update topic_notes set body = ?, updated_at = ? where id = ? and deleted_at is null",
+                      (body, now(), int(data["id"])))
+    con.commit()
+    return {"ok": cur.rowcount == 1}
+
+
+def delete_topic_note(con, data):
+    cur = con.execute("update topic_notes set deleted_at = ? where id = ? and deleted_at is null",
+                      (now(), int(data["id"])))
+    con.commit()
+    return {"ok": cur.rowcount == 1}
+
+
+def _touch_topic(con, topic_id):
+    con.execute("update topics set updated_at = ? where id = ?", (now(), topic_id))
+
+
 # ---- estudos (D5, primeira fatia: passagem, título e nota) ----------------------
 
 BLOCK_KINDS = ("passagem", "titulo", "nota")
@@ -453,8 +574,11 @@ def list_backlinks(con, q):
 
 
 READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study, "marks": list_marks,
-        "backlinks": list_backlinks, "reading": list_reading, "journal": list_journal}
+        "backlinks": list_backlinks, "reading": list_reading, "journal": list_journal,
+        "topics": list_topics, "topic": get_topic}
 WRITE = {
+    "topic/create": create_topic, "topic/delete": delete_topic, "topic/note/add": add_topic_note,
+    "topic/note/update": update_topic_note, "topic/note/delete": delete_topic_note,
     "journal/create": create_journal, "journal/update": update_journal, "journal/delete": delete_journal,
     "note/create": create_note, "note/update": update_note, "note/delete": delete_note,
     "study/create": create_study, "study/update": update_study, "study/delete": delete_study,

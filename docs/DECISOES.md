@@ -510,3 +510,17 @@ das notas presas a um versículo. Uma tabela própria evita mexer no modelo de n
 **Limites:** sem exportação, etiquetas ou ligação com estudos nesta etapa; o diário
 de oração e louvor (T99) fica para depois e pode reaproveitar a mesma tabela com uma
 etiqueta.
+
+## D030 — Notas por tópico separadas das notas por versículo · 2026-11-19
+
+**Decisão:** o tópico (T87) é um assunto com notas que podem ou não apontar uma
+passagem. Tabelas `topics` e `topic_notes` em `data/user.db`; o nome do tópico é
+único sem diferença de maiúsculas; apagar é lixeira. O botão "Tópicos" não se confunde
+com "Temas", a busca por tema.
+
+**Motivo:** o Topic Notes do e-Sword organiza a anotação por assunto, não por
+passagem (ESTUDO-PROGRAMAS). Um tópico pode reunir notas de várias passagens, o que
+nenhuma nota por versículo faz.
+
+**Limites:** sem etiquetas em notas por versículo (parte de T40), sem exportação e
+sem ligação entre tópico e estudos.

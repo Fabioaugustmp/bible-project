@@ -524,3 +524,18 @@ nenhuma nota por versículo faz.
 
 **Limites:** sem etiquetas em notas por versículo (parte de T40), sem exportação e
 sem ligação entre tópico e estudos.
+
+## D031 — Memorização de versículos com SM-2 · 2026-11-19
+
+**Decisão:** o cartão de memorização (T80) é um versículo com facilidade, intervalo e
+repetições, calculados pelo SM-2 (SuperMemo 2): acertos seguidos com intervalos de 1,
+6 dias e depois intervalo x facilidade; erro volta a 1 dia; facilidade mínima 1,3.
+Resposta em quatro graus: não lembrei, difícil, bom, fácil. Tabela `memo_cards` em
+`data/user.db`; apagar é lixeira.
+
+**Motivo:** SM-2 é o algoritmo de origem do Anki, que os usuários de cartões conhecem;
+agenda melhor que intervalos fixos e cabe em poucas linhas da biblioteca padrão.
+FSRS (o padrão mais recente do Anki) fica para depois, com a mesma tabela.
+
+**Limites:** um cartão por versículo; sem cartões a partir de notas ou de passagens com
+intervalo; sem botão "Memorizar" no painel do versículo ainda.

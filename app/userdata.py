@@ -70,6 +70,16 @@ create table if not exists topic_notes(
     created_at text not null, updated_at text not null,
     deleted_at text);
 create index if not exists topic_notes_by_topic on topic_notes(topic_id);
+create table if not exists memo_cards(
+    id integer primary key,
+    book integer not null, chapter integer not null, verse integer not null,
+    ease real not null default 2.5,
+    interval integer not null default 0,
+    reps integer not null default 0,
+    due text not null,
+    created_at text not null, updated_at text not null,
+    deleted_at text);
+create index if not exists memo_cards_due on memo_cards(due);
 create table if not exists imports(
     id integer primary key,
     origin_path text, origin_sha256 text unique,
@@ -395,6 +405,83 @@ def _touch_topic(con, topic_id):
     con.execute("update topics set updated_at = ? where id = ?", (now(), topic_id))
 
 
+# ---- memorização (T80, D031): cartões de um versículo, com o algoritmo SM-2 ------------
+
+MEMO_GRADES = {"esqueci": 0, "dificil": 3, "bom": 4, "facil": 5}
+
+
+def sm2(ease, interval, reps, quality):
+    """SM-2 (SuperMemo 2). Devolve (facilidade, intervalo em dias, repetições) depois da resposta.
+
+    quality 0-5; abaixo de 3 o cartão volta ao começo (intervalo 1 dia).
+    """
+    if quality < 3:
+        reps, interval = 0, 1
+    else:
+        if reps == 0:
+            interval = 1
+        elif reps == 1:
+            interval = 6
+        else:
+            interval = max(1, round(interval * ease))
+        reps += 1
+    ease = ease + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+    return max(1.3, ease), interval, reps
+
+
+def _memo_day(days):
+    import datetime
+    return (datetime.date.fromisoformat(reading.today()) + datetime.timedelta(days=days)).isoformat()
+
+
+def list_memo(con, q):
+    today = reading.today()
+    rows = con.execute(
+        "select id, book, chapter, verse, due, reps, interval from memo_cards where deleted_at is null"
+        " order by due, book, chapter, verse").fetchall()
+    cards = [dict(r) for r in rows]
+    return {"date": today, "due": [c for c in cards if c["due"] <= today], "cards": cards}
+
+
+def add_memo(con, data):
+    book, chapter, verse = ref_of(data)
+    if not (1 <= book <= 66 and 1 <= chapter <= len(reading.VERSES[book - 1])
+            and 1 <= verse <= reading.VERSES[book - 1][chapter - 1]):
+        raise ValueError("passagem inexistente")
+    if con.execute("select 1 from memo_cards where deleted_at is null and book = ? and chapter = ? and verse = ?",
+                   (book, chapter, verse)).fetchone():
+        raise ValueError("este versículo já está na memorização")
+    stamp = now()
+    cur = con.execute("insert into memo_cards(book, chapter, verse, due, created_at, updated_at)"
+                      " values (?, ?, ?, ?, ?, ?)", (book, chapter, verse, reading.today(), stamp, stamp))
+    con.commit()
+    return {"id": cur.lastrowid}
+
+
+def review_memo(con, data):
+    """Registra a resposta: quality é uma das chaves de MEMO_GRADES (ou um número de 0 a 5)."""
+    grade = data.get("grade")
+    quality = MEMO_GRADES.get(grade) if isinstance(grade, str) else None
+    if quality is None:
+        raise ValueError("resposta inválida")
+    card = con.execute("select id, ease, interval, reps from memo_cards where id = ? and deleted_at is null",
+                       (int(data["id"]),)).fetchone()
+    if not card:
+        raise ValueError("cartão não encontrado")
+    ease, interval, reps = sm2(card["ease"], card["interval"], card["reps"], quality)
+    con.execute("update memo_cards set ease = ?, interval = ?, reps = ?, due = ?, updated_at = ? where id = ?",
+                (ease, interval, reps, _memo_day(interval), now(), card["id"]))
+    con.commit()
+    return {"ok": True, "due": _memo_day(interval), "interval": interval}
+
+
+def delete_memo(con, data):
+    cur = con.execute("update memo_cards set deleted_at = ? where id = ? and deleted_at is null",
+                      (now(), int(data["id"])))
+    con.commit()
+    return {"ok": cur.rowcount == 1}
+
+
 # ---- estudos (D5, primeira fatia: passagem, título e nota) ----------------------
 
 BLOCK_KINDS = ("passagem", "titulo", "nota")
@@ -575,8 +662,9 @@ def list_backlinks(con, q):
 
 READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study, "marks": list_marks,
         "backlinks": list_backlinks, "reading": list_reading, "journal": list_journal,
-        "topics": list_topics, "topic": get_topic}
+        "topics": list_topics, "topic": get_topic, "memo": list_memo}
 WRITE = {
+    "memo/add": add_memo, "memo/review": review_memo, "memo/delete": delete_memo,
     "topic/create": create_topic, "topic/delete": delete_topic, "topic/note/add": add_topic_note,
     "topic/note/update": update_topic_note, "topic/note/delete": delete_topic_note,
     "journal/create": create_journal, "journal/update": update_journal, "journal/delete": delete_journal,

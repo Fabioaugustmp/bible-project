@@ -1598,6 +1598,7 @@ async function init() {
   });
   $("#select").addEventListener("click", () => setSelectMode(!selection.on));
   $("#view").addEventListener("click", showView);
+  $("#memo").addEventListener("click", () => openMemo().catch((error) => showToast(`Não foi possível abrir a memorização: ${error.message}`)));
   $("#topics-notes").addEventListener("click", () => openTopicNotes().catch((error) => showToast(`Não foi possível abrir os tópicos: ${error.message}`)));
   $("#journal").addEventListener("click", () => openJournal().catch((error) => showToast(`Não foi possível abrir o diário: ${error.message}`)));
   $("#parallel").addEventListener("click", () => {
@@ -1684,6 +1685,77 @@ $("#graph-full-close").addEventListener("click", closeGraphFull);
 async function openReading() {
   const data = await api("user/reading");
   openPanel("leitura", "Leitura de hoje", readingBody(data));
+}
+
+// --- Memorização (T80, D031): SM-2 sobre cartões de versículos ---------------------
+
+const MEMO_BUTTONS = [["esqueci", "Não lembrei"], ["dificil", "Difícil"], ["bom", "Bom"], ["facil", "Fácil"]];
+
+async function openMemo() {
+  const data = await api("user/memo");
+  openPanel("memo", "Memorização", memoBody(data));
+}
+
+function memoBody(data) {
+  const fail = (error) => showToast(`Não foi possível salvar: ${error.message}`);
+  const head = el("p", { class: "group-note" }, `Hoje: ${data.date} · ${data.due.length} para revisar · ${data.cards.length} ${data.cards.length === 1 ? "versículo" : "versículos"}`);
+  const review = data.due.length
+    ? el("div", { class: "note-actions" }, el("button", { class: "chip on", onclick: () => startReview(data.due, 0) }, `Revisar agora (${data.due.length})`))
+    : el("p", { class: "group-note" }, "Nada para revisar hoje.");
+
+  const bookSelect = el("select", { "aria-label": "Livro do versículo" },
+    state.books.map((b) => el("option", { value: b.book, selected: b.book === state.book ? true : null }, b.name)));
+  const chapter = el("input", { type: "number", min: 1, value: state.chapter, "aria-label": "Capítulo do versículo", style: "width:4.5em" });
+  const verse = el("input", { type: "number", min: 1, placeholder: "vers.", "aria-label": "Versículo a memorizar", style: "width:4.5em" });
+  const add = el("section", { class: "plan plan-new" },
+    el("h3", {}, "Novo versículo"),
+    el("div", { class: "note-actions" }, bookSelect, " ", chapter, " ", verse),
+    el("div", { class: "note-actions" }, el("button", { class: "chip on", onclick: async () => {
+      try {
+        await userWrite("memo/add", { book: Number(bookSelect.value), chapter: Number(chapter.value), verse: Number(verse.value) });
+        openMemo();
+      } catch (error) { fail(error); }
+    } }, "Adicionar")));
+
+  const card = (c) => el("section", { class: "plan journal-entry" },
+    el("p", { class: "group-note" }, `${refLabel(c.book, c.chapter, c.verse)} · próxima revisão ${brDate(c.due)} · ${c.reps} acertos seguidos`),
+    el("div", { class: "note-actions" }, el("button", { class: "link", onclick: async () => {
+      if (!confirm("Tirar este versículo da memorização? Ele vai para a lixeira.")) return;
+      try { await userWrite("memo/delete", { id: c.id }); openMemo(); } catch (error) { fail(error); }
+    } }, "Tirar da memorização")));
+
+  return [head, review, add,
+    data.cards.length ? data.cards.map(card) : el("p", { class: "empty" }, "Nenhum versículo ainda. Adicione um acima."),
+  ];
+}
+
+// Uma revisão por vez: mostra o versículo só quando pedido, e a resposta fica com o usuário.
+function startReview(queue, index) {
+  if (index >= queue.length) {
+    showToast("Revisão concluída.");
+    openMemo().catch(() => {});
+    return;
+  }
+  const item = queue[index];
+  const text = el("div", { class: "journal-text", "aria-live": "polite" }, "");
+  const reveal = el("button", { class: "chip on", onclick: async () => {
+    reveal.disabled = true;
+    try {
+      const data = await api("passage", { module: state.module, book: item.book, chapter: item.chapter, verse: item.verse });
+      text.textContent = data.verses[0]?.text || "Texto indisponível nesta versão.";
+    } catch (error) { text.textContent = "Não foi possível carregar o versículo."; }
+    grades.hidden = false;
+  } }, "Mostrar versículo");
+  const grades = el("div", { class: "note-actions", hidden: true }, MEMO_BUTTONS.map(([grade, label]) =>
+    el("button", { class: "chip", onclick: async () => {
+      try {
+        await userWrite("memo/review", { id: item.id, grade });
+        startReview(queue, index + 1);
+      } catch (error) { showToast(`Não foi possível salvar: ${error.message}`); }
+    } }, label)));
+  openPanel("memo-review", "Revisão", el("p", { class: "group-note" }, `${index + 1} de ${queue.length} · ${refLabel(item.book, item.chapter, item.verse)}`),
+    reveal, text, grades,
+    el("button", { class: "link", onclick: () => openMemo().catch(() => {}) }, "Sair da revisão"));
 }
 
 // --- Notas por tópico (T87, D030) -------------------------------------------------

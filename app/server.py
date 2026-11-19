@@ -4,6 +4,7 @@ Uso: python app/server.py [--db data/library.db] [--port 8377]
 Só aceita conexões da própria máquina e abre a base somente para leitura.
 """
 import argparse
+import hmac
 import json
 import mimetypes
 import os
@@ -722,19 +723,28 @@ API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cite
 
 
 LAN = False          # --lan: escuta na rede local, com código de acesso para outros aparelhos
+PUBLIC = False       # --public-origin (BIBLE_PUBLIC_ORIGIN): publicado na internet; todo pedido exige o código (D034)
+PUBLIC_ORIGIN = ""
 TOKEN = None
 TOKEN_FILE = DATA_DIR / "acesso-celular.txt"
 LOCAL_ADDRESSES = ("127.0.0.1", "::1")
 
 
 def load_token():
-    """Código de acesso para o celular, guardado em data/ (fora do git)."""
+    """Código de acesso, guardado em data/ (fora do git). BIBLE_ACCESS_TOKEN, se definido, tem preferência."""
+    env_token = os.environ.get("BIBLE_ACCESS_TOKEN", "").strip()
+    if env_token:
+        return env_token
     if TOKEN_FILE.is_file():
         return TOKEN_FILE.read_text(encoding="utf-8").strip()
-    token = secrets.token_urlsafe(9)
+    token = secrets.token_urlsafe(18)
     TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
     TOKEN_FILE.write_text(token, encoding="utf-8")
     return token
+
+
+def token_ok(value):
+    return bool(TOKEN) and hmac.compare_digest(value.encode("utf-8"), TOKEN.encode("utf-8"))
 
 
 def lan_ip():
@@ -753,18 +763,25 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "BibleProject/0.1"
 
     def gate(self, url):
-        """True se a conexão pode seguir. Fora do computador, exige o código (cookie ou ?t=)."""
-        if not LAN or self.client_address[0] in LOCAL_ADDRESSES:
+        """True se a conexão pode seguir.
+
+        Com --lan, fora do computador exige o código (cookie ou ?t=). Com --public-origin,
+        todo pedido exige o código, inclusive os que chegam pelo túnel (D034).
+        """
+        if not (LAN or PUBLIC):
             return True
-        if parse_qs(url.query).get("t", [""])[0] == TOKEN:
+        if not PUBLIC and self.client_address[0] in LOCAL_ADDRESSES:
+            return True
+        if token_ok(parse_qs(url.query).get("t", [""])[0]):
+            secure = "; Secure" if PUBLIC else ""
             self.send_response(302)
-            self.send_header("Set-Cookie", f"bp_t={TOKEN}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000")
+            self.send_header("Set-Cookie", f"bp_t={TOKEN}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000{secure}")
             self.send_header("Location", "/")
             self.send_header("Content-Length", "0")
             self.end_headers()
             return False
         cookies = [part.strip() for part in self.headers.get("Cookie", "").split(";")]
-        if f"bp_t={TOKEN}" in cookies:
+        if TOKEN and any(part.startswith("bp_t=") and token_ok(part[len("bp_t="):]) for part in cookies):
             return True
         self.send(403, "Acesso negado. Abra o endereço completo com o código de acesso mostrado no computador.".encode("utf-8"),
                   "text/plain; charset=utf-8")
@@ -772,7 +789,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         if args and str(args[1]) != "200":
-            super().log_message(fmt, *args)
+            # o código de acesso vai na URL (?t=): não grava o valor no registro
+            line = re.sub(r"([?&]t=)[^ &]*", r"\1***", fmt % args)
+            super().log_message("%s", line)
 
     def send(self, status, body: bytes, content_type: str):
         self.send_response(status)
@@ -915,15 +934,27 @@ def main():
                         help="endereço de escuta (no contêiner: 0.0.0.0; o host publica só em 127.0.0.1)")
     parser.add_argument("--allow-host", action="append", default=[],
                         help="nome de host aceito além de localhost (ex.: meu-servidor:8377); pode repetir")
+    parser.add_argument("--public-origin", default=os.environ.get("BIBLE_PUBLIC_ORIGIN", ""),
+                        help="endereço público, com https (ex.: https://biblia.famptech.com.br); exige código de acesso")
     args = parser.parse_args()
     DB_PATH = Path(args.db).resolve()
     if not DB_PATH.is_file():
         raise SystemExit(f"base não encontrada: {DB_PATH}\nrode antes: python importer/build.py PASTA")
-    global LAN, TOKEN
+    global LAN, PUBLIC, PUBLIC_ORIGIN, TOKEN
     hosts = {f"localhost:{args.port}", f"127.0.0.1:{args.port}"}
     hosts.update(args.allow_host + [h for h in os.environ.get("BIBLE_ALLOWED_HOSTS", "").split(",") if h.strip()])
     bind = args.bind
     print(f"http://localhost:{args.port}  (base: {DB_PATH})", flush=True)
+    if args.public_origin:
+        origin = args.public_origin.rstrip("/")
+        if not origin.startswith("https://"):
+            raise SystemExit("o endereço público precisa começar com https:// (o túnel da Cloudflare termina o HTTPS)")
+        PUBLIC, PUBLIC_ORIGIN, TOKEN = True, origin, load_token()
+        if len(TOKEN) < 16:
+            raise SystemExit("código de acesso curto demais: defina BIBLE_ACCESS_TOKEN com pelo menos 16 caracteres")
+        hosts.add(urlparse(origin).netloc)
+        userdata.PUBLIC_ORIGINS = {origin}
+        print(f"publicado em {origin}; todo pedido exige o código (BIBLE_ACCESS_TOKEN ou data/acesso-celular.txt)", flush=True)
     if args.lan:
         LAN, TOKEN = True, load_token()
         ip = lan_ip()

@@ -567,3 +567,28 @@ verdade.
 
 **Limites:** sem instantâneos históricos (a linha do tempo mostra o estado atual com as datas
 de criação); sem filtro por período; sem ligação entre passagens que estão no mesmo estudo.
+
+## D034 — Publicação em biblia.famptech.com.br pelo túnel da Cloudflare, com código de acesso · 2026-11-19
+
+**Decisão:** a aplicação roda em um servidor Linux, em contêineres Docker, e é publicada pelo
+túnel da Cloudflare que já existe, no endereço https://biblia.famptech.com.br. O serviço
+`tunnel` do compose (perfil `tunnel`, imagem `cloudflare/cloudflared` fixada em 2026.10.7) leva o
+pedido até `http://web:8377`. Com `BIBLE_PUBLIC_ORIGIN` definido (ou `--public-origin`), o
+servidor exige o código de acesso em **todo** pedido, inclusive os que vêm do túnel; o código vem
+de `BIBLE_ACCESS_TOKEN` (no `.env`, fora do git) ou de `data/acesso-celular.txt`. A comparação é
+em tempo constante e o cookie recebe `Secure`. O endereço público só aceita origem `https`
+para escrita em `/api/user/*`. Frontend e API continuam no mesmo processo (`app/server.py`):
+o túnel encaminha `/` e `/api/*` para o mesmo serviço `web`.
+
+**Motivo:** o usuário quer a aplicação no ar em um domínio próprio, com o HTTPS e a rede já
+resolvidos pela Cloudflare. O código de acesso reaproveita o mecanismo do D024 e fecha a porta que
+antes estava aberta (sem login, qualquer um lia e escrevia em `user.db`). Um processo só evita
+um proxy extra para o frontend, e a mesma origem dispensa CORS.
+
+**Limites:** o código é único e compartilhado, sem usuários nem expiração; o acesso pela URL (`?t=`)
+passa pelos registros da Cloudflare, por isso o servidor grava `?t=***` no próprio registro.
+Recomendado, mas feito no painel da Cloudflare e não no repositório: Cloudflare Access (login por
+e-mail) na frente do hostname. A base `library.db` tem texto de módulos com direito autoral
+(D007); a publicação do texto integral depende de conferir a licença de cada módulo (T52), e
+essa decisão é do usuário. O embed (busca por sentido) não foi construído nesta máquina (ver
+DEPLOY.md, "Estado da verificação").

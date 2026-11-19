@@ -135,10 +135,20 @@ def clean_body(data):
     return body
 
 
+PUBLIC_ORIGINS = set()   # ex.: {"https://biblia.famptech.com.br"}, definido pelo servidor (D034)
+
+
 def check_origin(headers):
-    """Escrita só de páginas servidas por este app (D021 e proposta, seção 10)."""
+    """Escrita só de páginas servidas por este app (D021, proposta seção 10, D034).
+
+    Atrás do túnel da Cloudflare a página chega como https, com o Host público;
+    o Host público (em PUBLIC_ORIGINS) só aceita https; os demais, http://Host como antes.
+    """
     host = headers.get("Host", "")
     origin = headers.get("Origin", "")
+    public_hosts = {o[len("https://"):] for o in PUBLIC_ORIGINS if o.startswith("https://")}
+    if host in public_hosts:
+        return origin == f"https://{host}"   # o endereço público só aceita https
     return host in ALLOWED_HOSTS and origin == f"http://{host}"
 
 

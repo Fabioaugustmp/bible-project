@@ -76,6 +76,9 @@ aviso, e a busca por palavra continua funcionando.
 | `BIBLE_DATA_DIR` | `data/` do projeto | web, embed | pasta com `library.db`, `user.db`, `embeddings.db`, `hf-cache/` |
 | `BIBLE_BIND` | `127.0.0.1` | web | endereço de escuta (no contêiner: `0.0.0.0`) |
 | `BIBLE_ALLOWED_HOSTS` | vazio | web | nomes extras aceitos no cabeçalho Host, separados por vírgula (ex.: `meu-host:8377`) |
+| `BIBLE_PUBLIC_ORIGIN` | vazio | web (`.env`) | endereço público com https; vazio = uso local. Com ele, todo pedido exige o código |
+| `BIBLE_ACCESS_TOKEN` | vazio (usa `data/acesso-celular.txt`) | web (`.env`) | código de acesso, pelo menos 16 caracteres |
+| `CLOUDFLARE_TUNNEL_TOKEN` | vazio | tunnel (`.env`) | token do túnel da Cloudflare (perfil `tunnel`) |
 | `BIBLE_EMBED_URL` | `http://127.0.0.1:8378` | web | endereço do serviço de sentido |
 | `BIBLE_EMBED_HOST`, `BIBLE_EMBED_PORT` | `127.0.0.1`, `8378` | embed | escuta do serviço de sentido |
 
@@ -104,15 +107,73 @@ docker compose up -d --build
 Os dados em `./data` continuam os mesmos. Se o esquema de `user.db` mudar, as
 tabelas novas são criadas sozinhas (`create table if not exists`).
 
+## Publicação (https://biblia.famptech.com.br, pelo túnel da Cloudflare)
+
+Decisão D034. Frontend e API ficam no mesmo serviço `web` (um processo Python, rotas
+`/` e `/api/*`); o túnel encaminha tudo para ele. Nada precisa de porta aberta no
+roteador: o `cloudflared` só faz saída para a Cloudflare.
+
+Passos (uma vez):
+
+1. No servidor, na pasta do projeto, copie o modelo e preencha:
+
+   ```bash
+   cp .env.example .env
+   python3 -c "import secrets; print(secrets.token_urlsafe(24))"
+   ```
+
+   Cole o resultado em `BIBLE_ACCESS_TOKEN` (pelo menos 16 caracteres). Em
+   `CLOUDFLARE_TUNNEL_TOKEN`, cole o token do túnel (passo 2).
+
+2. No painel Zero Trust da Cloudflare, em Networks > Tunnels, abra o túnel
+   existente. Em **Public Hostname**, crie ou ajuste a rota:
+   - Subdomain/domain: `biblia` / `famptech.com.br`
+   - Service: `HTTP` e `web:8377`
+
+   Se o túnel já roda como serviço no próprio servidor (fora do Docker), a
+   rota pode apontar para `http://localhost:8377`: o `web` publica essa porta
+   em `127.0.0.1`. Nesse caso não suba o perfil `tunnel`, para não ter dois
+   conectores com o mesmo token.
+
+3. Suba a aplicação com o túnel:
+
+   ```bash
+   docker compose --profile tunnel up -d --build
+   ```
+
+4. Abra https://biblia.famptech.com.br/?t=SEU_CODIGO uma vez. O navegador guarda
+   um cookie `HttpOnly` e `Secure`, e a partir daí o `?t=` não é mais necessário.
+
+Conferir:
+
+```bash
+docker compose ps
+docker compose logs tunnel --tail 20
+curl -s -o /dev/null -w "%{http_code}\n" https://biblia.famptech.com.br/
+```
+
+Sem o código, a resposta é `403`. Com ele, a página abre.
+
+Como funciona a segurança:
+
+- Com `BIBLE_PUBLIC_ORIGIN` definido, **todo** pedido exige o código, inclusive
+  os de `/api/*` e os que vêm do túnel. Sem `BIBLE_PUBLIC_ORIGIN`, o comportamento é o de uso local.
+- Escritas em `/api/user/*` só são aceitas com Origin `https://biblia.famptech.com.br`.
+- O código não aparece no registro do servidor (`?t=***`).
+- Recomendado: ative o **Cloudflare Access** (login por e-mail) na frente do
+  hostname, no painel Zero Trust. Isso é uma configuração da Cloudflare, não do repositório.
+- O código é único e não expira. Para trocá-lo, altere `BIBLE_ACCESS_TOKEN` no `.env`,
+  rode `docker compose up -d web` e refaça o passo 4 nos aparelhos.
+
+Atenção: `library.db` contém o texto de módulos com direito autoral (D007). Antes
+de publicar o texto integral, confira a licença de cada módulo (T52).
+
 ## Limites (leia antes de expor)
 
-- **Sem autenticação.** A aplicação foi feita para uso pessoal. Quem alcança a
-  porta lê e escreve nos dados. Por isso a porta é publicada só em `127.0.0.1`.
-- **Sem HTTPS.** Atrás de um proxy HTTPS, as escritas em `/api/user/*` falham,
-  porque a conferência de Origin espera `http://` com o mesmo Host. Isso precisa de
-  alteração no código antes de uma publicação real.
+- **Acesso só pelo código de acesso.** Não há usuários nem senhas separados, e o
+  código não expira. Os dados pessoais (`user.db`) ficam acessíveis a quem tiver o código.
 - **Sem avaliação de segurança formal** (ver `docs/RELATORIO-PRIMEIRA-VERSAO.md`,
-  Parte 3). Não é recomendado colocar a aplicação na internet nesta versão.
+  Parte 3). A publicação pelo túnel (D034) depende do código de acesso e do Cloudflare Access.
 - A mensagem de aviso da busca por sentido ainda cita o comando do Windows
   (`.venv-bench`); dentro do contêiner, o perfil `semantic` é o caminho certo.
 - A imagem não tem verificação de saúde (`healthcheck`) nem testes; os testes

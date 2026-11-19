@@ -1587,6 +1587,7 @@ async function init() {
     if (browseState.module) showBrowse(); else browseHome();
   });
   $("#select").addEventListener("click", () => setSelectMode(!selection.on));
+  $("#view").addEventListener("click", showView);
   $("#parallel").addEventListener("click", () => {
     selection.on = false; selection.start = selection.end = null;   // a seleção é só do capítulo normal
     state.parallel = !state.parallel;
@@ -2026,6 +2027,26 @@ function showShortcuts() {
     el("dl", { class: "shortcuts" }, SHORTCUTS.flatMap(([keys, action]) => [
       el("dt", {}, el("kbd", {}, keys)), el("dd", {}, action),
     ])));
+}
+
+// Menu Exibir (T84): as alternâncias da barra com o estado atual e a tecla de cada uma, quando há.
+function showView() {
+  const on = (id) => $(id).getAttribute("aria-pressed") === "true";
+  const row = (label, keys, action, pressed) => {
+    const props = { class: "view-row", onclick: () => { action(); showView(); } };
+    if (pressed !== undefined) props["aria-pressed"] = String(pressed);
+    return el("button", props, el("span", {}, label), keys ? el("kbd", {}, keys) : null);
+  };
+  openPanel("exibir", "Exibir",
+    el("div", { class: "view-menu" },
+      row("Paralelo: versões lado a lado", "p", () => $("#parallel").click(), on("#parallel")),
+      row("Marcas: versículos com notas ou em estudos", null, () => $("#marks").click(), on("#marks")),
+      row("Selecionar versículos", null, () => $("#select").click(), on("#select")),
+      row("Fonte menor", null, () => $("#smaller").click()),
+      row("Fonte maior", null, () => $("#larger").click()),
+      row("Alternar tema claro e escuro", null, () => $("#theme").click()),
+      row("Buscar ou ir para uma referência", "/", () => $("#q").focus()),
+      row("Atalhos de teclado", "?", () => showShortcuts())));
 }
 
 function moveVerse(delta) {

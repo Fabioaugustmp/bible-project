@@ -360,6 +360,13 @@ i.kind {
 .pcell sup { font: 600 .6em var(--sans); color: var(--accent); margin-right: .25em; }
 .pempty { color: var(--muted); }
 .pnote { margin: -6px 0 12px; font-size: 14px; color: var(--muted); }
+
+/* Menu Exibir (T84): linhas com rótulo, estado e tecla */
+.view-menu { display: grid; gap: 6px; }
+.view-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.view-row[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.view-row[aria-pressed="true"]::after { content: "ligado"; margin-left: auto; font-size: 12px; color: var(--accent); }
+.view-row kbd { flex: none; }
 @media (max-width: 560px) { .prow { grid-template-columns: 1fr !important; } }
 
 /* Aviso de erro (D1) */

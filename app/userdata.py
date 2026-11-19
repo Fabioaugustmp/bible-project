@@ -7,6 +7,7 @@ muda ao reimportar a biblioteca. Apagar vai para a lixeira (deleted_at).
 
 Só biblioteca padrão (D003).
 """
+import os
 import sqlite3
 import time
 from pathlib import Path
@@ -15,7 +16,7 @@ import reading
 import studymap
 
 ROOT = Path(__file__).resolve().parent.parent
-USER_DB = ROOT / "data" / "user.db"
+USER_DB = Path(os.environ.get("BIBLE_DATA_DIR", ROOT / "data")) / "user.db"   # BIBLE_DATA_DIR: volume do contêiner
 ALLOWED_HOSTS = {"localhost:8377", "127.0.0.1:8377"}   # ajustado pelo servidor ao iniciar
 MAX_BODY = 20000
 

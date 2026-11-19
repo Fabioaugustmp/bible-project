@@ -1,0 +1,44 @@
+# Biblioteca Bíblica em contêineres. Ver DEPLOY.md.
+#
+#   docker compose up -d --build web                      # leitura, estudo e busca por palavra
+#   docker compose --profile semantic up -d --build       # + busca por sentido e "Parecidas"
+#
+# A pasta ./data do host é montada em /data: library.db, user.db, embeddings.db e hf-cache/.
+# Nada disso entra na imagem (módulos têm direito autoral, D007).
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: biblioteca-web:local
+    ports:
+      - "127.0.0.1:8377:8377"        # publicado só na própria máquina
+    volumes:
+      - ./data:/data
+    environment:
+      BIBLE_EMBED_URL: http://embed:8378   # sem o perfil "semantic", a busca por sentido avisa e a busca por palavra continua
+      # BIBLE_ALLOWED_HOSTS: meu-host:8377  # nomes extras aceitos no cabeçalho Host (ver DEPLOY.md)
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  embed:
+    build:
+      context: .
+      dockerfile: Dockerfile.embed
+    image: biblioteca-embed:local
+    profiles: ["semantic"]
+    volumes:
+      - ./data:/data
+    expose:
+      - "8378"                       # só na rede interna do compose; não é publicado
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

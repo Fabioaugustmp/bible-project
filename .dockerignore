@@ -1,0 +1,11 @@
+# O contexto de build leva só código. Dados, módulos e ambientes ficam de fora.
+data/
+modules-sample/
+bench/
+tests/
+docs/
+.git/
+.venv*/
+**/__pycache__/
+**/*.pyc
+*.log

@@ -1,0 +1,21 @@
+# Interface e API da biblioteca (app/server.py). Não contém módulos nem bases:
+# a pasta data/ entra por volume (ver docker-compose.yml e DEPLOY.md).
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    BIBLE_DATA_DIR=/data \
+    BIBLE_BIND=0.0.0.0
+
+RUN useradd --create-home --uid 1000 app \
+ && mkdir /data && chown app /data
+
+WORKDIR /app
+COPY app/ ./app/
+COPY importer/ ./importer/
+
+USER app
+EXPOSE 8377
+
+# Só biblioteca padrão do Python (D003): não há pip install nesta imagem.
+CMD ["python", "app/server.py", "--port", "8377"]

@@ -10,6 +10,7 @@ Uso (a partir da raiz do projeto):
 Escuta só em 127.0.0.1:8378.
 """
 import json
+import os
 import sqlite3
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -18,10 +19,12 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-EMBED_DB = ROOT / "data" / "embeddings.db"
-MODEL_DIR = ROOT / "data" / "hf-cache" / "hub" / "models--BAAI--bge-m3"
+DATA_DIR = Path(os.environ.get("BIBLE_DATA_DIR", ROOT / "data"))
+EMBED_DB = DATA_DIR / "embeddings.db"
+MODEL_DIR = DATA_DIR / "hf-cache" / "hub" / "models--BAAI--bge-m3"
 MODEL = "bge-m3"
-PORT = 8378
+PORT = int(os.environ.get("BIBLE_EMBED_PORT", "8378"))
+HOST = os.environ.get("BIBLE_EMBED_HOST", "127.0.0.1")   # no contêiner: 0.0.0.0
 
 
 class Index:
@@ -143,8 +146,8 @@ def main():
     print("carregando vetores...", flush=True)
     INDEX = Index()
     INDEX.encoder()   # carrega o modelo já na partida, para a primeira busca ser rápida
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    print(f"busca por sentido em http://127.0.0.1:{PORT}", flush=True)
+    server = ThreadingHTTPServer((HOST, PORT), Handler)
+    print(f"busca por sentido em http://{HOST}:{PORT}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

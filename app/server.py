@@ -6,6 +6,7 @@ Só aceita conexões da própria máquina e abre a base somente para leitura.
 import argparse
 import json
 import mimetypes
+import os
 import re
 import secrets
 import socket
@@ -24,7 +25,10 @@ from xrefs import ranked as ranked_xrefs
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
-DB_PATH = ROOT.parent / "data" / "library.db"
+# Pasta de dados: a padrão é data/ do projeto; o contêiner aponta BIBLE_DATA_DIR para o volume.
+DATA_DIR = Path(os.environ.get("BIBLE_DATA_DIR", ROOT.parent / "data"))
+DB_PATH = DATA_DIR / "library.db"
+EMBED_BASE = os.environ.get("BIBLE_EMBED_URL", "http://127.0.0.1:8378").rstrip("/")
 
 _WORD = re.compile(r"[\w]+", re.UNICODE)
 MODULE_COLUMNS = "id, source, kind, abbr, title, author, lang, has_strongs, items"
@@ -452,7 +456,7 @@ def api_item(con, q):
     return item
 
 
-EMBED_URL = "http://127.0.0.1:8378/search"
+EMBED_URL = EMBED_BASE + "/search"
 _WORD = re.compile(r"[^\W\d_]{4,}", re.UNICODE)
 SEMANTIC_K = 10
 
@@ -567,7 +571,7 @@ def api_search(con, q):
     return result
 
 
-SIMILAR_URL = "http://127.0.0.1:8378/similar"
+SIMILAR_URL = EMBED_BASE + "/similar"
 SIMILAR_K = 10
 
 
@@ -719,7 +723,7 @@ API = {"library": api_library, "chapter": api_chapter, "verse": api_verse, "cite
 
 LAN = False          # --lan: escuta na rede local, com código de acesso para outros aparelhos
 TOKEN = None
-TOKEN_FILE = ROOT.parent / "data" / "acesso-celular.txt"
+TOKEN_FILE = DATA_DIR / "acesso-celular.txt"
 LOCAL_ADDRESSES = ("127.0.0.1", "::1")
 
 
@@ -907,13 +911,18 @@ def main():
     parser.add_argument("--db", default=str(DB_PATH))
     parser.add_argument("--lan", action="store_true", help="escuta na rede local (celular), com código de acesso")
     parser.add_argument("--port", type=int, default=8377)
+    parser.add_argument("--bind", default=os.environ.get("BIBLE_BIND", "127.0.0.1"),
+                        help="endereço de escuta (no contêiner: 0.0.0.0; o host publica só em 127.0.0.1)")
+    parser.add_argument("--allow-host", action="append", default=[],
+                        help="nome de host aceito além de localhost (ex.: meu-servidor:8377); pode repetir")
     args = parser.parse_args()
     DB_PATH = Path(args.db).resolve()
     if not DB_PATH.is_file():
         raise SystemExit(f"base não encontrada: {DB_PATH}\nrode antes: python importer/build.py PASTA")
     global LAN, TOKEN
     hosts = {f"localhost:{args.port}", f"127.0.0.1:{args.port}"}
-    bind = "127.0.0.1"
+    hosts.update(args.allow_host + [h for h in os.environ.get("BIBLE_ALLOWED_HOSTS", "").split(",") if h.strip()])
+    bind = args.bind
     print(f"http://localhost:{args.port}  (base: {DB_PATH})", flush=True)
     if args.lan:
         LAN, TOKEN = True, load_token()

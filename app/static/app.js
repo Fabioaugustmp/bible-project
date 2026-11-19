@@ -1598,6 +1598,7 @@ async function init() {
   });
   $("#select").addEventListener("click", () => setSelectMode(!selection.on));
   $("#view").addEventListener("click", showView);
+  $("#journal").addEventListener("click", () => openJournal().catch((error) => showToast(`Não foi possível abrir o diário: ${error.message}`)));
   $("#parallel").addEventListener("click", () => {
     selection.on = false; selection.start = selection.end = null;   // a seleção é só do capítulo normal
     state.parallel = !state.parallel;
@@ -1682,6 +1683,68 @@ $("#graph-full-close").addEventListener("click", closeGraphFull);
 async function openReading() {
   const data = await api("user/reading");
   openPanel("leitura", "Leitura de hoje", readingBody(data));
+}
+
+// --- Diário de estudo (T89, D029) -------------------------------------------------
+
+async function openJournal(query = "") {
+  const data = await api("user/journal", { q: query || null });
+  openPanel("diario", "Diário de estudo", journalBody(data, query));
+}
+
+function brDate(stamp) {
+  const [y, m, d] = String(stamp).slice(0, 10).split("-");
+  return d && m && y ? `${d}/${m}/${y}` : String(stamp);
+}
+
+function journalBody(data, query) {
+  const fail = (error) => showToast(`Não foi possível salvar: ${error.message}`);
+  const reopen = () => openJournal(query).catch(fail);
+
+  const entry = (item) => {
+    const card = el("section", { class: "plan journal-entry" });
+    const showCard = () => card.replaceChildren(
+      el("p", { class: "group-note" }, `${brDate(item.created_at)}${item.updated_at !== item.created_at ? " · editada" : ""}`),
+      el("div", { class: "journal-text" }, item.body),
+      el("div", { class: "note-actions" },
+        el("button", { class: "link", onclick: editCard }, "Editar"),
+        el("button", { class: "link", onclick: async () => {
+          if (!confirm("Apagar esta entrada do diário? Ela vai para a lixeira.")) return;
+          try { await userWrite("journal/delete", { id: item.id }); reopen(); } catch (error) { fail(error); }
+        } }, "Apagar")));
+    const editCard = () => {
+      const area = el("textarea", { rows: 5, "aria-label": "Texto da entrada" });
+      area.value = item.body;
+      card.replaceChildren(
+        area,
+        el("div", { class: "note-actions" },
+          el("button", { class: "chip on", onclick: async () => {
+            try { await userWrite("journal/update", { id: item.id, body: area.value }); reopen(); } catch (error) { fail(error); }
+          } }, "Salvar"),
+          el("button", { class: "link", onclick: showCard }, "Cancelar")));
+      area.focus();
+    };
+    showCard();
+    return card;
+  };
+
+  const area = el("textarea", { rows: 4, placeholder: "O que você percebeu hoje?", "aria-label": "Nova entrada do diário" });
+  const create = el("section", { class: "plan plan-new" },
+    el("h3", {}, "Nova entrada"),
+    area,
+    el("div", { class: "note-actions" }, el("button", { class: "chip on", onclick: async () => {
+      if (!area.value.trim()) return fail(new Error("a entrada está vazia"));
+      try { await userWrite("journal/create", { body: area.value }); reopen(); } catch (error) { fail(error); }
+    } }, "Salvar entrada")));
+
+  const search = el("input", { type: "search", value: query, placeholder: "Buscar no diário", "aria-label": "Buscar no diário",
+    onchange: (event) => openJournal(event.target.value.trim()).catch(fail) });
+  return [
+    el("p", { class: "group-note" }, "Entradas com data, sem passagem. Para anotar um versículo, use as notas dele."),
+    create,
+    search,
+    data.entries.length ? data.entries.map(entry) : el("p", { class: "empty" }, query ? "Nenhuma entrada com este texto." : "Nenhuma entrada ainda."),
+  ];
 }
 
 function readingBody(data) {

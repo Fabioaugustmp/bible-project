@@ -361,6 +361,10 @@ i.kind {
 .pempty { color: var(--muted); }
 .pnote { margin: -6px 0 12px; font-size: 14px; color: var(--muted); }
 
+/* Diário de estudo (T89): texto com quebras de linha, campos com a largura do painel */
+.journal-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.plan-new textarea, .journal-entry textarea { width: 100%; min-height: 6rem; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px; box-sizing: border-box; }
+
 /* Menu Exibir (T84): linhas com rótulo, estado e tecla */
 .view-menu { display: grid; gap: 6px; }
 .view-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }

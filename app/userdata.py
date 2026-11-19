@@ -52,6 +52,11 @@ create table if not exists reading_days(
     id integer primary key,
     plan_id integer not null references reading_plans(id),
     pos integer not null, book integer not null, chapter integer not null, done_on text);
+create table if not exists journal(
+    id integer primary key,
+    body text not null,
+    created_at text not null, updated_at text not null,
+    deleted_at text);
 create table if not exists imports(
     id integer primary key,
     origin_path text, origin_sha256 text unique,
@@ -229,6 +234,41 @@ def update_note(con, data):
 
 def delete_note(con, data):
     cur = con.execute("update notes set deleted_at = ? where id = ? and deleted_at is null",
+                      (now(), int(data["id"])))
+    con.commit()
+    return {"ok": cur.rowcount == 1}
+
+
+# ---- diário de estudo (T89, D029): entradas com data, sem passagem ------------------
+
+def list_journal(con, q):
+    """Entradas do diário, da mais recente para a mais antiga; `q` filtra pelo texto."""
+    text = (q.get("q") or "").strip()
+    rows = con.execute(
+        "select id, body, created_at, updated_at from journal"
+        " where deleted_at is null and (? = '' or body like '%' || ? || '%')"
+        " order by created_at desc, id desc limit 500", (text, text)).fetchall()
+    return {"entries": [dict(r) for r in rows]}
+
+
+def create_journal(con, data):
+    body = clean_body(data)
+    stamp = now()
+    cur = con.execute("insert into journal(body, created_at, updated_at) values (?, ?, ?)", (body, stamp, stamp))
+    con.commit()
+    return {"id": cur.lastrowid}
+
+
+def update_journal(con, data):
+    body = clean_body(data)
+    cur = con.execute("update journal set body = ?, updated_at = ? where id = ? and deleted_at is null",
+                      (body, now(), int(data["id"])))
+    con.commit()
+    return {"ok": cur.rowcount == 1}
+
+
+def delete_journal(con, data):
+    cur = con.execute("update journal set deleted_at = ? where id = ? and deleted_at is null",
                       (now(), int(data["id"])))
     con.commit()
     return {"ok": cur.rowcount == 1}
@@ -413,8 +453,9 @@ def list_backlinks(con, q):
 
 
 READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study, "marks": list_marks,
-        "backlinks": list_backlinks, "reading": list_reading}
+        "backlinks": list_backlinks, "reading": list_reading, "journal": list_journal}
 WRITE = {
+    "journal/create": create_journal, "journal/update": update_journal, "journal/delete": delete_journal,
     "note/create": create_note, "note/update": update_note, "note/delete": delete_note,
     "study/create": create_study, "study/update": update_study, "study/delete": delete_study,
     "block/add": add_block, "block/update": update_block, "block/delete": delete_block,

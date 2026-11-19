@@ -496,3 +496,17 @@ data, um dia perdido não cria atraso artificial.
 **Limites:** intervalos de versículos, calendário e planos prontos ficam para
 depois. O módulo `app/reading.py` usa só a biblioteca padrão e a lista de livros
 de `importer/canon.py`.
+
+## D029 — Diário de estudo separado das notas por versículo · 2026-11-19
+
+**Decisão:** o diário (T89) é uma coleção de entradas com data de criação, sem
+passagem, em `data/user.db` (tabela `journal`). Criar, editar e buscar pelo texto;
+apagar é lixeira. As notas por versículo e os estudos não mudam.
+
+**Motivo:** o Journal Notes do e-Sword (ESTUDO-PROGRAMAS) é o diário de estudo, separado
+das notas presas a um versículo. Uma tabela própria evita mexer no modelo de notas
+(ancoradas em `anchors`) e mantém os dados pessoais só em `user.db`.
+
+**Limites:** sem exportação, etiquetas ou ligação com estudos nesta etapa; o diário
+de oração e louvor (T99) fica para depois e pode reaproveitar a mesma tabela com uma
+etiqueta.

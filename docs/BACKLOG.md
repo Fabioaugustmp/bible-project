@@ -178,6 +178,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T85 | concluída (já existia): o painel Palavra mostra as ocorrências em contexto (versículo com o texto e as palavras usadas pela ARA), 60 por página com "Mais ocorrências"; testado com G1722 (2.112 ocorrências); léxicos com trecho e traduções em português e inglês no mesmo painel |
 | T96 | concluída (já existia, commit b0bad3e): modo "Próximas (NEAR)" com campo "Alcance" de 1 a 50 palavras; conferido no código (`fts_by_mode`) e no painel de busca |
 | T88 | concluída: escopo por livro (select "Livro", 66 livros ou toda a Bíblia) em versículos e comentários, no servidor (`book` em `/api/search`); testado no navegador com "graça" em João (comentários de 18.245 para 841; versículos da versão aberta KJV sem resultado, por a palavra ser "grace"); 375 px sem rolagem horizontal; 75 testes OK. Escopo de obra segue como "Versão aberta / Todas as versões"; dicionários não têm livro |
+| T89 | concluída (primeira etapa, D029): botão "Diário" abre "Diário de estudo": entradas com data, sem passagem, em `user.db` (tabela `journal`); criar, editar, buscar pelo texto e apagar para a lixeira; endpoints `/api/user/journal` e `journal/create|update|delete`; 5 testes em `tests/test_journal.py` (80 no total, OK); testado no navegador (criar com quebra de linha, editar, buscar com e sem resultado, apagar; 375 px sem rolagem horizontal). Pendente: exportar o diário e etiquetas (T99) |
 | T50–T52 (M5) | pendente |
 
 ## M1 — Fechar a importação completa

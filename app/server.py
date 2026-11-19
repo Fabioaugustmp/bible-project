@@ -38,6 +38,10 @@ MODULE_COLUMNS = "id, source, kind, abbr, title, author, lang, has_strongs, item
 def connect():
     con = sqlite3.connect(f"file:{DB_PATH.as_posix()}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
+    # Leitura por mapeamento de memória: as páginas vêm direto do cache do sistema, sem cópia
+    # para o cache de cada conexão (abrimos uma por pedido). Na busca "graça": ~105 -> ~60 ms.
+    # A base só é lida; substitua library.db com o servidor parado (D009), nunca por cima.
+    con.execute("pragma mmap_size = 2147418112")
     return con
 
 
@@ -253,12 +257,14 @@ def api_word(con, q):
     portuguese = con.execute(
         "select id from modules where kind = 'bible' and has_strongs = 1 and lang = 'por' order by id limit 1"
     ).fetchone()
+    # "+module_id" impede o SQLite de escolher tokens_by_ref (todas as ~440 mil palavras do
+    # módulo) em vez de tokens_by_strong (só as ocorrências do código): de ~70 ms para ~2 ms.
     occurrences, total = [], 0
     if reference:
         total = con.execute("select count(*) from (select distinct book, chapter, verse from tokens"
-                            " where module_id = ? and strong = ?)", (reference[0], strong)).fetchone()[0]
+                            " where +module_id = ? and strong = ?)", (reference[0], strong)).fetchone()[0]
         for book, chapter, verse in con.execute(
-            "select distinct book, chapter, verse from tokens where module_id = ? and strong = ?"
+            "select distinct book, chapter, verse from tokens where +module_id = ? and strong = ?"
             " order by book, chapter, verse limit ? offset ?", (reference[0], strong, PAGE["verses"], offset),
         ):
             text = con.execute("select text from verses where module_id = ? and book = ? and chapter = ?"
@@ -273,7 +279,7 @@ def api_word(con, q):
     # Forma original com acentos e transliteração, tirada do interlinear (strong_terms guarda o
     # lema grego sem acentos, para unir as grafias do TR e do BSB).
     original = rows(con, "select lemma as term, translit, count(*) as count from tokens"
-                         " where module_id = ? and strong = ? and lemma is not null"
+                         " where +module_id = ? and strong = ? and lemma is not null"
                          " group by lemma order by count desc limit 1",
                     (reference[0], strong)) if reference else []
     return {
@@ -559,13 +565,17 @@ def api_search(con, q):
             (study_query, PAGE["entries"], offset),
         )
     if only is None:
+        # Sem filtro, a contagem fica só no índice FTS: o join leria uma linha da tabela por
+        # resultado (milhares de páginas de comentários longos) só para contar.
+        verse_count = ("select count(*) from verses_fts join verses v on v.id = verses_fts.rowid"
+                       f" where verses_fts match ? {verse_filter}" if verse_filter
+                       else "select count(*) from verses_fts where verses_fts match ?")
+        comment_count = ("select count(*) from comments_fts join comments c on c.id = comments_fts.rowid"
+                         f" where comments_fts match ?{comment_filter}" if comment_filter
+                         else "select count(*) from comments_fts where comments_fts match ?")
         result["totals"] = {
-            "verses": con.execute(
-                f"select count(*) from verses_fts join verses v on v.id = verses_fts.rowid"
-                f" where verses_fts match ? {verse_filter}", verse_params).fetchone()[0],
-            "comments": con.execute(
-                f"select count(*) from comments_fts join comments c on c.id = comments_fts.rowid"
-                f" where comments_fts match ?{comment_filter}", comment_params).fetchone()[0],
+            "verses": con.execute(verse_count, verse_params).fetchone()[0],
+            "comments": con.execute(comment_count, comment_params).fetchone()[0],
             "entries": con.execute(
                 "select count(*) from entries_fts where entries_fts match ?", (study_query,)).fetchone()[0],
         }
@@ -622,7 +632,7 @@ def api_strong(con, q):
     if not STRONG_RE.match(code):
         raise ValueError("número Strong inválido: use G ou H seguido de números")
     module = int(q["module"]) if q.get("module") else None
-    filt = " and t.module_id = ?" if module else ""
+    filt = " and +t.module_id = ?" if module else ""   # "+": usa tokens_by_strong, não tokens_by_ref (ver api_word)
     params = (code, module) if module else (code,)
     total = con.execute(
         f"select count(*) from (select 1 from tokens t where t.strong = ?{filt}"

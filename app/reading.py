@@ -94,10 +94,13 @@ def list_plans(con, q=None):
 
 
 def mark_day(con, data):
+    """Marca um capítulo. Exige o plano e o capítulo juntos: um id de dia de outro plano é recusado."""
     day_id = _int(data, "id")
+    plan_id = _int(data, "plan_id")
     done = bool(data.get("done", True))
-    cur = con.execute("update reading_days set done_on = ? where id = ?",
-                      (today() if done else None, day_id))
+    cur = con.execute("update reading_days set done_on = ? where id = ? and plan_id = ?"
+                      " and plan_id in (select id from reading_plans where deleted_at is null)",
+                      (today() if done else None, day_id, plan_id))
     if cur.rowcount == 0:
         raise ValueError("capítulo do plano não encontrado")
     con.commit()

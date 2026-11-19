@@ -55,12 +55,12 @@ class Plans(unittest.TestCase):
             self.assertFalse(plan["read_today"])
 
             first = plan["next"]["id"]
-            reading.mark_day(self.con, {"id": first, "done": True})
+            reading.mark_day(self.con, {"id": first, "plan_id": made["id"], "done": True})
             plan = reading.list_plans(self.con)["plans"][0]
             self.assertEqual((plan["done"], plan["next"]["chapter"]), (1, 2))
             self.assertTrue(plan["read_today"])
 
-            reading.mark_day(self.con, {"id": first, "done": False})
+            reading.mark_day(self.con, {"id": first, "plan_id": made["id"], "done": False})
             self.assertEqual(reading.list_plans(self.con)["plans"][0]["done"], 0)
 
         reading.delete_plan(self.con, {"id": made["id"]})
@@ -73,9 +73,19 @@ class Plans(unittest.TestCase):
         with mock.patch.object(reading, "today", return_value="2026-11-18"):
             self.assertEqual(reading.list_plans(self.con)["notes_today"], 1)
 
+    def test_dia_de_outro_plano_e_recusado(self):
+        first_plan = reading.create_plan(self.con, {"book": 43, "chapter": 1, "to_chapter": 2})
+        second_plan = reading.create_plan(self.con, {"book": 40, "chapter": 1, "to_chapter": 2})
+        day_of_second = self.con.execute("select id from reading_days where plan_id = ? order by pos",
+                                         (second_plan["id"],)).fetchone()[0]
+        with self.assertRaises(ValueError):
+            reading.mark_day(self.con, {"id": day_of_second, "plan_id": first_plan["id"], "done": True})
+        marked = self.con.execute("select done_on from reading_days where id = ?", (day_of_second,)).fetchone()[0]
+        self.assertIsNone(marked)
+
     def test_capitulo_inexistente_no_plano(self):
         with self.assertRaises(ValueError):
-            reading.mark_day(self.con, {"id": 999, "done": True})
+            reading.mark_day(self.con, {"id": 999, "plan_id": 1, "done": True})
 
 
 if __name__ == "__main__":

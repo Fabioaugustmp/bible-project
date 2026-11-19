@@ -2074,7 +2074,7 @@ function readingBody(data) {
           plan.read_today
             ? el("span", { class: "group-note" }, "Lido hoje ✓")
             : el("button", { class: "chip on", onclick: async () => {
-                try { await userWrite("plan/mark", { id: plan.next.id, done: true }); openReading(); } catch (error) { fail(error); }
+                try { await userWrite("plan/mark", { id: plan.next.id, plan_id: plan.id, done: true }); openReading(); } catch (error) { fail(error); }
               } }, "Marcar como lido"))
       : el("p", { class: "group-note" }, "Plano concluído."),
     el("button", { class: "link", onclick: async () => {

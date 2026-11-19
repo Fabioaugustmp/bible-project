@@ -28,3 +28,26 @@ class GetStudyWithoutId(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PassageBlockBody(unittest.TestCase):
+    """Bloco de passagem não guarda texto próprio: enviar body é recusado, não descartado em silêncio."""
+
+    def setUp(self):
+        self.con = sqlite3.connect(":memory:")
+        self.con.row_factory = sqlite3.Row
+        self.con.executescript(userdata.SCHEMA)
+        self.study = userdata.create_study(self.con, {"title": "Teste"})["id"]
+
+    def tearDown(self):
+        self.con.close()
+
+    def test_passagem_com_texto_e_recusada(self):
+        with self.assertRaises(ValueError):
+            userdata.add_block(self.con, {"study_id": self.study, "kind": "passagem",
+                                          "book": 43, "chapter": 3, "verse": 16, "body": "texto"})
+
+    def test_passagem_sem_texto_e_aceita(self):
+        block = userdata.add_block(self.con, {"study_id": self.study, "kind": "passagem",
+                                              "book": 43, "chapter": 3, "verse": 16, "body": "  "})["id"]
+        self.assertIsNotNone(block)

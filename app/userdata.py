@@ -628,6 +628,9 @@ def _add_block(con, study_id, kind, data):
         raise ValueError("tipo de bloco desconhecido")
     anchor, body = None, None
     if kind == "passagem":
+        if str(data.get("body") or "").strip():
+            # o bloco de passagem aponta para o versículo; texto próprio iria para um bloco de nota
+            raise ValueError("bloco de passagem não tem texto próprio: use um bloco de nota")
         anchor = _anchor(con, *ref_of(data))
     else:
         body = clean_body(data)

@@ -252,3 +252,10 @@ Conferi os pontos do relatório no código antes de decidir. Correções e confi
 - **Atraso de 2 s (2.2, item 7): hipótese, não diagnóstico.** O servidor escuta só em `127.0.0.1` (`app/server.py`). Se o navegador tenta `localhost` como IPv6 primeiro, pode haver espera. Para testar, abrir a aplicação por `http://127.0.0.1:8377` e medir de novo.
 
 Testes unitários: 99 passam.
+
+### Correções feitas depois da conferência (2026-11-19)
+
+- **plan/mark exige o plano:** `plan/mark` passa a receber `plan_id` e recusa dia de outro plano ou de plano apagado (400, "capítulo do plano não encontrado"). A interface envia o plano em "Marcar como lido". Testado pela API: dia de outro plano recusado; dia certo aceito (200); teste unitário novo.
+- **Bloco de passagem recusa texto:** `block/add` com `kind: "passagem"` e `body` preenchido responde 400 com a mensagem "bloco de passagem não tem texto próprio: use um bloco de nota". Testado pela API e por teste unitário.
+- Testes unitários: 102 passam.
+- Não reproduzido: o campo Strong preenchido. Atraso de 2 s: hipótese ainda aberta.

@@ -154,6 +154,62 @@ curl -s -o /dev/null -w "%{http_code}
 A rede deve listar `biblioteca-web` e `cloudflared-default`. Sem o código, a resposta
 é `403`. Com ele, a página abre.
 
+### Se o túnel der 502 (`lookup biblioteca-web ... server misbehaving`)
+
+Nada aqui exige reiniciar o Docker nem mexe nos outros contêineres.
+
+1. Veja se o contêiner está de pé. `EndpointID` e `IPAddress` vazios em todas as redes,
+   e `network sandbox ... not found` no `docker network connect`, quase sempre querem
+   dizer que o contêiner não está rodando (parado ou reiniciando em laço):
+
+   ```bash
+   docker inspect biblioteca-web --format '{{.State.Status}} restarts={{.RestartCount}} exit={{.State.ExitCode}} err={{.State.Error}}'
+   ```
+
+   ```bash
+   docker logs --tail 50 biblioteca-web
+   ```
+
+   Causas comuns: `base não encontrada` (falta `data/library.db` no servidor),
+   `código de acesso curto demais` (`.env`), ou `Permission denied` em `./data`
+   (o contêiner roda com uid 1000; corrija com `chown -R 1000:1000 data`).
+
+2. Recrie só este contêiner:
+
+   ```bash
+   docker compose stop web
+   ```
+
+   ```bash
+   docker compose rm -f web
+   ```
+
+   ```bash
+   docker compose up -d --force-recreate web
+   ```
+
+3. Teste pela mesma rede do túnel (qualquer resposta HTTP, inclusive 403, prova que o
+   nome resolve; o `Host` precisa ser o público, senão o servidor recusa):
+
+   ```bash
+   docker run --rm --network general-network busybox wget -S -O /dev/null --header "Host: biblia.famptech.com.br" http://biblioteca-web:8377/
+   ```
+
+**Contingência sem DNS entre contêineres.** Publique a porta no IP do gateway da
+`general-network` (endereço do host nessa ponte; não fica exposto na internet) e
+aponte a rota do túnel para ele:
+
+```bash
+docker network inspect general-network --format '{{range .IPAM.Config}}{{.Subnet}} gw={{.Gateway}}{{end}}'
+```
+
+No `.env`, acrescente `BIBLE_HOST_BIND=<gateway>` (ex.: `172.18.0.1`) e recrie com
+`docker compose up -d --force-recreate web`. No painel, troque o Service da rota para
+`http://<gateway>:8377`. Riscos: o gateway muda se a rede for recriada (o contêiner
+deixa de subir com `cannot assign requested address`); um firewall no host (ufw) pode
+bloquear o tráfego da ponte para o host. Assim que o nome voltar a funcionar, apague
+`BIBLE_HOST_BIND` e volte a rota para `http://biblioteca-web:8377`.
+
 Como funciona a segurança:
 
 - Com `BIBLE_PUBLIC_ORIGIN` definido, **todo** pedido exige o código, inclusive

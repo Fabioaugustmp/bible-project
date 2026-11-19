@@ -593,3 +593,15 @@ e-mail) na frente do hostname. A base `library.db` tem texto de módulos com dir
 (D007); a publicação do texto integral depende de conferir a licença de cada módulo (T52), e
 essa decisão é do usuário. O embed (busca por sentido) não foi construído nesta máquina (ver
 DEPLOY.md, "Estado da verificação").
+
+## D035 — Busca por sentido continua em fp32, com teto de 3 GB · 2026-11-19
+
+**Decisão:** o serviço `embed` mantém o BGE-M3 em fp32 (CPU), sem quantização, e recebe
+`mem_limit: 3g` no compose. Bf16 e int8 foram medidos e descartados (ver
+`docs/EXPERIMENTO-MEMORIA-EMBED.md`).
+
+**Motivo:** em fp32 o pico medido foi de 2,46 GB, com 106 ms por consulta mediana e qualidade
+igual à referência. Bf16 usou mais memória (4,27 GB) e foi mais lento; int8 usou mais ainda
+(5,21 GB) e perdeu qualidade (top-10 em comum de 81%, mínimo de 40%).
+
+**Limite:** medido no Windows, com 4 threads; o servidor ainda precisa ser medido.

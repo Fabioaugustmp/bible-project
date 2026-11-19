@@ -19,7 +19,9 @@ services:
       - default
       - general-network
     ports:
-      - "127.0.0.1:8377:8377"        # publicado só na própria máquina (o túnel chega pela rede do compose)
+      # Publicado só na própria máquina (o túnel chega pelo nome, na general-network).
+      # Contingência sem DNS: BIBLE_HOST_BIND=<gateway da general-network> no .env (DEPLOY.md).
+      - "${BIBLE_HOST_BIND:-127.0.0.1}:8377:8377"
     volumes:
       - ./data:/data
     environment:
@@ -40,6 +42,7 @@ services:
       dockerfile: Dockerfile.embed
     image: biblioteca-embed:local
     profiles: ["semantic"]
+    mem_limit: 3g                   # teto de memória medido no experimento (fp32: pico de 2,46 GB; ver docs/EXPERIMENTO-MEMORIA-EMBED.md)
     volumes:
       - ./data:/data
     expose:

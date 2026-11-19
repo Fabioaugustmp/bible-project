@@ -1279,12 +1279,13 @@ function writeSearchStore(key, list) {
 
 function currentSearchOptions(query) {
   return { q: query, scope: state.searchScope || "aberta", modo: state.searchModo || "todas",
-    near: state.searchNear || 5, strong: state.searchStrong || null };
+    near: state.searchNear || 5, strong: state.searchStrong || null, book: state.searchBook || null };
 }
 
 function addRecentSearch(query) {
   const item = currentSearchOptions(query);
-  const same = (a) => a.q === item.q && a.scope === item.scope && a.modo === item.modo && a.strong === item.strong;
+  const same = (a) => a.q === item.q && a.scope === item.scope && a.modo === item.modo && a.strong === item.strong
+    && (a.book || null) === item.book;
   const recent = [item, ...readSearchStore("buscas.recentes").filter((a) => !same(a))].slice(0, 10);
   writeSearchStore("buscas.recentes", recent);
 }
@@ -1303,6 +1304,7 @@ function runSavedSearch(item) {
   state.searchModo = item.modo;
   state.searchNear = item.near;
   state.searchStrong = item.strong;
+  state.searchBook = item.book || null;
   $("#q").value = item.q;
   showSearch(item.q);
 }
@@ -1336,7 +1338,14 @@ function searchOptions(filterRow = null) {
     state.searchStrong = event.target.value.trim().toUpperCase() || null; rerun();
   } });
   strongField.value = state.searchStrong || "";
-  const children = [el("label", {}, "Strong ", strongField), el("label", {}, "Escopo ", scope), el("label", {}, "Modo ", mode)];
+  // Livro (T88): restringe versículos e comentários; dicionários não têm livro, então não entram.
+  const bookScope = el("select", { "aria-label": "Livro da busca", onchange: (event) => {
+    state.searchBook = Number(event.target.value) || null; rerun();
+  } }, el("option", { value: "" }, "Toda a Bíblia"),
+     state.books.map((b) => el("option", { value: String(b.book) }, b.name)));
+  bookScope.value = String(state.searchBook || "");
+  const children = [el("label", {}, "Strong ", strongField), el("label", {}, "Escopo ", scope),
+    el("label", {}, "Livro ", bookScope), el("label", {}, "Modo ", mode)];
   if ((state.searchModo || "todas") === "near") {
     const distance = el("input", { type: "number", min: "1", max: "50", "aria-label": "Alcance em palavras", onchange: (event) => {
       state.searchNear = Math.max(1, Math.min(50, Number(event.target.value) || 5)); rerun();
@@ -1480,6 +1489,7 @@ async function showSearch(query) {
       bilingual: state.bilingual ? 1 : 0,
       modo: state.searchModo || "todas",
       near: state.searchNear || 5,
+      book: state.searchBook || "",
     }),
     api("semantic", { q: query }).catch(() => ({ available: false, reason: "Não foi possível consultar a busca por sentido." })),
     state.searchStrong ? api("strong", { code: state.searchStrong }).catch(() => ({ error: "Não foi possível buscar este número Strong. Use G ou H seguido de números." })) : null,

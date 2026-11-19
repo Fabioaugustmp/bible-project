@@ -516,8 +516,14 @@ def api_search(con, q):
     only = q.get("kind")
     offset = max(0, int(q.get("offset", 0)))
     snippet = "snippet({t}, {col}, '[[', ']]', '…', 26)"
-    verse_filter = "and v.module_id = ?" if module else ""
-    verse_params = (query, module) if module else (query,)
+    # Escopo por livro (T88): vale para versículos e comentários; dicionários não têm livro.
+    book = int(q["book"]) if q.get("book") else None
+    if book is not None and not 1 <= book <= 66:
+        raise ValueError("livro inválido")
+    verse_filter = ("and v.module_id = ?" if module else "") + (" and v.book = ?" if book else "")
+    verse_params = (query, *([module] if module else []), *([book] if book else []))
+    comment_filter = " and c.book = ?" if book else ""
+    comment_params = (study_query, *([book] if book else []))
     result = {"query": query, "verses": [], "comments": [], "entries": [], "totals": {},
               "expansions": expansions, "bilingual": bilingual, "bridge": BRIDGE.available}
 
@@ -536,8 +542,8 @@ def api_search(con, q):
             f"select c.id, m.abbr, m.lang, c.book, c.ref_start, c.ref_end,"
             f" {snippet.format(t='comments_fts', col=0)} as hit"
             " from comments_fts join comments c on c.id = comments_fts.rowid join modules m on m.id = c.module_id"
-            " where comments_fts match ? order by m.lang <> 'por', bm25(comments_fts) limit ? offset ?",
-            (study_query, PAGE["comments"], offset),
+            f" where comments_fts match ?{comment_filter} order by m.lang <> 'por', bm25(comments_fts) limit ? offset ?",
+            (*comment_params, PAGE["comments"], offset),
         )
     if only in (None, "entries"):
         result["entries"] = rows(
@@ -553,7 +559,8 @@ def api_search(con, q):
                 f"select count(*) from verses_fts join verses v on v.id = verses_fts.rowid"
                 f" where verses_fts match ? {verse_filter}", verse_params).fetchone()[0],
             "comments": con.execute(
-                "select count(*) from comments_fts where comments_fts match ?", (study_query,)).fetchone()[0],
+                f"select count(*) from comments_fts join comments c on c.id = comments_fts.rowid"
+                f" where comments_fts match ?{comment_filter}", comment_params).fetchone()[0],
             "entries": con.execute(
                 "select count(*) from entries_fts where entries_fts match ?", (study_query,)).fetchone()[0],
         }

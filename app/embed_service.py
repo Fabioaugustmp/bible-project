@@ -27,6 +27,16 @@ PORT = int(os.environ.get("BIBLE_EMBED_PORT", "8378"))
 HOST = os.environ.get("BIBLE_EMBED_HOST", "127.0.0.1")   # no contêiner: 0.0.0.0
 
 
+def scores(matrix, vector, chunk=20000):
+    """Produto escalar. Matriz em float32 vai direto; em float16, em blocos (não copia tudo)."""
+    if matrix.dtype == np.float32:
+        return matrix @ vector
+    out = np.empty(matrix.shape[0], dtype=np.float32)
+    for i in range(0, matrix.shape[0], chunk):
+        out[i:i + chunk] = matrix[i:i + chunk].astype(np.float32) @ vector
+    return out
+
+
 class Index:
     def __init__(self):
         self.model = None
@@ -40,7 +50,11 @@ class Index:
                 "select item_id, vector from embeddings where kind = ? and model = ? order by item_id",
                 (kind, MODEL)).fetchall()
             ids = np.array([r[0] for r in rows], dtype=np.int64)
-            matrix = np.vstack([np.frombuffer(r[1], dtype=np.float16) for r in rows]).astype(np.float32)
+            matrix = np.vstack([np.frombuffer(r[1], dtype=np.float16) for r in rows])
+            del rows
+            if kind == "verse":           # poucos vetores: float32 é barato
+                matrix = matrix.astype(np.float32)
+            # comentários ficam em float16 (cerca de 400 MB em vez de 800); ver scores()
             self.kinds[kind] = (ids, matrix)
             print(f"  {kind}: {len(ids)} vetores", flush=True)
         con.close()
@@ -63,9 +77,9 @@ class Index:
         out = {}
         for kind in kinds:
             ids, matrix = self.kinds[kind]
-            scores = matrix @ vector
-            top = np.argsort(-scores)[:k]
-            out[kind] = [{"item_id": int(ids[i]), "score": round(float(scores[i]), 4)} for i in top]
+            sims = scores(matrix, vector)
+            top = np.argsort(-sims)[:k]
+            out[kind] = [{"item_id": int(ids[i]), "score": round(float(sims[i]), 4)} for i in top]
         return out
 
     def similar(self, kind, item_id, k):
@@ -74,10 +88,10 @@ class Index:
         i = int(np.searchsorted(ids, item_id))
         if i >= len(ids) or ids[i] != item_id:
             return None
-        scores = matrix @ matrix[i]
-        scores[i] = -1.0
-        top = np.argsort(-scores)[:k]
-        return [{"item_id": int(ids[j]), "score": round(float(scores[j]), 4)} for j in top]
+        sims = scores(matrix, matrix[i].astype(np.float32))
+        sims[i] = -1.0
+        top = np.argsort(-sims)[:k]
+        return [{"item_id": int(ids[j]), "score": round(float(sims[j]), 4)} for j in top]
 
 
 INDEX = None

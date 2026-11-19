@@ -76,6 +76,12 @@ class Timeline(unittest.TestCase):
         self.assertEqual([e["kind"] for e in events], ["journal", "reading", "notes"])
         self.assertEqual(events[2]["book"], 43)
 
+    def test_leitura_de_plano_apagado_nao_aparece(self):
+        self.con.execute("insert into reading_plans(id, title, created_at, deleted_at) values (1, 'Plano', '2026-11-01', '2026-11-05')")
+        self.con.execute("insert into reading_days(plan_id, pos, book, chapter, done_on) values (1, 1, 43, 1, '2026-11-02')")
+        self.con.commit()
+        self.assertEqual(studymap.timeline(self.con)["events"], [])
+
     def test_apagados_nao_aparecem(self):
         self.con.execute("insert into journal(body, created_at, updated_at, deleted_at) values ('x', '2026-11-03', '2026-11-03', '2026-11-04')")
         self.con.commit()

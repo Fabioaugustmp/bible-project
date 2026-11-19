@@ -85,7 +85,8 @@ def timeline(con, q=None):
         ("set", "conjunto", "select i.created_at as at, s.name as title, i.book, i.chapter, i.verse, null as text"
                             " from ref_set_items i join ref_sets s on s.id = i.set_id where s.deleted_at is null"),
         ("reading", "leitura", "select done_on || 'T00:00:00' as at, null as title, book, chapter, null as verse,"
-                               " null as text from reading_days where done_on is not null"),
+                               " null as text from reading_days where done_on is not null"
+                               " and plan_id in (select id from reading_plans where deleted_at is null)"),
     ]
     for kind, label, sql in sources:
         for r in con.execute(sql + " order by at desc limit ?", (TIMELINE_LIMIT,)).fetchall():

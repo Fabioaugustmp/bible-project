@@ -378,10 +378,15 @@ function annotateRange(range) {
 
 const MAX_COLUMNS = 4;
 
-// Versões escolhidas para o paralelo: as guardadas (só as que existem) ou, por padrão, a aberta.
+// Versões escolhidas para o paralelo: as guardadas (só as que existem); sem escolha guardada,
+// a aberta e uma segunda, do mesmo idioma quando houver (T83: o botão já mostra a comparação).
 function parallelChoice() {
   const ids = state.parallelIds.filter((id) => state.bibles.some((m) => m.id === id)).slice(0, MAX_COLUMNS);
-  return ids.length ? ids : [state.module];
+  if (ids.length) return ids;
+  const open = state.bibles.find((m) => m.id === state.module);
+  const others = state.bibles.filter((m) => m.id !== state.module);
+  const second = others.find((m) => open && m.lang === open.lang) || others[0];
+  return second ? [state.module, second.id] : [state.module];
 }
 
 async function renderParallel(token) {
@@ -430,7 +435,11 @@ async function renderParallel(token) {
     class: "pcell", lang: LANG[c.module.lang] || null, dir: c.module.lang === "heb" ? "rtl" : null,
   }, index === 0 ? el("sup", {}, String(n)) : null,
      c.verses.has(n) ? c.verses.get(n) : el("span", { class: "pempty" }, "—")))));
-  text.replaceChildren(picker, head, ...rows);
+  // T83: com uma só versão, o estado vazio diz como comparar sem sair da tela.
+  const hint = columns.length === 1 && state.bibles.length > 1
+    ? el("p", { class: "pnote" }, "Escolha mais uma versão nas fichas acima para comparar.")
+    : null;
+  text.replaceChildren(picker, ...(hint ? [hint] : []), head, ...rows);
   followReading();
 }
 

@@ -361,6 +361,12 @@ i.kind {
 .pempty { color: var(--muted); }
 .pnote { margin: -6px 0 12px; font-size: 14px; color: var(--muted); }
 
+/* Referências e conjuntos (T98): a passagem ocupa a largura; os controles ficam à direita */
+.xref-row { display: flex; gap: 6px; align-items: stretch; }
+.xref-row > .result { flex: 1; min-width: 0; }
+.xref-row > .chip { align-self: center; flex: none; }
+.xref-row > .chip:disabled { opacity: .4; cursor: default; }
+
 /* Diário de estudo (T89): texto com quebras de linha, campos com a largura do painel */
 .journal-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
 .plan-new textarea, .journal-entry textarea { width: 100%; min-height: 6rem; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px; box-sizing: border-box; }

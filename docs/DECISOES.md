@@ -539,3 +539,16 @@ FSRS (o padrão mais recente do Anki) fica para depois, com a mesma tabela.
 
 **Limites:** um cartão por versículo; sem cartões a partir de notas ou de passagens com
 intervalo; sem botão "Memorizar" no painel do versículo ainda.
+
+## D032 — Conjuntos de referências ordenados pelo usuário · 2026-11-19
+
+**Decisão:** T98 cria conjuntos nomeados de passagens, na ordem que o usuário escolhe.
+Cada item vem de uma referência cruzada ("+ conjunto" ao lado da referência) e pode
+ser subido, descido ou removido. Tabelas `ref_sets` e `ref_set_items` em `data/user.db`;
+apagar conjunto é lixeira. A ordem fixa das referências (curadas, depois co-citação)
+não muda. Acesso pelo menu Exibir.
+
+**Motivo:** o theWord e o e-Sword mostram referências em ordem fixa; o estudante quer o
+próprio critério. Um conjunto guarda essa escolha sem alterar a lista automática.
+
+**Limites:** sem reordenar a lista automática; sem notas por item; sem exportação.

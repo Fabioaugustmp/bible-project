@@ -80,6 +80,19 @@ create table if not exists memo_cards(
     created_at text not null, updated_at text not null,
     deleted_at text);
 create index if not exists memo_cards_due on memo_cards(due);
+create table if not exists ref_sets(
+    id integer primary key,
+    name text not null,
+    created_at text not null, updated_at text not null,
+    deleted_at text);
+create table if not exists ref_set_items(
+    id integer primary key,
+    set_id integer not null references ref_sets(id),
+    pos integer not null,
+    book integer not null, chapter integer not null, verse integer not null,
+    span integer not null default 0,
+    created_at text not null);
+create index if not exists ref_set_items_by_set on ref_set_items(set_id, pos);
 create table if not exists imports(
     id integer primary key,
     origin_path text, origin_sha256 text unique,
@@ -482,6 +495,101 @@ def delete_memo(con, data):
     return {"ok": cur.rowcount == 1}
 
 
+# ---- conjuntos de referências (T98, D032): ordem escolhida pelo usuário ----------------
+
+MAX_SET = 80
+MAX_SET_ITEMS = 200
+
+
+def _set(con, set_id):
+    row = con.execute("select id, name from ref_sets where id = ? and deleted_at is null", (set_id,)).fetchone()
+    if not row:
+        raise ValueError("conjunto não encontrado")
+    return row
+
+
+def list_ref_sets(con, q):
+    rows = con.execute(
+        "select s.id, s.name, s.updated_at, count(i.id) as items from ref_sets s"
+        " left join ref_set_items i on i.set_id = s.id where s.deleted_at is null"
+        " group by s.id order by lower(s.name)").fetchall()
+    return {"sets": [dict(r) for r in rows]}
+
+
+def get_ref_set(con, q):
+    try:
+        set_id = int(q["id"])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("conjunto inválido")
+    found = _set(con, set_id)
+    items = con.execute("select id, pos, book, chapter, verse, span from ref_set_items where set_id = ?"
+                        " order by pos", (set_id,)).fetchall()
+    return {"id": found["id"], "name": found["name"], "items": [dict(r) for r in items]}
+
+
+def create_ref_set(con, data):
+    name = " ".join(str(data.get("name", "")).split())
+    if not name:
+        raise ValueError("o nome do conjunto está vazio")
+    if len(name) > MAX_SET:
+        raise ValueError(f"o nome passa de {MAX_SET} caracteres")
+    stamp = now()
+    cur = con.execute("insert into ref_sets(name, created_at, updated_at) values (?, ?, ?)", (name, stamp, stamp))
+    con.commit()
+    return {"id": cur.lastrowid}
+
+
+def delete_ref_set(con, data):
+    set_id = int(data["id"])
+    _set(con, set_id)
+    con.execute("update ref_sets set deleted_at = ? where id = ?", (now(), set_id))
+    con.commit()
+    return {"ok": True}
+
+
+def add_ref_item(con, data):
+    set_id = int(data["set_id"])
+    _set(con, set_id)
+    book, chapter, verse = ref_of(data)
+    if not (1 <= book <= 66 and 1 <= chapter <= len(reading.VERSES[book - 1])
+            and 1 <= verse <= reading.VERSES[book - 1][chapter - 1]):
+        raise ValueError("passagem inexistente")
+    try:
+        span = max(0, int(data.get("span") or 0))
+    except (TypeError, ValueError):
+        raise ValueError("intervalo inválido")
+    count = con.execute("select count(*) from ref_set_items where set_id = ?", (set_id,)).fetchone()[0]
+    if count >= MAX_SET_ITEMS:
+        raise ValueError(f"o conjunto passa de {MAX_SET_ITEMS} passagens")
+    last = con.execute("select coalesce(max(pos), 0) from ref_set_items where set_id = ?", (set_id,)).fetchone()[0]
+    cur = con.execute("insert into ref_set_items(set_id, pos, book, chapter, verse, span, created_at)"
+                      " values (?, ?, ?, ?, ?, ?, ?)", (set_id, last + 1, book, chapter, verse, span, now()))
+    con.execute("update ref_sets set updated_at = ? where id = ?", (now(), set_id))
+    con.commit()
+    return {"id": cur.lastrowid}
+
+
+def move_ref_item(con, data):
+    """Sobe (delta -1) ou desce (delta 1) a passagem trocando de lugar com a vizinha."""
+    item = con.execute("select id, set_id, pos from ref_set_items where id = ?", (int(data["id"]),)).fetchone()
+    if not item:
+        raise ValueError("passagem não encontrada")
+    delta = -1 if int(data.get("delta", 0)) < 0 else 1
+    neighbor = con.execute("select id, pos from ref_set_items where set_id = ? and pos = ?",
+                           (item["set_id"], item["pos"] + delta)).fetchone()
+    if neighbor:
+        con.execute("update ref_set_items set pos = ? where id = ?", (item["pos"], neighbor["id"]))
+        con.execute("update ref_set_items set pos = ? where id = ?", (neighbor["pos"], item["id"]))
+        con.commit()
+    return {"ok": bool(neighbor)}
+
+
+def remove_ref_item(con, data):
+    cur = con.execute("delete from ref_set_items where id = ?", (int(data["id"]),))
+    con.commit()
+    return {"ok": cur.rowcount == 1}
+
+
 # ---- estudos (D5, primeira fatia: passagem, título e nota) ----------------------
 
 BLOCK_KINDS = ("passagem", "titulo", "nota")
@@ -662,8 +770,11 @@ def list_backlinks(con, q):
 
 READ = {"notes": list_notes, "all": list_all, "studies": list_studies, "study": get_study, "marks": list_marks,
         "backlinks": list_backlinks, "reading": list_reading, "journal": list_journal,
-        "topics": list_topics, "topic": get_topic, "memo": list_memo}
+        "topics": list_topics, "topic": get_topic, "memo": list_memo,
+        "sets": list_ref_sets, "set": get_ref_set}
 WRITE = {
+    "set/create": create_ref_set, "set/delete": delete_ref_set, "set/add": add_ref_item,
+    "set/move": move_ref_item, "set/remove": remove_ref_item,
     "memo/add": add_memo, "memo/review": review_memo, "memo/delete": delete_memo,
     "topic/create": create_topic, "topic/delete": delete_topic, "topic/note/add": add_topic_note,
     "topic/note/update": update_topic_note, "topic/note/delete": delete_topic_note,

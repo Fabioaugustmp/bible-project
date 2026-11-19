@@ -1006,13 +1006,17 @@ async function showVerse(ref = null) {
     ...x.sources,
     x.cocited ? `citados juntos ${x.cocited}×` : null,
   ].filter(Boolean).join(" · ");
-  const xrefs = data.xrefs.map((x) => el("button", {
-    class: "result", onclick: () => go({ book: x.book, chapter: x.chapter, verse: x.verse }),
-    title: "Listas curadas: theWord, BSB e TSK. Citados juntos: comentários e verbetes que citam os dois versículos.",
-  }, el("div", { class: "source" },
-      el("b", {}, refLabel(x.book, x.chapter, x.verse) + (x.span ? `–${x.verse + x.span}` : "")),
-      el("span", {}, why(x))),
-    x.text ? el("div", { class: "t clamp2" }, x.text) : null));
+  const xrefs = data.xrefs.map((x) => el("div", { class: "xref-row" },
+    el("button", {
+      class: "result", onclick: () => go({ book: x.book, chapter: x.chapter, verse: x.verse }),
+      title: "Listas curadas: theWord, BSB e TSK. Citados juntos: comentários e verbetes que citam os dois versículos.",
+    }, el("div", { class: "source" },
+        el("b", {}, refLabel(x.book, x.chapter, x.verse) + (x.span ? `–${x.verse + x.span}` : "")),
+        el("span", {}, why(x))),
+      x.text ? el("div", { class: "t clamp2" }, x.text) : null),
+    el("button", { class: "chip xref-add", title: "Adicionar esta passagem a um conjunto de referências",
+      onclick: () => pickRefSet(x).catch((error) => showToast(`Não foi possível abrir os conjuntos: ${error.message}`)) },
+      "+ conjunto")));
   // Lista ou grafo (T65). O grafo precisa de largura: em telas estreitas, só a lista.
   const graphFits = matchMedia("(min-width: 760px)").matches;
   const xrefMode = graphFits && store.get("xrefView") === "graph" ? "graph" : "list";
@@ -1687,6 +1691,74 @@ async function openReading() {
   openPanel("leitura", "Leitura de hoje", readingBody(data));
 }
 
+// --- Conjuntos de referências (T98, D032): passagens ordenadas pelo usuário ---------
+
+const refSetFail = (error) => showToast(`Não foi possível salvar: ${error.message}`);
+
+async function openRefSets() {
+  const data = await api("user/sets");
+  const name = el("input", { type: "text", placeholder: "Nome do conjunto, ex.: graça", "aria-label": "Nome do novo conjunto" });
+  const create = el("section", { class: "plan plan-new" },
+    el("h3", {}, "Novo conjunto"),
+    el("div", { class: "note-actions" }, name, el("button", { class: "chip on", onclick: async () => {
+      try { await userWrite("set/create", { name: name.value }); openRefSets(); } catch (error) { refSetFail(error); }
+    } }, "Criar")));
+  const rows = data.sets.map((s) => el("button", { class: "result", onclick: () => openRefSet(s.id).catch(refSetFail) },
+    el("b", {}, s.name), " ", el("span", { class: "group-note" }, `${s.items} ${s.items === 1 ? "passagem" : "passagens"}`)));
+  openPanel("conjuntos", "Conjuntos de referências", [
+    el("p", { class: "group-note" }, "Escolha passagens das referências cruzadas e ponha-as na ordem que quiser."),
+    create,
+    rows.length ? rows : el("p", { class: "empty" }, "Nenhum conjunto ainda."),
+  ]);
+}
+
+async function openRefSet(id) {
+  const set = await api("user/set", { id });
+  const label = (item) => refLabel(item.book, item.chapter, item.verse) + (item.span ? `–${item.verse + item.span}` : "");
+  const rows = set.items.map((item, index) => el("div", { class: "xref-row" },
+    el("button", { class: "result", onclick: () => go({ book: item.book, chapter: item.chapter, verse: item.verse }) },
+      el("b", {}, label(item))),
+    el("button", { class: "chip", "aria-label": "Subir", disabled: index === 0 ? true : null,
+      onclick: () => userWrite("set/move", { id: item.id, delta: -1 }).then(() => openRefSet(id)).catch(refSetFail) }, "↑"),
+    el("button", { class: "chip", "aria-label": "Descer", disabled: index === set.items.length - 1 ? true : null,
+      onclick: () => userWrite("set/move", { id: item.id, delta: 1 }).then(() => openRefSet(id)).catch(refSetFail) }, "↓"),
+    el("button", { class: "chip", "aria-label": "Remover do conjunto",
+      onclick: () => userWrite("set/remove", { id: item.id }).then(() => openRefSet(id)).catch(refSetFail) }, "×")));
+  openPanel("conjunto", set.name, [
+    el("button", { class: "link back", onclick: () => openRefSets().catch(refSetFail) }, "← Conjuntos"),
+    rows.length ? rows : el("p", { class: "empty" }, "Nenhuma passagem neste conjunto. Use “+ conjunto” nas referências."),
+    el("div", { class: "note-actions" }, el("button", { class: "link", onclick: async () => {
+      if (!confirm(`Apagar o conjunto "${set.name}"? Vai para a lixeira.`)) return;
+      try { await userWrite("set/delete", { id: set.id }); openRefSets(); } catch (error) { refSetFail(error); }
+    } }, "Apagar conjunto")),
+  ]);
+}
+
+async function pickRefSet(x) {
+  const data = await api("user/sets");
+  const label = refLabel(x.book, x.chapter, x.verse) + (x.span ? `–${x.verse + x.span}` : "");
+  const name = el("input", { type: "text", placeholder: "Novo conjunto", "aria-label": "Novo conjunto para esta passagem" });
+  const add = async (setId) => {
+    try {
+      await userWrite("set/add", { set_id: setId, book: x.book, chapter: x.chapter, verse: x.verse, span: x.span || 0 });
+      openRefSet(setId).catch(refSetFail);
+    } catch (error) { refSetFail(error); }
+  };
+  openPanel("conjuntos", `Adicionar ${label}`, [
+    el("p", { class: "group-note" }, "Escolha o conjunto, ou crie um novo para esta passagem."),
+    el("div", { class: "note-actions" }, name, el("button", { class: "chip on", onclick: async () => {
+      try {
+        const made = await userWrite("set/create", { name: name.value });
+        await add(made.id);
+      } catch (error) { refSetFail(error); }
+    } }, "Criar e adicionar")),
+    data.sets.length
+      ? data.sets.map((s) => el("button", { class: "result", onclick: () => add(s.id) }, el("b", {}, s.name), " ",
+          el("span", { class: "group-note" }, `${s.items} ${s.items === 1 ? "passagem" : "passagens"}`)))
+      : el("p", { class: "empty" }, "Nenhum conjunto ainda."),
+  ]);
+}
+
 // --- Memorização (T80, D031): SM-2 sobre cartões de versículos ---------------------
 
 const MEMO_BUTTONS = [["esqueci", "Não lembrei"], ["dificil", "Difícil"], ["bom", "Bom"], ["facil", "Fácil"]];
@@ -2286,6 +2358,7 @@ function showView() {
       row("Fonte maior", null, () => $("#larger").click()),
       row("Alternar tema claro e escuro", null, () => $("#theme").click()),
       row("Buscar ou ir para uma referência", "/", () => $("#q").focus()),
+      row("Conjuntos de referências", null, () => openRefSets().catch(refSetFail)),
       row("Atalhos de teclado", "?", () => showShortcuts())));
 }
 

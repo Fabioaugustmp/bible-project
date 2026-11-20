@@ -1505,11 +1505,18 @@ function renderSearch(keepScroll = false) {
     chip("verses", "Versículos", counts.verses),
     chip("comments", "Comentários", counts.comments),
     chip("entries", "Dicionários e livros", counts.entries));
+  const semState = state.lastSearch.semanticState || "done";
+  const loading = semState === "loading";
+  if (loading) startSemanticClock();
+  const semanticBody = loading ? semanticLoading(state.lastSearch.startedAt)
+    : semState === "timeout" ? semanticTimedOut(query)
+    : semanticGroup(semantic);
   const body = mode === "sentido"
     ? [el("p", { class: "group-note" }, "Passagens de assunto parecido, mesmo sem as palavras digitadas. A ordem vem da similaridade de sentido (modelo BGE-M3)."),
-       semanticGroup(semantic)]
+       semanticBody]
     : state.searchStrong ? [searchOptions(), ...strongBody(state.lastSearch.strong)]
-    : [el("p", { class: "group-note" }, "Versículos e comentários que contêm os termos digitados."),
+    : [loading ? semanticStatus(state.lastSearch.startedAt) : null,
+       el("p", { class: "group-note" }, "Versículos e comentários que contêm os termos digitados."),
        searchOptions(filterRow),
        bridgeNote(query, data),
        keyword ? null : suggestionBlock(state.lastSearch.suggest),
@@ -1597,8 +1604,61 @@ function bridgeNote(query, data) {
     toggle(false, "Buscar só o que digitei"));
 }
 
+// Busca por sentido pode levar muito tempo na primeira vez (o modelo carrega no servidor).
+// Ela corre em paralelo; a busca por palavra aparece assim que chega (T103).
+const SEMANTIC_TIMEOUT_MS = 20000;
+const TIMED_OUT = Symbol("tempo esgotado");
+let searchToken = 0;   // resposta de uma busca antiga não pode sobrescrever a nova
+
+function withTimeout(promise, ms) {
+  let timer;
+  const limit = new Promise((resolve) => { timer = setTimeout(() => resolve(TIMED_OUT), Math.max(0, ms)); });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
+function semanticSeconds(startedAt) {
+  return `${Math.floor((Date.now() - startedAt) / 1000)} s`;
+}
+
+let clockTimer = null;
+function tickSemanticClocks() {
+  const nodes = document.querySelectorAll(".sem-clock");
+  if (!nodes.length) { clearInterval(clockTimer); clockTimer = null; return; }
+  nodes.forEach((node) => { node.textContent = semanticSeconds(Number(node.dataset.started)); });
+}
+function startSemanticClock() {
+  if (!clockTimer) clockTimer = setInterval(tickSemanticClocks, 1000);
+}
+function semanticClock(startedAt) {
+  return el("span", { class: "sem-clock", "data-started": String(startedAt) }, semanticSeconds(startedAt));
+}
+
+// Indicador discreto na aba "Por palavra" enquanto a busca por sentido não chega.
+function semanticStatus(startedAt) {
+  return el("p", { class: "sem-status", role: "status" }, "Buscando por sentido… ", semanticClock(startedAt));
+}
+
+function semanticLoading(startedAt) {
+  return el("div", { class: "sem-loading", role: "status" },
+    el("span", { class: "spinner", "aria-hidden": "true" }),
+    el("div", {},
+      el("p", {}, "Buscando por sentido… ", semanticClock(startedAt)),
+      el("p", { class: "group-note" }, "Na primeira vez, o servidor carrega o modelo, o que pode demorar. Os resultados por palavra já estão na aba ao lado.")));
+}
+
+function semanticTimedOut(query) {
+  return el("div", { class: "sem-loading", role: "status" },
+    el("div", {},
+      el("p", {}, "O modelo de sentido ainda está carregando."),
+      el("p", { class: "group-note" }, "Os resultados por palavra continuam disponíveis. Tente de novo em instantes."),
+      el("button", { class: "chip on", onclick: () => showSearch(query) }, "Tentar de novo")));
+}
+
 async function showSearch(query) {
-  const [data, semantic, strong] = await Promise.all([
+  const token = ++searchToken;
+  const semanticStart = Date.now();
+  const semanticP = api("semantic", { q: query }).catch(() => ({ available: false, reason: "Não foi possível consultar a busca por sentido." }));
+  const [data, strong] = await Promise.all([
     api("search", {
       q: query,
       module: state.searchScope === "todas" ? null : state.module,
@@ -1607,13 +1667,22 @@ async function showSearch(query) {
       near: state.searchNear || 5,
       book: state.searchBook || "",
     }),
-    api("semantic", { q: query }).catch(() => ({ available: false, reason: "Não foi possível consultar a busca por sentido." })),
     state.searchStrong ? api("strong", { code: state.searchStrong }).catch(() => ({ error: "Não foi possível buscar este número Strong. Use G ou H seguido de números." })) : null,
   ]);
+  if (token !== searchToken) return;
   const nothing = !Object.values(data.totals || {}).some((n) => n);
   const suggest = nothing && !state.searchStrong ? await api("suggest", { q: query }).catch(() => null) : null;
-  state.lastSearch = { query, data, semantic, strong, suggest };
+  if (token !== searchToken) return;
+  const startedAt = semanticStart;
+  state.lastSearch = { query, data, semantic: null, semanticState: "loading", startedAt, strong, suggest };
   renderSearch();
+
+  const semantic = await withTimeout(semanticP, SEMANTIC_TIMEOUT_MS - (Date.now() - semanticStart));
+  if (token !== searchToken) return;
+  const timedOut = semantic === TIMED_OUT;
+  state.lastSearch.semanticState = timedOut ? "timeout" : "done";
+  state.lastSearch.semantic = timedOut ? null : semantic;
+  if (panelMode === "search" || panelMode === "buscar") renderSearch(true);
 }
 
 // Cabeçalho de grupo: deixa claro de que tipo de busca vêm os resultados abaixo (T33).
@@ -1845,6 +1914,9 @@ async function init() {
   fontSize = setFontSize(Number(store.get("fontSize")) || 20);
   const resume = location.hash ? null : resumeInfo();   // antes de render() gravar a leitura atual
   readHash();
+  // Aquecimento (T103): uma consulta em segundo plano carrega o modelo antes da primeira busca.
+  // O resultado é descartado; falha em silêncio (sem o serviço, a busca por sentido já avisa).
+  setTimeout(() => api("semantic", { q: "aquecimento" }).catch(() => {}), 1500);
 
   $("#version").addEventListener("change", (e) => {
     store.set("module", e.target.value);

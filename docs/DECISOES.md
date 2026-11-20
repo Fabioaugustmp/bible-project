@@ -631,3 +631,20 @@ A rolagem segue dentro de `#reader` (a do documento inteiro, que recolheria a ba
 do Chrome, ficou para depois por risco ao desktop), e o "voltar" do Android ainda troca de
 passagem em vez de fechar a folha. Celular deitado (largura acima de 560 px) usa o layout de
 tela estreita antigo.
+
+## D037 — Busca por sentido corre em paralelo, com indicador e tempo limite de 20 s · 2026-11-20
+
+**Decisão:** a busca por palavra é mostrada assim que chega, sem esperar a busca por sentido. A
+busca por sentido mostra "Buscando por sentido…" com contador de segundos (na aba "Por sentido"
+e, em "Por palavra", uma linha discreta). Depois de 20 s sem resposta, a aba "Por sentido" diz que
+o modelo ainda está carregando e oferece "Tentar de novo"; os resultados por palavra continuam.
+Ao abrir a página, uma consulta de aquecimento ("aquecimento", 1,5 s depois do carregamento) é
+enviada em segundo plano; o resultado é descartado. Respostas de buscas antigas não sobrescrevem
+a busca nova (contador de busca em `app/static/app.js`).
+
+**Motivo:** a primeira busca por sentido carrega o modelo no servidor e pode levar dezenas de
+segundos; antes, a tela ficava em "Buscando…" até a resposta mais lenta.
+
+**Limites:** o tempo limite é só no cliente: a requisição do servidor continua até terminar, e o
+resultado é descartado. O aquecimento faz o servidor carregar o modelo a cada abertura da página
+quando ele ainda não estiver na memória. Sem o serviço de sentido, o aviso aparece sem espera.

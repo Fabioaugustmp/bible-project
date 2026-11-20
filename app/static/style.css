@@ -519,7 +519,130 @@ kbd { font: 600 12px var(--sans); border: 1px solid var(--line); border-bottom-w
 .suggest { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; }
 .suggest .empty { width: 100%; margin: 0; }
 
+/* Teclas citadas em botões ("Fechar · Esc") não servem em tela de toque */
+@media (pointer: coarse) { .kbd-hint { display: none; } }
+
+/* Navegação do celular (D036): elementos que só existem até 560 px */
+.passage-btn, .bnav, .sheet-grip { display: none; }
+
 /* Marcas no texto: nota (ponto) e estudo (traço) (DESENHO: Ler, texto primeiro) */
 .v.has-note > sup::after { content: " ●"; color: var(--accent); font-size: .8em; }
 .v.has-study > sup::after { content: " ▬"; color: var(--muted); font-size: .8em; }
 body.marks-off .v > sup::after { content: none; }
+
+/* ===== Celular (até 560 px): cabeçalho de uma linha, barra inferior e folhas (D036) =====
+   Relatório: docs/UX-MOBILE-S23.md (Alternativa 1). Nada aqui vale acima de 560 px. */
+@media (max-width: 560px) {
+  :root { --bnav-h: calc(56px + env(safe-area-inset-bottom)); --head-h: 57px; }
+  /* Teclado virtual aberto (campo de texto com foco): a barra inferior sai */
+  body:has(:is(textarea, input:not([type=checkbox]):not([type=radio])):focus) { --bnav-h: 0px; }
+
+  /* Cabeçalho: "João 1 ▾" e versão; some ao descer, volta ao subir */
+  .bar {
+    flex-wrap: nowrap; height: var(--head-h); padding: 4px 8px 4px 4px; gap: 6px;
+    transition: margin-top .2s ease; position: relative; z-index: 6;
+  }
+  body.bar-hidden .bar { margin-top: calc(-1 * var(--head-h)); }
+  .bar .search, .bar .tools { display: none; }
+  .nav { flex: 1 1 auto; gap: 6px; }
+  .nav #prev, .nav #next, .nav #book, .nav #chapter { display: none; }
+  .passage-btn {
+    display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; height: 48px;
+    border: 0; background: transparent; color: var(--ink); padding: 0 10px; text-align: left;
+    font: 600 1.15rem var(--serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .passage-btn::after { content: "▾"; font: 600 .8rem var(--sans); color: var(--muted); }
+  .nav select#version { flex: 0 0 auto; max-width: 8.5rem; min-height: 48px; height: 48px; }
+
+  /* Leitura: menos margem acima do texto */
+  .reader { padding: 14px 16px 40px; }
+  h1 { font-size: 1.7rem; margin-bottom: 16px; }
+  body.sheet-open .reader { padding-bottom: 62vh; }
+
+  /* Barra inferior: sempre visível, faz parte do fluxo (não cobre o texto) */
+  .bnav {
+    display: flex; flex: none; align-items: stretch; height: var(--bnav-h);
+    padding: 0 0 env(safe-area-inset-bottom); background: var(--surface);
+    border-top: 1px solid var(--line); position: relative; z-index: 22;
+  }
+  body:has(:is(textarea, input:not([type=checkbox]):not([type=radio])):focus) .bnav { display: none; }
+  .bnav-btn {
+    flex: 1 1 0; min-width: 48px; height: 56px; min-height: 56px; padding: 4px 0 2px; border: 0; border-radius: 0;
+    background: transparent; color: var(--muted); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px; font: 600 11px var(--sans);
+  }
+  .bnav-btn svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .bnav-aa { font: 700 18px/24px var(--serif); height: 24px; }
+  .bnav-step { flex: 0 0 56px; font: 400 2rem/1 var(--sans); color: var(--ink); }
+  .bnav-btn[aria-current="true"] { color: var(--accent); }
+  .bnav-btn:disabled { opacity: .3; }
+
+  /* Folhas: acima da barra inferior; 60% da altura, ou quase tudo com a alça */
+  .panel, .pinned {
+    bottom: var(--bnav-h); height: 60%; max-height: calc(100% - var(--bnav-h) - 8px);
+  }
+  .panel.tall,
+  body:has(:is(textarea, input:not([type=checkbox]):not([type=radio])):focus) .panel,
+  body:has(:is(textarea, input:not([type=checkbox]):not([type=radio])):focus) .pinned { height: calc(100% - var(--bnav-h) - 8px); }
+  .panel.full {
+    top: 0; height: auto; max-height: none; border-radius: 0; box-shadow: none; border-top: 0;
+  }
+  .panel.full .sheet-grip, .panel.full #panel-pin { display: none; }
+  .panel::before {
+    content: ""; position: absolute; top: 5px; left: 50%; width: 36px; height: 4px; margin-left: -18px;
+    border-radius: 2px; background: var(--line);
+  }
+  .panel.full::before { display: none; }
+  .panel-head { padding: 8px 4px 4px 14px; gap: 4px; }
+  .panel-head h2 { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #panel-close { min-width: 48px; min-height: 48px; font-size: 1.6rem; font-weight: 400; border: 0; background: transparent; }
+  .sheet-grip { display: block; min-width: 48px; min-height: 48px; border: 0; background: transparent; font-size: 1.2rem; }
+  .sheet-grip[aria-pressed="true"] { transform: rotate(180deg); }
+  #panel-pin { min-height: 48px; }
+
+  /* Abas do versículo: quebram em duas linhas em vez de sumir à direita */
+  .verse-tabs { flex-wrap: wrap; overflow-x: visible; row-gap: 0; }
+  .verse-tabs .mode-tab { min-height: 44px; padding: 8px 10px; }
+
+  /* Faixa "Continuar": uma linha, com Abrir e × */
+  .resume { padding: 0 0 0 12px; min-height: 48px; margin-bottom: 12px; gap: 6px; }
+  .resume-row { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; }
+  .resume-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .resume-row .chip { flex: none; }
+  .resume-close { position: static; flex: none; }
+
+  /* Barra da seleção e aviso: acima da barra inferior */
+  .selbar { bottom: var(--bnav-h); }
+  .toast { bottom: calc(var(--bnav-h) + 12px); }
+
+  /* Telas cheias: botão Fechar com alvo de toque grande */
+  .graph-full-head .chip { min-height: 48px; padding: 0 16px; }
+
+  /* Menus das folhas (Estudo, Texto, Mais) */
+  .sheet-menu { display: grid; gap: 6px; padding-bottom: 8px; }
+  .sheet-menu h3 { margin: 16px 0 2px; }
+  .sheet-menu .view-row { min-height: 52px; font-size: 1rem; }
+  .view-row .row-note { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+  .size-row { display: flex; align-items: center; gap: 12px; }
+  .size-row button { min-width: 56px; min-height: 48px; font-weight: 600; }
+  .size-row output { min-width: 3ch; text-align: center; font: 600 1.1rem var(--sans); }
+  .seg { display: flex; gap: 6px; }
+  .seg button { flex: 1; min-height: 48px; border-radius: 8px; }
+  .seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+
+  /* Busca em tela própria */
+  .m-search { display: flex; gap: 8px; margin: 8px 0 4px; }
+  .m-search input { flex: 1; min-height: 48px; font-size: 16px; }
+  .m-search button { min-height: 48px; }
+
+  /* Seletor de passagem: grade de livros e de capítulos */
+  .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
+  .pick-grid button { min-height: 48px; padding: 0 4px; font-size: 14px; }
+  .pick-grid button.on { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+}
+@media (max-width: 560px) and (pointer: coarse) {
+  select, input, button { min-height: 48px; }
+  .chip { min-height: 44px; }
+  .link { min-height: 48px; box-sizing: border-box; }
+  .resume-close { min-width: 48px; min-height: 48px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+}

@@ -605,3 +605,29 @@ igual à referência. Bf16 usou mais memória (4,27 GB) e foi mais lento; int8 u
 (5,21 GB) e perdeu qualidade (top-10 em comum de 81%, mínimo de 40%).
 
 **Limite:** medido no Windows, com 4 threads; o servidor ainda precisa ser medido.
+
+## D036 — Navegação do celular com barra inferior, só até 560 px · 2026-11-19
+
+**Decisão:** em telas de até 560 px de largura, a interface usa a Alternativa 1 do relatório
+`docs/UX-MOBILE-S23.md`: cabeçalho de uma linha ("João 1 ▾", que abre uma grade de livros e
+capítulos, e a versão) que some ao rolar para baixo e volta ao subir; barra inferior sempre
+visível com ‹ (capítulo anterior), Buscar, Estudo, Aa, ⋯ (Mais) e › (próximo); busca em tela
+própria; folha "Estudo" (Leitura de hoje primeiro, último estudo, Meus estudos, Diário,
+Memorizar, Notas por tópico); folha "Texto e tema" (tamanho com valor visível, tema Claro,
+Escuro ou Sistema, Marcas, Strong); folha "Mais" agrupada em Ler, Ferramentas e Preferências,
+que substitui no celular a barra de ferramentas e o menu Exibir. A folha do versículo ocupa 60%
+da altura (o versículo aberto rola para cima dela) e pode crescer quase até o topo. O tema passa a
+ter o valor "system" no navegador (segue `prefers-color-scheme`); o botão Tema do desktop
+continua alternando claro e escuro. As escolhas foram aprovadas pelo usuário (seção E do
+relatório: itens 1, 2, 4 e 6).
+
+**Motivo:** no celular a barra superior ocupava 265 de 915 px, com 23 controles fora do alcance
+do polegar, e a folha do versículo cobria o próprio versículo. Com a mudança, o texto começa em
+y 218 em vez de 599 (412 × 915) e as ações frequentes ficam embaixo.
+
+**Limites:** tudo fica em media queries de até 560 px e em elementos ocultos acima disso; o
+desktop (atalhos, menu Exibir, colunas) não muda. Continua sem framework nem build (D004).
+A rolagem segue dentro de `#reader` (a do documento inteiro, que recolheria a barra de endereço
+do Chrome, ficou para depois por risco ao desktop), e o "voltar" do Android ainda troca de
+passagem em vez de fechar a folha. Celular deitado (largura acima de 560 px) usa o layout de
+tela estreita antigo.

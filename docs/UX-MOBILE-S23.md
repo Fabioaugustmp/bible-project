@@ -284,3 +284,76 @@ Os ícones são indicativos; com texto e ícone, o rótulo some o problema "Tema
 | 8 | "Voltar" do Android deve fechar folhas antes de trocar de passagem? | Sim |
 | 9 | Aplicar a reorganização também no desktop (menus "Estudo ▾" e "Ferramentas ▾")? | Depois, como tarefa separada |
 | 10 | Ponto de corte: só largura ≤ 560 px, ou também celular deitado (cerca de 915 px de largura e pouca altura)? | ≤ 560 px agora; avaliar celular deitado depois |
+
+## Implementação (2026-11-19)
+
+Feita a Alternativa 1, só até 560 px de largura (D036). Arquivos: `app/static/index.html`,
+`app/static/style.css`, `app/static/app.js`. Nada mudou no servidor.
+
+### O que foi feito (números da seção C)
+
+| # | Situação | Como ficou |
+|---|---|---|
+| 12 | feito | Ajuda diz "Toque" em tela de toque (`pointer: coarse`), "Clique" com mouse; "· Esc" dos botões Fechar some no toque; Fechar com 48 px no celular |
+| 5 | feito | Faixa "Continuar" em uma linha (49 px): "Continuar: João 3:6", Abrir e ×; o último estudo foi para a folha Estudo |
+| 1 | feito | Cabeçalho de 57 px: "João 1 ▾" e a versão; busca e ferramentas saem do topo |
+| 2 | feito | Barra inferior de 56 px (+ área segura) com ‹ Buscar Estudo Aa ⋯ ›; faz parte do fluxo, não cobre o texto; o botão da folha aberta fica destacado e um segundo toque fecha |
+| 3 | feito | Folha "Mais": Ler (paralelo, selecionar, itens fixados), Ferramentas (tema, dicionários, conjuntos, mapa), Preferências (Texto e tema; Atalhos só com `pointer: fine`) |
+| 4 | feito | Folha "Texto e tema": A− valor A+, tema Claro/Escuro/Sistema, Marcas, Strong (quando a versão tem) |
+| 6 | feito | Folha a 60%; ao abrir um versículo, o texto rola para que ele fique acima da folha; botão ⌃ leva a folha a quase tela cheia; × com 48 × 48 |
+| 7 | feito | Abas do versículo quebram em duas linhas (as seis cabem em 412 px) |
+| 11 | feito, sem teste no aparelho | `interactive-widget=resizes-content` na meta viewport; com campo de texto em foco, a barra inferior sai e a folha ocupa a altura visível (CSS `:has(:focus)`); o campo e o botão abaixo dele rolam para a vista |
+| 8 | feito | "João 1 ▾" abre grade de livros (AT e NT) e depois de capítulos, botões de 48 px |
+| 9 | parcial | O cabeçalho some ao descer e volta ao subir (rolagem do `#reader`); a rolagem do documento inteiro não foi feita |
+| 10 | não feito | "Voltar" do Android continua trocando de passagem |
+| 13 | não feito | Desktop fica como está (tarefa separada) |
+
+Busca no celular: o botão Buscar abre uma tela própria com o campo no topo, buscas salvas e
+recentes; os resultados ocupam a tela com o campo acima; tocar num resultado abre o versículo
+na folha, com "← Resultados" para voltar. Enquanto a busca roda aparece "Buscando…" (a busca por
+sentido levou alguns segundos no teste).
+
+### Medidas depois (412 × 915, `getBoundingClientRect`, tema do sistema, fonte 20 px)
+
+| Elemento | Antes | Depois |
+|---|---|---|
+| Barra superior | 265 px | 57 px (0 px depois de rolar para baixo) |
+| Faixa "Continuar" | 187 px | 49 px |
+| Início do texto (com a faixa) | y 599 | y 218 |
+| Linhas de texto na 1ª tela | 9 | 18 |
+| Versículos inteiros na 1ª tela (ARA1993+) | 5 | 9 |
+| Barra inferior | não havia | y 859, 56 px; botões de 56 a 75 px de largura |
+| Folha do versículo | y 275, cobria o versículo | y 310 a 859; Romanos 11:6 aberto pela busca ficou em y 12 a 113, acima da folha |
+
+Em 360 × 800 (sem a faixa): cabeçalho 57 px, texto em y 169, 16 linhas e 8 versículos inteiros,
+barra inferior com botões de 56 e 62 px; sem rolagem horizontal. Em 1280 × 800 as posições e
+tamanhos da barra, do campo de busca, das ferramentas, do texto e do painel lateral são iguais
+aos medidos antes da mudança (barra de 101 px; painel do versículo como coluna de 480 px).
+
+### Verificado no navegador emulado
+
+- Capturas de tela funcionaram desta vez (escala 0,5).
+- Fluxo: abrir João 1; ‹ e › da barra inferior; seletor de passagem até Romanos 8; buscar
+  "graça" e abrir Romanos 11:6; painel do versículo e abas; criar uma nota e apagá-la (vai para a
+  lixeira); trocar fonte e os três temas; abrir Leitura de hoje, Meus estudos, Diário, Memorizar,
+  Notas por tópico, Dicionários, Conjuntos, Mapa, Pesquisa por tema, paralelo e seleção.
+- Tema claro e escuro no celular (o sistema do teste é escuro).
+- Desktop: Esc fecha o painel, `[` `]` trocam capítulo, `?` abre os atalhos, menu Exibir abre,
+  botão Tema alterna claro e escuro.
+- Campo da nota com foco real (clique): barra inferior oculta e folha com 907 px.
+
+### Não verificado
+
+- Aparelho real, toque real e teclado virtual (o efeito de `resizes-content` não aparece na
+  emulação).
+- "Voltar" do Android (não implementado).
+- Celular deitado (acima de 560 px usa o layout antigo de tela estreita).
+
+### Ficou de fora e riscos
+
+- Rolagem do documento inteiro (item 9): a barra de endereço do Chrome não recolhe.
+- "Voltar" do Android fechando folhas (item 10).
+- A faixa "Continuar" e o texto "Toque/Clique" são escolhidos ao carregar a página; girar ou
+  redimensionar a janela depois não os refaz.
+- Marca de nota no texto não some logo depois de apagar a nota (o capítulo não é redesenhado);
+  comportamento anterior a esta mudança.

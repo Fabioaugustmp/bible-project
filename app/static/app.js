@@ -38,6 +38,14 @@ const store = {
   set(key, value) { try { localStorage.setItem(key, value); } catch { /* sem armazenamento */ } },
 };
 
+// Celular (D036): até 560 px, a navegação usa cabeçalho de uma linha, barra inferior e folhas.
+const phoneQuery = matchMedia("(max-width: 560px)");
+const isPhone = () => phoneQuery.matches;
+// Tela de toque: "Toque" em vez de "Clique" nos textos de ajuda.
+const touch = matchMedia("(pointer: coarse)").matches;
+const TAP = touch ? "Toque" : "Clique";
+const tap = TAP.toLowerCase();
+
 const bookOf = (number) => state.books[number - 1];
 const LANG = { por: "pt-BR", eng: "en", spa: "es", grc: "grc", heb: "he" };
 const LANG_LABEL = { por: "PT", eng: "EN", spa: "ES", grc: "GR", heb: "HE" };
@@ -158,6 +166,17 @@ function resumeInfo() {
 function showResume(info) {
   const box = $("#resume");
   const hide = () => { box.hidden = true; };
+  // Celular (D036): uma linha só com a última leitura; o último estudo fica na folha Estudo.
+  if (isPhone()) {
+    if (!info.read) return;
+    const module = state.bibles.some((m) => m.id === info.read.module) ? info.read.module : state.module;
+    box.replaceChildren(el("div", { class: "resume-row" },
+      el("span", { class: "resume-text" }, `Continuar: ${refLabel(info.read.book, info.read.chapter, info.read.verse)}`),
+      el("button", { class: "chip on", onclick: () => { hide(); go({ ...info.read, module }); } }, "Abrir")),
+      el("button", { class: "link resume-close", "aria-label": "Fechar", onclick: hide }, "×"));
+    box.hidden = false;
+    return;
+  }
   const items = [];
   if (info.read) {
     const module = state.bibles.some((m) => m.id === info.read.module) ? info.read.module : state.module;
@@ -187,8 +206,9 @@ async function render() {
   $("#chapter").replaceChildren(
     ...Array.from({ length: chapters }, (_, i) => el("option", { value: i + 1 }, String(i + 1))));
   $("#chapter").value = state.chapter;
-  $("#prev").disabled = state.book === 1 && state.chapter === 1;
-  $("#next").disabled = state.book === state.books.length && state.chapter === chapters;
+  $("#prev").disabled = $("#b-prev").disabled = state.book === 1 && state.chapter === 1;
+  $("#next").disabled = $("#b-next").disabled = state.book === state.books.length && state.chapter === chapters;
+  $("#passage").textContent = refLabel(state.book, state.chapter);
 
   const text = $("#text");
   const hasWords = module.has_strongs === 1;
@@ -246,13 +266,27 @@ async function render() {
   const selected = state.verse ? text.querySelector(`.v[data-verse="${state.verse}"], .prow[data-verse="${state.verse}"]`) : null;
   if (selected) {
     selected.classList.add("selected");
-    if (!sameChapter) selected.scrollIntoView({ block: "center" });
+    if (isPhone()) revealAboveSheet(selected, sameChapter ? "smooth" : "auto");
+    else if (!sameChapter) selected.scrollIntoView({ block: "center" });
     $("#hint").hidden = true;
     showVerse();
   } else if (panelMode === "verse") {
     closePanel();
   }
   applySelection();
+}
+
+// Celular (D036): a folha ocupa a parte de baixo; o versículo aberto sobe para a parte
+// visível acima dela, em vez de ficar escondido atrás.
+function revealAboveSheet(node, behavior = "smooth") {
+  document.body.classList.add("sheet-open");   // dá ao texto espaço para rolar acima da folha
+  setSheetTall(false);
+  const reader = $("#reader");
+  const box = reader.getBoundingClientRect();
+  const sheetTop = box.bottom - innerHeight * 0.6;
+  const rect = node.getBoundingClientRect();
+  if (rect.top >= box.top + 8 && rect.bottom <= sheetTop - 8) return;   // já está à vista
+  reader.scrollTo({ top: reader.scrollTop + rect.top - box.top - 12, behavior });
 }
 
 // --- Seleção de versículos: funções ------------------------------------------------
@@ -503,7 +537,7 @@ async function showPreview(anchor) {
       ? el("div", { class: "t", lang: LANG[module.lang] || null },
           data.verses.map((v, i) => [i ? " " : null, el("sup", {}, String(v.verse)), v.text]))
       : el("p", { class: "empty" }, `${module.abbr} não tem este trecho.`),
-    ...(data.more ? [el("div", { class: "origin" }, "Trecho mais longo: clique para ler.")] : []));
+    ...(data.more ? [el("div", { class: "origin" }, `Trecho mais longo: ${tap} para ler.`)] : []));
   box.hidden = false;
   const rect = anchor.getBoundingClientRect();
   const width = Math.min(360, innerWidth - 24);
@@ -559,6 +593,7 @@ function openPanel(mode, title, ...content) {
     renderTarget.body.replaceChildren(...nodes);
     return;
   }
+  if (mode !== panelMode) setSheetTall(false);
   panelMode = mode;
   currentView = pendingView ? { ...pendingView, title } : null;
   pendingView = null;
@@ -566,6 +601,11 @@ function openPanel(mode, title, ...content) {
   $("#panel-body").replaceChildren(...nodes);
   $("#panel-body").scrollTop = 0;
   $("#panel").hidden = false;
+  $("#panel").dataset.mode = mode;
+  // Celular: a busca ocupa a tela inteira (tela própria); o resto abre como folha.
+  $("#panel").classList.toggle("full", mode === "search" || mode === "buscar");
+  document.body.classList.add("sheet-open");
+  markBottomNav(mode);
   $("#panel-pin").hidden = !currentView;
   layout.showPinned(false);
   layout.update();
@@ -575,7 +615,28 @@ function closePanel() {
   panelMode = null;
   currentView = null;
   $("#panel").hidden = true;
+  $("#panel").classList.remove("full");
+  document.body.classList.remove("sheet-open");
+  setSheetTall(false);
+  markBottomNav(null);
   layout.update();
+}
+
+// Folha do celular: 60% da altura ou quase a tela toda (botão ⌃ no cabeçalho da folha).
+function setSheetTall(on) {
+  $("#panel").classList.toggle("tall", on);
+  $("#panel-grip").setAttribute("aria-pressed", String(on));
+  $("#panel-grip").setAttribute("aria-label", on ? "Reduzir a folha" : "Aumentar a folha");
+}
+
+// Destaca na barra inferior o botão da folha aberta.
+const BNAV_MODES = { "#b-search": ["buscar", "search"], "#b-study": ["estudo"], "#b-text": ["texto"], "#b-more": ["mais"] };
+function markBottomNav(mode) {
+  for (const [id, modes] of Object.entries(BNAV_MODES)) {
+    const button = $(id);
+    if (modes.includes(mode)) button.setAttribute("aria-current", "true");
+    else button.removeAttribute("aria-current");
+  }
 }
 
 // --- Comentário que acompanha a leitura (T63) ------------------------------------
@@ -1455,8 +1516,59 @@ function renderSearch(keepScroll = false) {
        show("verses") ? searchSection("verses", `Bíblia · ${module.abbr}`) : null,
        show("comments") ? searchSection("comments", "Comentários") : null,
        show("entries") ? searchSection("entries", "Dicionários e livros") : null];
-  openPanel("search", `Busca: ${query}`, modeBar, body);
+  openPanel("search", `Busca: ${query}`, isPhone() ? phoneSearchForm(query) : null, modeBar, body);
   if (keepScroll) $("#panel-body").scrollTop = scroll;
+}
+
+// --- Busca em tela própria no celular (D036) --------------------------------------
+
+// Mesmo comportamento do campo da barra do desktop: referência abre o texto, palavra busca.
+function submitSearch(query) {
+  query = query.trim();
+  if (!query) return;
+  $("#q").value = query;
+  const reference = parseReference(query);
+  if (reference) {
+    if (isPhone() && (panelMode === "buscar" || panelMode === "search")) closePanel();
+    go(reference);
+  } else {
+    // Celular: a busca por sentido pode levar alguns segundos; mostra que está em andamento.
+    if (isPhone() && (panelMode === "buscar" || panelMode === "search")) {
+      $("#panel-body").replaceChildren(...[...$("#panel-body").children].filter((node) => node.matches(".m-search")),
+        el("p", { class: "empty", role: "status" }, "Buscando…"));
+    }
+    addRecentSearch(query);
+    showSearch(query);
+  }
+}
+
+function phoneSearchForm(query = "") {
+  const input = el("input", { type: "search", enterkeyhint: "search", autocomplete: "off",
+    placeholder: "Palavra, ou referência como Jo 3:16", "aria-label": "Buscar ou ir para referência" });
+  input.value = query;
+  return el("form", { class: "m-search", role: "search", onsubmit: (event) => {
+    event.preventDefault();
+    input.blur();
+    submitSearch(input.value);
+  } }, input, el("button", { class: "chip on", type: "submit" }, "Buscar"));
+}
+
+function openSearchScreen() {
+  const form = phoneSearchForm();
+  const recent = readSearchStore("buscas.recentes");
+  const saved = readSearchStore("buscas.salvas");
+  const row = (item, label) => el("button", { class: "view-row", onclick: () => runSavedSearch(item) }, el("span", {}, label));
+  const resultsBack = state.lastSearch
+    ? el("button", { class: "view-row", onclick: () => renderSearch() }, el("span", {}, `← Resultados de "${state.lastSearch.query}"`))
+    : null;
+  openPanel("buscar", "Buscar",
+    form,
+    el("div", { class: "sheet-menu" },
+      resultsBack,
+      saved.length ? [el("h3", {}, "Salvas"), saved.map((item) => row(item, `★ ${item.q}`))] : null,
+      recent.length ? [el("h3", {}, "Recentes"), recent.map((item) => row(item, item.q))] : null,
+      el("p", { class: "group-note" }, "Digite uma palavra para buscar no texto, nos comentários e nos dicionários, ou uma referência (Jo 3:16, Sl 23) para abrir a passagem.")));
+  form.querySelector("input").focus();
 }
 
 // Explica o que a ponte por Strong acrescentou à busca e permite desligá-la.
@@ -1539,6 +1651,8 @@ function semanticGroup(sem) {
 
 // --- Aparência ------------------------------------------------------------------
 
+let fontSize = 20;
+
 function setFontSize(size) {
   const clamped = Math.min(30, Math.max(15, size));
   document.documentElement.style.setProperty("--reading-size", clamped + "px");
@@ -1551,8 +1665,154 @@ function toggleTheme() {
   const dark = root.dataset.theme
     ? root.dataset.theme === "dark"
     : matchMedia("(prefers-color-scheme: dark)").matches;
-  root.dataset.theme = dark ? "light" : "dark";
-  store.set("theme", root.dataset.theme);
+  setTheme(dark ? "light" : "dark");
+}
+
+// Tema (D036): "light", "dark" ou "system" (segue prefers-color-scheme).
+function setTheme(theme) {
+  const root = document.documentElement;
+  if (theme === "light" || theme === "dark") root.dataset.theme = theme;
+  else delete root.dataset.theme;
+  store.set("theme", theme);
+}
+
+function currentTheme() {
+  const theme = store.get("theme");
+  return theme === "light" || theme === "dark" ? theme : "system";
+}
+
+// --- Folhas do celular: Estudo, Texto (Aa), Mais e seletor de passagem (D036) ------
+
+const menuRow = (label, action, { note = null, pressed } = {}) => {
+  const props = { class: "view-row", onclick: action };
+  if (pressed !== undefined) props["aria-pressed"] = String(pressed);
+  return el("button", props, el("span", {}, label, note ? el("span", { class: "row-note" }, note) : null));
+};
+const openFail = (what) => (error) => showToast(`Não foi possível abrir ${what}: ${error.message}`);
+
+// Abre a folha; se a mesma folha já está aberta, fecha (o botão da barra alterna).
+function toggleSheet(mode, open) {
+  if (panelMode === mode && !$("#panel").hidden) { closePanel(); return; }
+  open();
+}
+
+function openStudyHub() {
+  const study = readStored("ultimoEstudo");
+  openPanel("estudo", "Estudo", el("div", { class: "sheet-menu" },
+    menuRow("Leitura de hoje", () => openReading().catch(openFail("a leitura")), { note: "Planos de capítulos, marcados como lidos" }),
+    study ? menuRow(`Continuar: ${study.title}`, () => { closePanel(); openStudies(study.id); }, { note: "Último estudo aberto" }) : null,
+    menuRow("Meus estudos", () => { closePanel(); openStudies(); }),
+    menuRow("Diário", () => openJournal().catch(openFail("o diário")), { note: "Reflexões com data, sem passagem" }),
+    menuRow("Memorizar", () => openMemo().catch(openFail("a memorização")), { note: "Revisão com intervalos crescentes" }),
+    menuRow("Notas por tópico", () => openTopicNotes().catch(openFail("os tópicos")), { note: "Um assunto com notas de várias passagens" })));
+}
+
+function openTextPanel() {
+  const module = state.bibles.find((m) => m.id === state.module);
+  const hasWords = module && module.has_strongs === 1;
+  const size = el("output", { "aria-live": "polite" }, String(fontSize));
+  const resize = (delta) => { fontSize = setFontSize(fontSize + delta); size.textContent = String(fontSize); };
+  const themes = [["light", "Claro"], ["dark", "Escuro"], ["system", "Sistema"]];
+  const marksOn = !document.body.classList.contains("marks-off");
+  openPanel("texto", "Texto e tema", el("div", { class: "sheet-menu" },
+    el("h3", {}, "Tamanho do texto"),
+    el("div", { class: "size-row" },
+      el("button", { "aria-label": "Diminuir fonte", onclick: () => resize(-1) }, "A−"), size,
+      el("button", { "aria-label": "Aumentar fonte", onclick: () => resize(1) }, "A+")),
+    el("h3", {}, "Tema"),
+    el("div", { class: "seg", role: "group", "aria-label": "Tema" }, themes.map(([value, label]) => el("button", {
+      "aria-pressed": String(currentTheme() === value), onclick: () => { setTheme(value); openTextPanel(); },
+    }, label))),
+    el("h3", {}, "No texto"),
+    menuRow("Marcas: versículos com notas ou em estudos", () => { $("#marks").click(); openTextPanel(); }, { pressed: marksOn }),
+    hasWords
+      ? menuRow("Palavras originais (Strong)", () => { $("#words").click(); openTextPanel(); },
+          { pressed: state.words, note: `${TAP} numa palavra para ver o termo grego ou hebraico` })
+      : el("p", { class: "group-note" }, "Palavras originais (Strong): disponível nas versões com marcação, como ARA1993+ e KJV.")));
+}
+
+function openMoreMenu() {
+  const fine = matchMedia("(pointer: fine)").matches;
+  const pins = layout.pins.length;
+  openPanel("mais", "Mais", el("div", { class: "sheet-menu" },
+    el("h3", {}, "Ler"),
+    menuRow("Versões em paralelo", () => { closePanel(); $("#parallel").click(); }, { pressed: state.parallel }),
+    menuRow("Selecionar versículos", () => { closePanel(); setSelectMode(!selection.on); },
+      { pressed: selection.on, note: "Toque no primeiro e no último para copiar, anotar ou estudar" }),
+    pins ? menuRow(`Itens fixados (${pins})`, () => layout.showPinned(true)) : null,
+    el("h3", {}, "Ferramentas"),
+    menuRow("Pesquisa por tema", () => { closePanel(); openTopics(); }, { note: "Um assunto na Bíblia (ex.: perdão, paz)" }),
+    menuRow("Dicionários e livros", () => $("#browse").click()),
+    menuRow("Conjuntos de referências", () => openRefSets().catch(refSetFail)),
+    menuRow("Mapa de estudo e linha do tempo", () => openStudyMap().catch(refSetFail)),
+    el("h3", {}, "Preferências"),
+    menuRow("Texto e tema (Aa)", openTextPanel),
+    fine ? menuRow("Atalhos de teclado", showShortcuts) : null));
+}
+
+// Liga a barra inferior, o cabeçalho que some ao rolar e o ajuste ao teclado virtual.
+function setupPhoneNav() {
+  document.querySelectorAll(".tap-word").forEach((node) => { node.textContent = TAP; });
+  $("#b-prev").addEventListener("click", () => step(-1));
+  $("#b-next").addEventListener("click", () => step(1));
+  $("#b-search").addEventListener("click", () => toggleSheet("buscar", openSearchScreen));
+  $("#b-study").addEventListener("click", () => toggleSheet("estudo", openStudyHub));
+  $("#b-text").addEventListener("click", () => toggleSheet("texto", openTextPanel));
+  $("#b-more").addEventListener("click", () => toggleSheet("mais", openMoreMenu));
+  $("#passage").addEventListener("click", () => toggleSheet("passagem", () => openPassagePicker()));
+  $("#panel-grip").addEventListener("click", () => setSheetTall(!$("#panel").classList.contains("tall")));
+
+  // Cabeçalho: some ao descer e volta ao subir ou perto do topo. A barra inferior fica.
+  const reader = $("#reader");
+  let lastTop = 0;
+  reader.addEventListener("scroll", () => {
+    const top = reader.scrollTop;
+    if (!isPhone()) { document.body.classList.remove("bar-hidden"); lastTop = top; return; }
+    if (top < 40) document.body.classList.remove("bar-hidden");
+    else if (top > lastTop + 6) document.body.classList.add("bar-hidden");
+    else if (top < lastTop - 6) document.body.classList.remove("bar-hidden");
+    else return;   // movimento pequeno: guarda a referência anterior
+    lastTop = top;
+  }, { passive: true });
+
+  // Teclado virtual: enquanto um campo de texto tem o foco, a barra inferior sai e a folha
+  // ocupa a altura visível (CSS, :has(:focus)); aqui o campo e o botão abaixo dele rolam para a vista.
+  const textField = (node) => node.matches?.("textarea, input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit])");
+  document.addEventListener("focusin", (event) => {
+    if (!isPhone() || !textField(event.target)) return;
+    const field = event.target;
+    setTimeout(() => {
+      const actions = field.closest(".note-new, .note, form")?.querySelector(".note-actions, button[type=submit]");
+      (actions || field).scrollIntoView({ block: "nearest" });
+      field.scrollIntoView({ block: "nearest" });
+    }, 350);
+  });
+  phoneQuery.addEventListener("change", () => { document.body.classList.remove("bar-hidden"); });
+}
+
+// Seletor de passagem: grade de livros (AT e NT) e depois de capítulos.
+function openPassagePicker(book = null) {
+  if (book) {
+    const count = bookOf(book).chapters.length;
+    openPanel("passagem", bookOf(book).name,
+      el("button", { class: "link back", onclick: () => openPassagePicker() }, "← Livros"),
+      el("div", { class: "pick-grid", role: "group", "aria-label": "Capítulos" },
+        Array.from({ length: count }, (_, i) => el("button", {
+          class: book === state.book && i + 1 === state.chapter ? "on" : null,
+          onclick: () => { closePanel(); go({ book, chapter: i + 1, verse: null }); },
+        }, String(i + 1)))));
+    setSheetTall(true);
+    return;
+  }
+  const grid = (from, to) => el("div", { class: "pick-grid", role: "group" },
+    state.books.slice(from - 1, to).map((b) => el("button", {
+      class: b.book === state.book ? "on" : null, title: b.name, "aria-label": b.name,
+      onclick: () => (b.chapters.length === 1 ? (closePanel(), go({ book: b.book, chapter: 1, verse: null })) : openPassagePicker(b.book)),
+    }, b.abbr)));
+  openPanel("passagem", "Escolher passagem",
+    el("h3", {}, "Antigo Testamento"), grid(1, 39),
+    el("h3", {}, "Novo Testamento"), grid(40, 66));
+  setSheetTall(true);
 }
 
 // --- Início ---------------------------------------------------------------------
@@ -1582,7 +1842,7 @@ async function init() {
   state.words = store.get("words") === "1";
   state.parallel = store.get("parallel") === "1";
   try { state.parallelIds = JSON.parse(store.get("parallelIds") || "[]"); } catch { state.parallelIds = []; }
-  let fontSize = setFontSize(Number(store.get("fontSize")) || 20);
+  fontSize = setFontSize(Number(store.get("fontSize")) || 20);
   const resume = location.hash ? null : resumeInfo();   // antes de render() gravar a leitura atual
   readHash();
 
@@ -1602,6 +1862,7 @@ async function init() {
   });
   $("#select").addEventListener("click", () => setSelectMode(!selection.on));
   $("#view").addEventListener("click", showView);
+  setupPhoneNav();
   $("#memo").addEventListener("click", () => openMemo().catch((error) => showToast(`Não foi possível abrir a memorização: ${error.message}`)));
   $("#topics-notes").addEventListener("click", () => openTopicNotes().catch((error) => showToast(`Não foi possível abrir os tópicos: ${error.message}`)));
   $("#journal").addEventListener("click", () => openJournal().catch((error) => showToast(`Não foi possível abrir o diário: ${error.message}`)));
@@ -1745,7 +2006,7 @@ function studyMapBody(map) {
     svg.append(g);
   });
   const legend = el("p", { class: "group-note" },
-    `Passagens: ${map.passages_total} (mostrando as ${map.passages_shown} mais estudadas). Clique numa passagem para abri-la. Tópicos e estudos são os nós com nome.`);
+    `Passagens: ${map.passages_total} (mostrando as ${map.passages_shown} mais estudadas). ${TAP} numa passagem para abri-la. Tópicos e estudos são os nós com nome.`);
   return [legend, svg];
 }
 

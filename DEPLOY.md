@@ -106,6 +106,24 @@ docker compose up -d --build
 Os dados em `./data` continuam os mesmos. Se o esquema de `user.db` mudar, as
 tabelas novas são criadas sozinhas (`create table if not exists`).
 
+### Rebuild após mudança só na interface (`app/static/`)
+
+Os arquivos de `app/static/` entram na imagem `web` (são copiados no build), então
+mudança de HTML, CSS ou JavaScript exige rebuild. Não precisa tocar em `embed`, em
+`data/` nem no `.env`:
+
+```bash
+git pull
+docker compose up -d --build web
+docker compose ps
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8377/api/library
+```
+
+O `web` sobe com `read_only`, então o rebuild não altera a base. Se `library.db`
+faltar, o contêiner reinicia em laço (ver "Se o túnel der 502" acima). No navegador,
+recarregue a página (Ctrl+F5 no computador; no celular, feche e reabra a aba) se a
+interface antiga continuar aparecendo.
+
 ## Publicação (https://biblia.famptech.com.br, pelo túnel da Cloudflare)
 
 Decisão D034. O túnel já existe no servidor: o contêiner `cloudflared-default`, na rede

@@ -2,20 +2,22 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <title>Biblioteca Bíblica</title>
   <link rel="stylesheet" href="style.css">
   <script>
     // Aplica o tema salvo antes da primeira pintura.
     try {
+      // "light" ou "dark"; sem valor (ou "system"), segue o sistema (D036).
       const theme = localStorage.getItem("theme");
-      if (theme) document.documentElement.dataset.theme = theme;
+      if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
     } catch {}
   </script>
 </head>
 <body>
   <header class="bar">
     <nav class="nav" aria-label="Passagem">
+      <button id="passage" class="passage-btn" aria-haspopup="dialog" aria-label="Escolher livro e capítulo"></button>
       <select id="version" aria-label="Versão"></select>
       <button id="prev" class="icon" aria-label="Capítulo anterior" title="Capítulo anterior">‹</button>
       <select id="book" aria-label="Livro"></select>
@@ -51,7 +53,7 @@
       <p class="kicker" id="kicker"></p>
       <h1 id="title"></h1>
       <div id="text" class="text"></div>
-      <p id="hint" class="hint">Clique em um versículo para ver versões, comentários e citações.</p>
+      <p id="hint" class="hint"><span class="tap-word">Clique</span> em um versículo para ver versões, comentários e citações.</p>
       <div id="selbar" class="selbar" role="toolbar" aria-label="Ações da seleção" hidden></div>
     </main>
 
@@ -62,6 +64,7 @@
         <h2 id="panel-title"></h2>
         <button id="show-pins" class="chip pins-switch" hidden></button>
         <button id="panel-pin" class="icon" title="Fixar numa coluna ao lado" aria-label="Fixar numa coluna ao lado">Fixar</button>
+        <button id="panel-grip" class="icon sheet-grip" aria-label="Aumentar a folha" aria-pressed="false">⌃</button>
         <button id="panel-close" class="icon" aria-label="Fechar painel">×</button>
       </div>
       <div id="panel-body" class="panel-body"></div>
@@ -77,14 +80,28 @@
     </aside>
   </div>
 
+  <!-- Barra inferior do celular (D036): só aparece até 560 px de largura. -->
+  <nav id="bnav" class="bnav" aria-label="Navegação">
+    <button id="b-prev" class="bnav-btn bnav-step" aria-label="Capítulo anterior">‹</button>
+    <button id="b-search" class="bnav-btn" aria-label="Buscar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Buscar</span></button>
+    <button id="b-study" class="bnav-btn" aria-label="Estudo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c3-1 5.8-.8 8.5 1v13c-2.7-1.8-5.5-2-8.5-1zM20.5 5.5c-3-1-5.8-.8-8.5 1v13c2.7-1.8 5.5-2 8.5-1z"/></svg><span>Estudo</span></button>
+    <button id="b-text" class="bnav-btn" aria-label="Texto e tema">
+      <b class="bnav-aa" aria-hidden="true">Aa</b><span>Texto</span></button>
+    <button id="b-more" class="bnav-btn" aria-label="Mais opções">
+      <b class="bnav-aa" aria-hidden="true">⋯</b><span>Mais</span></button>
+    <button id="b-next" class="bnav-btn bnav-step" aria-label="Próximo capítulo">›</button>
+  </nav>
+
   <div id="preview" class="preview" role="tooltip" hidden></div>
   <div id="toast" class="toast" role="alert" hidden></div>
   <div id="studies-full" class="graph-full" role="dialog" aria-modal="true" aria-label="Meus estudos" hidden>
-    <div class="graph-full-head"><strong>Meus estudos</strong><button id="studies-close" class="chip" aria-label="Fechar meus estudos">Fechar · Esc</button></div>
+    <div class="graph-full-head"><strong>Meus estudos</strong><button id="studies-close" class="chip" aria-label="Fechar meus estudos">Fechar<span class="kbd-hint"> · Esc</span></button></div>
     <div id="studies-body" class="topic-body"></div>
   </div>
   <div id="topic-full" class="graph-full topic-full" role="dialog" aria-modal="true" aria-label="Pesquisa por tema" hidden>
-    <div class="graph-full-head"><strong>Pesquisa por tema</strong><button id="topic-close" class="chip" aria-label="Fechar pesquisa por tema">Fechar · Esc</button></div>
+    <div class="graph-full-head"><strong>Pesquisa por tema</strong><button id="topic-close" class="chip" aria-label="Fechar pesquisa por tema">Fechar<span class="kbd-hint"> · Esc</span></button></div>
     <form id="topic-form" class="topic-form">
       <input id="topic-q" type="search" placeholder="Ex.: ansiedade, perdão, paz" autocomplete="off" aria-label="Tema">
       <button class="chip on" type="submit">Pesquisar</button>
@@ -94,7 +111,7 @@
   <div id="graph-full" class="graph-full" role="dialog" aria-modal="true" aria-label="Grafo de referências" hidden>
     <div class="graph-full-head">
       <div><strong id="graph-full-title">Referências</strong></div>
-      <button id="graph-full-close" class="chip" aria-label="Fechar grafo">Fechar · Esc</button>
+      <button id="graph-full-close" class="chip" aria-label="Fechar grafo">Fechar<span class="kbd-hint"> · Esc</span></button>
     </div>
     <div id="graph-full-body" class="graph-full-body"></div>
   </div>

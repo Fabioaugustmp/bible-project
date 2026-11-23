@@ -668,3 +668,11 @@ o usuário quer manter para comparar.
 site público (T52). A ordem das fontes no painel é a de `LEXICON_ORDER`; mudá-la é decisão de
 interface, não de dados.
 
+## D039 — Strong (MySword) é o primeiro léxico no painel de cada número · 2026-11-23
+
+**Decisão:** em `LEXICON_ORDER` (`app/server.py`), o léxico "Strong" vem antes de Dodson, AHLB e os demais. Os léxicos continuam separados (D038); só a ordem muda.
+
+**Motivo:** é o léxico mais completo da biblioteca para grego e hebraico (BDB, Thayer e Strong, com original, transliteração e ocorrências na KJV, conforme ANALISE-MYSWORD.md). Colocá-lo no fim, como estava, fazia a fonte mais útil aparecer por último.
+
+**Limites:** a ordem vale só para o painel Strong. Se o usuário preferir outra ordem, basta mudar a lista; os testes em `tests/test_mysword.py` acompanham a escolha.
+

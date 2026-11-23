@@ -216,7 +216,7 @@ def api_chapter(con, q):
 
 
 # Ordem de exibição dos léxicos no painel "Palavra" (os demais vêm depois, por sigla).
-LEXICON_ORDER = ["Dodson", "AHLB", "MLSJ", "LSJ", "KJC", "LXXHebGreek"]
+LEXICON_ORDER = ["Strong", "Dodson", "AHLB", "MLSJ", "LSJ", "KJC", "LXXHebGreek"]
 _LINK_STUB = re.compile(r"^meta=_twmgc_\s+type=link\s+id=(\d+)\s*$")
 _STRONG_CODE = re.compile(r"^[GH][1-9][0-9]{0,4}$")
 

@@ -276,9 +276,9 @@ class MyswordStrongAoLadoTest(unittest.TestCase):
                     " where m.abbr = 'Strong' and e.topic glob '[GH][0-9]*'").fetchone()[0]
             finally:
                 con.close()
-        for word, expected in ((g26, ["Dodson", "Strong"]), (h430, ["Dodson", "Strong"])):
+        for word, expected in ((g26, ["Strong", "Dodson"]), (h430, ["Strong", "Dodson"])):
             self.assertEqual([lexicon["abbr"] for lexicon in word["lexicons"]], expected)
-        dodson, strong = g26["lexicons"]
+        strong, dodson = g26["lexicons"]
         self.assertEqual(dodson["excerpt"], "Dodson: love")
         self.assertTrue(strong["excerpt"].startswith("Original: ἀγάπη"))
         self.assertNotEqual(dodson["id"], strong["id"])

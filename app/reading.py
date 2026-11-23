@@ -54,11 +54,11 @@ def create_plan(con, data):
     book, chapter = _int(data, "book"), _int(data, "chapter", 1)
     to_book, to_chapter = _int(data, "to_book", book), _int(data, "to_chapter", chapter)
     chapters = chapters_between(book, chapter, to_book, to_chapter)
-    # Sem título, usa a abreviação dos livros (a interface mostra o nome completo).
+    # Sem título, usa o nome completo dos livros (como na interface).
     if (book, chapter) == (to_book, to_chapter):
-        default = f"{BOOKS[book - 1][0]} {chapter}"
+        default = f"{BOOKS[book - 1][1]} {chapter}"
     else:
-        default = f"{BOOKS[book - 1][0]} {chapter} – {BOOKS[to_book - 1][0]} {to_chapter}"
+        default = f"{BOOKS[book - 1][1]} {chapter} – {BOOKS[to_book - 1][1]} {to_chapter}"
     title = (data.get("title") or "").strip()[:80] or default
     stamp = time.strftime("%Y-%m-%dT%H:%M:%S")
     cur = con.execute("insert into reading_plans(title, created_at) values (?, ?)", (title, stamp))

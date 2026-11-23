@@ -792,7 +792,10 @@ média, baixa.
 
 ### Baixa
 
-- **T120 — Setas não trocam de capítulo.**
+- **T120 — Setas não trocam de capítulo.** Estado: concluída. Os botões ‹ e ›
+  já trocavam; faltavam as setas do teclado. Agora ←/→ trocam de capítulo fora
+  de campos de texto e sem modificadores. Testado no navegador: a seta direita
+  foi de João 3 para 4; dentro da busca não mudou.
 - **T121 — Falta atalho "pular para o texto"**, e os versículos são controles
   de tabulação.
 - **T122 — Números de versículo com 11,6 px**, pequenos demais. Aceitação:

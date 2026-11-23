@@ -2823,6 +2823,9 @@ document.addEventListener("keydown", (event) => {
     "/": () => $("#q").focus(),
     "[": () => step(-1),
     "]": () => step(1),
+    // T120: setas de lado trocam de capítulo, como os botões ‹ e › (fora dos campos de texto).
+    ArrowLeft: () => step(-1),
+    ArrowRight: () => step(1),
     j: () => moveVerse(1),
     k: () => moveVerse(-1),
     p: () => $("#parallel").click(),

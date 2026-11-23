@@ -16,6 +16,9 @@ sys.path.insert(0, str(ROOT / "importer"))
 
 import mysword  # noqa: E402
 
+sys.path.insert(0, str(ROOT / "app"))
+import server  # noqa: E402
+
 
 class FakeAdder:
     def __init__(self):
@@ -242,6 +245,46 @@ class MyswordBibliaLivreTest(unittest.TestCase):
         self.assertIn("3 versículos vazios", warning[1])
         for ref in ("15:3:6", "19:108:13", "66:12:17"):
             self.assertIn(ref, warning[1])
+
+
+class MyswordStrongAoLadoTest(unittest.TestCase):
+    """T105 (D038): o Strong completo entra ao lado de Dodson e AHLB, sem substituí-los."""
+
+    def test_painel_strong_mostra_as_fontes_separadas(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "mods"
+            folder.mkdir()
+            make_dictionary(folder, [("G26", "<p>Dodson: love</p>"), ("H430", "<p>Dodson hebraico</p>")],
+                            {"title": "Dodson", "abbreviation": "Dodson"}, name="dodson.dct.mybible")
+            make_dictionary(folder, [("G26", "<p>Original: <b>ἀγάπη</b></p><p>Transliteration: agape</p>"),
+                                     ("H430", "<p>Original: <b>אֱלֹהִים</b></p>"), ("b-", "<p>prefixo</p>")],
+                            {"title": "Strong", "abbreviation": "Strong"}, name="strong.a.dct.mybible")
+            out = Path(tmp) / "out.db"
+            proc = subprocess.run([sys.executable, str(ROOT / "importer" / "build.py"), "--out", str(out),
+                                   str(folder)], capture_output=True, text=True, encoding="utf-8", cwd=ROOT)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            con = sqlite3.connect(out)
+            con.row_factory = sqlite3.Row
+            try:
+                g26 = server.api_word(con, {"strong": "G26"})
+                h430 = server.api_word(con, {"strong": "H430"})
+                provenance = con.execute(
+                    "select m.source, m.origin_path, e.origin_key from entries e join modules m on m.id = e.module_id"
+                    " where m.abbr = 'Strong' and e.topic = 'G26'").fetchone()
+                strong_keys = con.execute(
+                    "select count(*) from entries e join modules m on m.id = e.module_id"
+                    " where m.abbr = 'Strong' and e.topic glob '[GH][0-9]*'").fetchone()[0]
+            finally:
+                con.close()
+        for word, expected in ((g26, ["Dodson", "Strong"]), (h430, ["Dodson", "Strong"])):
+            self.assertEqual([lexicon["abbr"] for lexicon in word["lexicons"]], expected)
+        dodson, strong = g26["lexicons"]
+        self.assertEqual(dodson["excerpt"], "Dodson: love")
+        self.assertTrue(strong["excerpt"].startswith("Original: ἀγάπη"))
+        self.assertNotEqual(dodson["id"], strong["id"])
+        self.assertEqual((provenance[0], provenance[2]), ("mysword", "dictionary:1"))
+        self.assertTrue(provenance[1].endswith("strong.a.dct.mybible"))
+        self.assertEqual(strong_keys, 2)   # "b-" (prefixo) não conta como chave Strong
 
 
 if __name__ == "__main__":

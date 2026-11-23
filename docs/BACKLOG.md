@@ -693,3 +693,55 @@ aceitação própria antes de entrar em execução.
   explícito.
 - **T89** Diário de estudo separado das notas por versículo. Referência: Journal
   Notes do e-Sword. Pode ser uma coleção de notas sem passagem em `user.db`.
+
+## M10 — Correções de UX (relatório do agente de navegação, 2026-11-23)
+
+Origem: agente com navegador no desktop e no celular, sem alterar arquivos nem
+gravar dados. Cada item tem aceitação própria: testar no navegador (desktop e
+375 px) e rodar `python -m unittest discover -s tests`. Prioridade: alta,
+média, baixa.
+
+### Alta
+
+- **T110 — Botão "← João 1:1" do painel Palavra.** `onclick: showVerse` recebe
+  o evento como referência e o servidor responde 400. Aceitação: o botão volta
+  ao versículo sem erro, em desktop e celular. Estado: concluída (branch
+  `ux-correcoes-t110`, ver `git log`). Testado no navegador: João 3:16 em KJV,
+  Palavra G1161, "← João 3:16" volta ao versículo sem erro; 122 testes OK.
+  Celular não testado.
+- **T111 — Mensagem de erro enganosa.** A mensagem manda verificar o servidor
+  mesmo quando ele está no ar. Aceitação: a mensagem diz a causa real (falha
+  de rede, tempo esgotado, erro do servidor) e não culpa o servidor sem motivo.
+- **T112 — Versículo abre em cerca de 3 s.** As consultas (versão, comentários,
+  "Parecidas") são feitas em sequência; "Parecidas" espera até 2 s pelo serviço
+  parado. Aceitação: consultas em paralelo; serviço indisponível lembrado e
+  não repetido a cada versículo.
+- **T113 — Versão em inglês na busca.** Sem versículos, sem explicação, com
+  botões de copiar e adicionar visíveis. Aceitação: aviso claro de que a versão
+  não tem versículos buscáveis, e botões que não se aplicam ficam ocultos.
+- **T114 — Celular: opções ocupam a busca.** A primeira tela de busca abre com
+  as opções expandidas e os resultados fora da tela. Aceitação: opções
+  recolhidas por padrão; os primeiros resultados aparecem sem rolagem em 375 px.
+
+### Média
+
+- **T115 — Plano de leitura de hoje** corta o capítulo final no painel.
+- **T116 — Respostas lentas sobrescrevem o painel atual**, e "voltar" leva a
+  uma busca antiga. Aceitação: descartar respostas de consultas antigas
+  (contador de requisição, como em D037).
+- **T117 — Barra do desktop com 15 botões de mesmo peso.** "Tópicos" e "Temas"
+  se confundem; "Mapa" e "Linha do tempo" são notas do estudante, não um mapa.
+  Aceitação: hierarquia clara e nomes que não criam expectativa errada.
+- **T118 — Estudo de palavra com dados inconsistentes.** A contagem de
+  ocorrências não bate com os chips, o título vem sem acentos e as fontes estão
+  só em inglês. Aceitação: contagem igual à dos chips; título com acentos.
+- **T119 — Aba "Por sentido" fora do ar** mostra mensagem técnica. Aceitação:
+  texto em português simples, com o que o usuário pode fazer.
+
+### Baixa
+
+- **T120 — Setas não trocam de capítulo.**
+- **T121 — Falta atalho "pular para o texto"**, e os versículos são controles
+  de tabulação.
+- **T122 — Números de versículo com 11,6 px**, pequenos demais. Aceitação:
+  legíveis em 375 px, sem alterar o alinhamento da leitura.

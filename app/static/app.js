@@ -1166,7 +1166,7 @@ async function showItem(kind, id) {
   if (!item) return;
   const title = kind === "entry" ? item.label : `${item.abbr} · ${rangeLabel(item.book, item.ref_start, item.ref_end)}`;
   const backVerse = state.verse
-    ? el("button", { class: "link back", onclick: showVerse }, `← ${refLabel(state.book, state.chapter, state.verse)}`)
+    ? el("button", { class: "link back", onclick: () => showVerse() }, `← ${refLabel(state.book, state.chapter, state.verse)}`)
     : null;
   openPanel("item", title,
     backVerse, backToSearch(),
@@ -1225,7 +1225,7 @@ async function showWord(strong, source = null, offset = 0, previous = null) {
     : null;
 
   const backVerse = state.verse
-    ? el("button", { class: "link back", onclick: showVerse }, `← ${refLabel(state.book, state.chapter, state.verse)}`)
+    ? el("button", { class: "link back", onclick: () => showVerse() }, `← ${refLabel(state.book, state.chapter, state.verse)}`)
     : null;
   openPanel("word", `${strong}${original ? " · " + original : ""}`,
     backVerse, backToSearch(),

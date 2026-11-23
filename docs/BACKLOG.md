@@ -728,6 +728,12 @@ média, baixa.
 - **T113 — Versão em inglês na busca.** Sem versículos, sem explicação, com
   botões de copiar e adicionar visíveis. Aceitação: aviso claro de que a versão
   não tem versículos buscáveis, e botões que não se aplicam ficam ocultos.
+  Estado: concluída (branch `ux-correcoes-t110`). Com versão em inglês aberta
+  e nenhum versículo, aviso "Nenhum versículo da versão aberta (KJV, em
+  inglês) contém ..." com botão "Buscar em todas as versões"; "Copiar" e
+  "Adicionar" só aparecem com versículos. Testado no navegador com "amor" em
+  KJV: sem versículos, a nota e os botões certos; ao buscar em todas as
+  versões, 3.098 versículos e os dois botões aparecem. 122 testes OK.
 - **T114 — Celular: opções ocupam a busca.** A primeira tela de busca abre com
   as opções expandidas e os resultados fora da tela. Aceitação: opções
   recolhidas por padrão; os primeiros resultados aparecem sem rolagem em 375 px.

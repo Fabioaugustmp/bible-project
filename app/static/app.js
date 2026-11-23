@@ -1438,8 +1438,12 @@ function searchOptions(filterRow = null) {
   const configBox = el("details", { class: "search-config", open: state.searchConfigOpen, ontoggle: (event) => { state.searchConfigOpen = event.target.open; } },
     el("summary", {}, "Opções de busca"),
     el("div", { class: "search-opts" }, ...config));
-  children.push(el("button", { class: "link", onclick: copySearchResults }, "Copiar versículos"));
-  children.push(el("button", { class: "link", onclick: addSearchToStudy }, "Adicionar versículos ao estudo"));
+  // T113: copiar e adicionar só fazem sentido com versículos encontrados.
+  const hasVerses = ((state.lastSearch && state.lastSearch.data && state.lastSearch.data.verses) || []).length > 0;
+  if (hasVerses) {
+    children.push(el("button", { class: "link", onclick: copySearchResults }, "Copiar versículos"));
+    children.push(el("button", { class: "link", onclick: addSearchToStudy }, "Adicionar versículos ao estudo"));
+  }
   children.push(el("button", { class: "link", onclick: saveCurrentSearch }, "Salvar busca"));
   return el("div", { class: "search-opts-wrap" }, configBox, el("div", { class: "search-opts search-actions" }, ...children));
 }
@@ -1522,6 +1526,7 @@ function renderSearch(keepScroll = false) {
        el("p", { class: "group-note" }, "Versículos e comentários que contêm os termos digitados."),
        searchOptions(filterRow),
        bridgeNote(query, data),
+       englishVersionNote(query, data, module),
        keyword ? null : suggestionBlock(state.lastSearch.suggest),
        show("verses") ? searchSection("verses", `Bíblia · ${module.abbr}`) : null,
        show("comments") ? searchSection("comments", "Comentários") : null,
@@ -1582,6 +1587,15 @@ function openSearchScreen() {
 }
 
 // Explica o que a ponte por Strong acrescentou à busca e permite desligá-la.
+// T113: versão aberta em inglês e nenhum versículo: explica por que e oferece buscar em todas as versões.
+function englishVersionNote(query, data, module) {
+  if (state.searchStrong || !module || module.lang === "por" || (data.totals.verses || 0) > 0) return null;
+  if (state.searchScope === "todas") return null;
+  return el("div", { class: "bridge" },
+    `Nenhum versículo da versão aberta (${module.abbr}, em inglês) contém "${query}". `,
+    el("button", { class: "link", onclick: () => { state.searchScope = "todas"; showSearch(query); } }, "Buscar em todas as versões"));
+}
+
 function bridgeNote(query, data) {
   if (!data.bridge) return null;
   const toggle = (on, label) => el("button", {

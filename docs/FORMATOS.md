@@ -204,6 +204,49 @@ inteiro sem link correspondente no texto. Nos módulos com
 `compressed.search.data = 1` (Biblical Illustrator) a lista vem compactada e não
 é lida; para eles, a lista de citados passa a vir das citações encontradas no texto.
 
+## MySword (`*.mybible`) — verificado em 2026-11-23 (T104)
+
+Verificado nos 53 arquivos `.mybible` da pasta do Drive (ver
+`docs/ANALISE-MYSWORD.md`), abertos com `mode=ro&immutable=1`. Lidos por
+`importer/mysword.py`; `source = 'mysword'` na tabela `modules`.
+
+- Todos são SQLite. O tipo está no nome (`.bbl`, `.dct`, `.bok`, `.cmt`), mas o
+  leitor decide pelas tabelas: `Bible` → Bíblia, `dictionary` → dicionário,
+  `journal` → livro (ainda não importado), `commentary` → comentário (nenhum na amostra).
+- **Details:** nas Bíblias a tabela é `Details` com colunas em maiúscula
+  (`Title`, `Description`, `Abbreviation`, `Comments`, `Language`, `Strong`...); nos
+  dicionários e livros é `details` com colunas em minúscula. O leitor normaliza a caixa.
+  `Title` e `Language` faltam em várias Bíblias (WEB, BBE, AKJV, NET, ISV): o título
+  vem de `Description` e o idioma é estimado pelo texto. A BSB declara `en` (duas letras).
+- **Proteção:** só `abp` e `HiSB` têm `encryption = 2` e `compressed = 1`. Nos demais
+  as colunas não existem ou são nulas. Com qualquer uma diferente de zero o leitor
+  para depois de ler `Details` (D008).
+- **Bíblia:** `Bible(Book INT, Chapter INT, Verse INT, Scripture TEXT)`, sem linha de
+  cabeçalho, sem livro fora de 1–66. Marcação GBF igual à do theWord (`<WG26>`, `<FI>`,
+  `<FR>`, `<RF>…<Rf>`, `<TS>…<Ts>`, `<CM>`, `<PF1>`, `<PI3>`, `<CI>`), com HTML
+  solto (`<br>`, `<b>`, `<em>`) e entidades (`&amp;`, `&hellip;`, `&#1488;`) em poucas.
+  Referências cruzadas como `<RX 43.1.1>` e `<RX 43.1.1-5>` (até o versículo 5; o
+  theWord usa `+n`). Há versículos só com nota de rodapé (ficam vazios depois da
+  limpeza e não são gravados) e versículos fora da versificação KJV, mantidos como no
+  e-Sword.
+- **WEB (`web.bbl.mybible`, v1.5.3 de 2025-08-04):** 31.103 linhas, não 31.102 como
+  dizia a análise: Rm 14:24-26 (a doxologia no fim do cap. 14) existe e Rm 16:26-27
+  não; Lc 17:36, At 8:37, 15:34, 24:7 e Rm 16:25 só têm nota. Gravados: 31.098.
+  Jo 3:16: "For God so loved the world, that he gave his only born Son, that whoever
+  believes in him should not perish, but have eternal life." (origem `43.3.16`).
+- **Dicionário:** `dictionary(word, data)`, às vezes com `relativeorder`; `word` é a
+  chave (único em todos os verificados), `data` é HTML. Links: `#b43.3.16` e
+  `#b43.3.16-18` (versículo; viram citação clicável em `refs`), `#sG25` e `#dG25`
+  (Strong e dicionário; fica só o texto), `r…` (abreviaturas do Abbott-Smith). Chave de
+  origem gravada: `dictionary:<rowid>`.
+- **Strong (`strong.*.dct.mybible`):** há duas cópias. A de 35,3 MB é a v2.2
+  (2025-09-01) com 14.700 verbetes: 14.696 com chave Strong e 4 prefixos hebraicos
+  (`Hb`, `Hk`, `Hl`, `Hm`). A de 35,7 MB é a v2.0.3 (2015-06-22) com 14.696. Ambas
+  trazem as referências (cerca de 349 mil links de versículo). G26 começa com
+  "Original: ἀγάπη / Transliteration: agapē"; H430 com "Original: אלהים".
+- **OpenGNT:** interlinear com `<Q><G>palavra<WG..><WT.. l="lema"><g><X>…<x><E>glosa<e><q>`.
+  O leitor genérico grava a transliteração e a glosa no texto; tratar em T108.
+
 ## Notas do e-Sword (`study.notx`) — verificado em 2026-11-17
 
 - É um SQLite 3 com uma única tabela: `Verses(Book INT, Chapter INT, Verse INT, Notes TEXT)`.

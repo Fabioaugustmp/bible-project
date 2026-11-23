@@ -185,6 +185,7 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T93 | concluída (D033): menu Exibir → "Mapa de estudo e linha do tempo": mapa com passagens (40 mais estudadas), tópicos e estudos ligados pelas notas e blocos, layout do grafo de referências, clique abre a passagem; linha do tempo por dia com notas, tópicos, diário, estudos, memorização, conjuntos e leituras, lida das datas já guardadas (sem tabela nova); `app/studymap.py`; 4 testes em `tests/test_studymap.py` (98 no total, OK); testado no navegador com um tópico de três passagens (3 ligações, linha do tempo por dia) e 375 px sem rolagem horizontal. Pendente: instantâneos históricos, filtro por período |
 | T101 | parcial (D034): publicação em https://biblia.famptech.com.br pelo túnel da Cloudflare; `BIBLE_PUBLIC_ORIGIN` e `BIBLE_ACCESS_TOKEN` exigem código em todo pedido (`app/server.py`, `gate`); origem https aceita só no host público (`userdata.check_origin`); web entra na rede `general-network` do túnel existente (`cloudflared-default`, rota para `http://biblioteca-web:8377`); código gravado no log como `***`; 7 testes em `tests/test_publico.py` (111 no total, OK); testado no contêiner com Host e Origin do domínio: sem código 403, código 302 com cookie Secure, escrita https 200, escrita http 403. Pendente: rota criada no painel e teste no servidor; Cloudflare Access; decisão de licença (T52) |
 | T103 | concluída (D037): indicador de carregamento na busca, com busca por palavra primeiro, contador, tempo limite de 20 s, aquecimento ao abrir a página e descarte de respostas antigas; testado no navegador (desktop e 375 px) com atraso simulado de 8 s, 25 s e troca de busca; 111 testes OK. Nota: "fe" e "fé" dão zero resultados por palavra (termo de duas letras), fora deste escopo. Antigo plano: Problema: `showSearch` (app/static/app.js) espera busca por palavra, busca por sentido e Strong juntas (`Promise.all`); a primeira busca por sentido carrega o modelo no servidor (dezenas de segundos em CPU), e o usuário vê só "Buscando…" sem fim. Mudanças: (1) mostrar a busca por palavra assim que chegar, em bloco separado; (2) bloco "Buscando por sentido…" com contador de segundos e aviso de primeira vez; (3) tempo limite de 20 s no cliente, com a mensagem "o modelo ainda está carregando, tente em instantes", mantendo os resultados por palavra; (4) aquecimento: ao abrir a página, uma consulta em segundo plano (ex.: "aquecimento") para carregar o modelo antes da primeira busca; (5) indicador visual (spinner CSS, `role="status"`, respeitando `prefers-reduced-motion`); (6) opcional: endpoint de situação do serviço (modelo carregado ou não) para trocar o contador por "carregando modelo". Riscos: resultados chegando fora de ordem (usar contador de requisição para descartar respostas antigas); cuidar do celular, que já tem "Buscando…" (D036). Testes: navegador no desktop e no celular com serviço parado, lento e normal; 111 testes OK. |
+| T104 | concluída: `importer/mysword.py` lê Bíblias (`Bible`) e dicionários (`dictionary`, HTML → texto, links `#bL.C.V` viram citações em `refs`) e a tabela `Details`; protegidos (`encryption`/`compressed` ≠ 0) pulados só com `Details` lida (D008); `build.py` aceita `.mybible` (`source = 'mysword'`), sem mudar o esquema nem a versão do importador. Conferido nos 53 `.mybible` da pasta do Drive: 0 erros, 42 importados, 2 protegidos e 5 livros ignorados, 6 cópias unidas. WEB: 31.103 linhas (a análise dizia 31.102: Rm 14:24-26 a mais, Rm 16:26-27 a menos), 31.098 gravadas (5 só com nota); Jo 3:16 confere. Strong v2.2 (`strong.a`, 35,3 MB): 14.700 verbetes, 14.696 com chave Strong (confere com a análise) + 4 prefixos hebraicos; 349.504 citações; G26 e H430 conferem. Cópia `data/library-candidata.db` + WEB + Strong pela incremental: 114 arquivos pulados, 8 relidos, 144 s, 75 módulos; `verify.py` passa (não promovida). 120 testes OK (9 novos em `tests/test_mysword.py`). OpenGNT é lido, mas o texto leva transliteração e glosa (T108) |
 | T102 | parcial (D036): navegação do celular (até 560 px) pela Alternativa 1 de `docs/UX-MOBILE-S23.md`: cabeçalho de uma linha ("João 1 ▾" e versão) que some ao descer; barra inferior fixa ‹ Buscar Estudo Aa ⋯ ›; busca em tela própria; folhas Estudo (Leitura de hoje primeiro), Texto e tema (Claro, Escuro, Sistema) e Mais (Ler, Ferramentas, Preferências); seletor de passagem em grade; folha a 60% com o versículo aberto acima dela e botão para quase tela cheia; abas do versículo em duas linhas; faixa "Continuar" em uma linha; `interactive-widget=resizes-content` e barra inferior oculta com campo em foco; "Toque" e sem "Esc" em tela de toque. Medido em 412 × 915: barra superior 265 → 57 px, texto começa em y 599 → 218, 9 → 18 linhas na primeira dobra; desktop 1280 × 800 sem mudança nas medidas. Pendente: "voltar" do Android fechando folhas (item 10), rolagem do documento inteiro (item 9), teste em aparelho real com teclado virtual; reorganização do desktop (item 13) |
 | T50–T52 (M5) | pendente |
 
@@ -539,7 +540,7 @@ citada: ver [IDEIAS.md](IDEIAS.md) (B04, B05, B19). Dependem de P3 e P4.
 ## M9 — Fontes MySword (análise de 2026-11-23, `docs/ANALISE-MYSWORD.md`)
 
 Pasta do Drive com 55 módulos MySword distintos (formato SQLite). Nenhum foi
-importado ainda. Antes de T104, conferir a licença na origem (ver o relatório).
+importado na base em uso; o leitor existe desde T104. Conferir a licença na origem antes de importar cada um (ver o relatório).
 
 ### T104 — Leitor de módulos MySword (Bíblia e dicionário)
 - **Fazer:** `importer/mysword.py` lê `Details`, `Bible` e `dictionary`, com a
@@ -549,6 +550,10 @@ importado ainda. Antes de T104, conferir a licença na origem (ver o relatório)
   `strong.dct.mybible` (14.696 verbetes) sem erro; procedência por módulo e
   chave preservadas; `verify.py` continua passando.
 - **Tamanho:** M.
+- **Estado:** concluída (ver "Estado das tarefas"). Formato verificado em
+  FORMATOS.md, seção MySword. Nada foi importado em `data/library.db`: quais
+  módulos entram é T105–T108. Os 53 arquivos estão numa pasta temporária fora
+  do projeto (D007).
 
 ### T105 — Dicionário Strong completo (BDB, Thayer, Strong)
 - **Fazer:** importar `strong.dct.mybible` (versão 2.2, 2025-09-01) como
@@ -582,6 +587,23 @@ importado ainda. Antes de T104, conferir a licença na origem (ver o relatório)
 - **Licença:** © 2002 Sociedade Bíblica do Brasil; "uso pessoal, venda
   proibida" no próprio módulo. Não servir publicamente.
 - **Tamanho:** P. Depende de T104 e T105.
+
+### T108 — Grego do Novo Testamento (OpenGNT), para estudo
+- **Fazer:** importar a variante `OpenGNT.bbl.mybible` (27 livros, 7.941
+  versículos, Strong e morfologia), como texto grego de estudo. Não importar
+  `OpenGNTnet` (texto NET, só não comercial com crédito) nem `OpenGNTbe`
+  (tradução Berean, "all rights reserved") até confirmar a permissão.
+- **Aceite:** Jo 1:1 mostra as palavras gregas com Strong ligado ao painel;
+  procedência por módulo; a tela de créditos (T52) registra CC BY-SA 4.0 e a
+  atribuição "Open Greek New Testament Project by Eliran Wong".
+- **Licença:** texto base CC BY-SA 4.0, conferido no README do GitHub em
+  2026-11-23. Uso declarado: estudo pessoal, não comercial. Compartilhamento
+  pela mesma licença se o módulo ou derivados forem redistribuídos; isso
+  inclui publicar no site (decisão em T52 e na outra conversa jurídica).
+  Camadas Berean e Mounce: termos não conferidos.
+- **Cobertura:** 7.941 versículos; o NT padrão tem cerca de 7.957. Conferir
+  a diferença antes de usar como referência.
+- **Tamanho:** M. Depende de T104 (concluída; o leitor genérico ainda grava transliteração e glosa no texto do OpenGNT).
 
 ### Ideias da pesquisa em background (2026-11-18)
 

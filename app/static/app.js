@@ -583,6 +583,8 @@ let panelMode = null; // 'verse' | 'search' | 'item'
 // `pendingView` antes de chamar openPanel.
 let currentView = null;
 let pendingView = null;
+// T116: cada painel que carrega dados recebe um número; resposta de um número antigo é descartada.
+let panelToken = 0;
 // Quando definido, openPanel escreve num item fixado em vez do painel (restauração).
 let renderTarget = null;
 
@@ -1040,6 +1042,7 @@ function bookStrip(counts) {
 
 async function showVerse(ref = null) {
   const { book, chapter, verse } = ref || state;
+  const mine = ++panelToken;
   const verseKey = `${book}.${chapter}.${verse}`;
   if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; xrefBook = null; versionsOpen = false; }
   if (pendingTab) { verseTab = pendingTab; pendingTab = null; }
@@ -1052,6 +1055,7 @@ async function showVerse(ref = null) {
   ]);
   refreshCommentaryPins({ book, chapter, verse });
   const bookCounts = data.xrefs_total || xrefBook ? (await api("xref-books", { book, chapter, verse })).books : null;
+  if (mine !== panelToken) return;
   if (!ref && (book !== state.book || chapter !== state.chapter || verse !== state.verse)) return;
   pendingView = { type: "verse", book, chapter, verse };
 
@@ -1164,7 +1168,9 @@ async function showVerse(ref = null) {
 }
 
 async function showItem(kind, id) {
+  const mine = ++panelToken;
   const item = await api("item", { kind, id });
+  if (mine !== panelToken) return;
   pendingView = { type: "item", kind, id };
   if (!item) return;
   const title = kind === "entry" ? item.label : `${item.abbr} · ${rangeLabel(item.book, item.ref_start, item.ref_end)}`;
@@ -1184,7 +1190,9 @@ async function showItem(kind, id) {
 async function showWord(strong, source = null, offset = 0, previous = null) {
   document.querySelectorAll(".w.picked").forEach((node) => node.classList.remove("picked"));
   source?.classList.add("picked");
+  const mine = ++panelToken;
   const data = await api("word", { strong, module: state.module, offset });
+  if (mine !== panelToken) return;
   pendingView = { type: "word", strong };
   if (previous) data.occurrences = previous.concat(data.occurrences);
   const original = data.original[0]?.term;
@@ -1673,6 +1681,7 @@ function semanticTimedOut(query) {
 
 async function showSearch(query) {
   const token = ++searchToken;
+  const mine = ++panelToken;  // T116
   const semanticStart = Date.now();
   const semanticP = api("semantic", { q: query }).catch(() => ({ available: false, reason: "Não foi possível consultar a busca por sentido." }));
   const [data, strong] = await Promise.all([
@@ -1686,10 +1695,10 @@ async function showSearch(query) {
     }),
     state.searchStrong ? api("strong", { code: state.searchStrong }).catch(() => ({ error: "Não foi possível buscar este número Strong. Use G ou H seguido de números." })) : null,
   ]);
-  if (token !== searchToken) return;
+  if (token !== searchToken || mine !== panelToken) return;
   const nothing = !Object.values(data.totals || {}).some((n) => n);
   const suggest = nothing && !state.searchStrong ? await api("suggest", { q: query }).catch(() => null) : null;
-  if (token !== searchToken) return;
+  if (token !== searchToken || mine !== panelToken) return;
   const startedAt = semanticStart;
   state.lastSearch = { query, data, semantic: null, semanticState: "loading", startedAt, strong, suggest };
   renderSearch();

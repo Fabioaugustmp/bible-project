@@ -755,6 +755,13 @@ média, baixa.
 - **T116 — Respostas lentas sobrescrevem o painel atual**, e "voltar" leva a
   uma busca antiga. Aceitação: descartar respostas de consultas antigas
   (contador de requisição, como em D037).
+  Estado: concluída (branch `ux-correcoes-t110`). `panelToken` em app.js: o
+  versículo, a palavra, o item e a busca recebem um número ao começar e só
+  mostram a resposta se ainda forem o último. Testado no navegador: palavra
+  G1161 com resposta atrasada em 3 s, troca para João 1:1 antes; ao chegar, a
+  palavra não aparece e o painel fica no versículo. 122 testes OK. Não coberto
+  por teste automatizado; os demais painéis (notas, tópicos) não receberam o
+  controle.
 - **T117 — Barra do desktop com 15 botões de mesmo peso.** "Tópicos" e "Temas"
   se confundem; "Mapa" e "Linha do tempo" são notas do estudante, não um mapa.
   Aceitação: hierarquia clara e nomes que não criam expectativa errada.

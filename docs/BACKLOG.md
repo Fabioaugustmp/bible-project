@@ -712,6 +712,9 @@ média, baixa.
 - **T111 — Mensagem de erro enganosa.** A mensagem manda verificar o servidor
   mesmo quando ele está no ar. Aceitação: a mensagem diz a causa real (falha
   de rede, tempo esgotado, erro do servidor) e não culpa o servidor sem motivo.
+  Estado: concluída (branch `ux-correcoes-t110`). Falha de rede (`TypeError` de
+  fetch) diz "Não foi possível conectar ao servidor..."; demais erros mostram
+  a causa. Testado no navegador com as duas falhas simuladas; 122 testes OK.
 - **T112 — Versículo abre em cerca de 3 s.** As consultas (versão, comentários,
   "Parecidas") são feitas em sequência; "Parecidas" espera até 2 s pelo serviço
   parado. Aceitação: consultas em paralelo; serviço indisponível lembrado e

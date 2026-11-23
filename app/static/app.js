@@ -2809,8 +2809,13 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("unhandledrejection", (event) => {
-  console.error(event.reason);
-  showToast("Não foi possível concluir a ação. Verifique se o servidor da biblioteca está rodando.");
+  const reason = event.reason;
+  console.error(reason);
+  // Falha de rede do navegador (fetch não chegou ao servidor) é diferente de erro do servidor ou do código.
+  const network = reason instanceof TypeError && /fetch|NetworkError|Load failed/i.test(reason.message || "");
+  showToast(network
+    ? "Não foi possível conectar ao servidor da biblioteca. Verifique se ele está rodando."
+    : `Não foi possível concluir a ação${reason && reason.message ? `: ${reason.message}` : "."}`);
 });
 
 init().catch((error) => {

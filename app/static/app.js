@@ -1956,6 +1956,8 @@ async function init() {
   $("#smaller").addEventListener("click", () => { fontSize = setFontSize(fontSize - 1); });
   $("#larger").addEventListener("click", () => { fontSize = setFontSize(fontSize + 1); });
   $("#theme").addEventListener("click", toggleTheme);
+  // T121: "Pular para o texto" foca o texto sem mudar o endereço (o #text viraria uma passagem).
+  document.querySelector(".skip-link").addEventListener("click", (event) => { event.preventDefault(); $("#text").focus(); });
   $("#browse").addEventListener("click", () => {
     if (browseState.module) showBrowse(); else browseHome();
   });

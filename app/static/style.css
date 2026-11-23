@@ -662,3 +662,8 @@ body.marks-off .v > sup::after { content: none; }
 @media (prefers-reduced-motion: reduce) {
   .spinner { animation-duration: 2.4s; }
 }
+
+/* T121: atalho para pular a barra e ir ao texto; aparece só com o foco do teclado. */
+.skip-link { position: absolute; left: 8px; top: -60px; z-index: 100; padding: 8px 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; text-decoration: none; }
+.skip-link:focus { top: 8px; }
+#text:focus { outline: none; }

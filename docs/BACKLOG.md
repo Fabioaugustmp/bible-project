@@ -798,5 +798,11 @@ média, baixa.
   foi de João 3 para 4; dentro da busca não mudou.
 - **T121 — Falta atalho "pular para o texto"**, e os versículos são controles
   de tabulação.
+  Estado: parcial. Feito: link "Pular para o texto" como primeiro foco da
+  página (aparece só com Tab); ao usá-lo, o foco vai ao texto sem mudar o
+  endereço. Testado no navegador com Tab e Enter. Pendente: os versículos
+  continuam todos com tabulação (um capítulo tem até dezenas de paradas). Isso
+  pede "tabindex" móvel (uma parada por bloco, setas entre versículos), que
+  mexe no clique e na seleção; fica para tarefa própria.
 - **T122 — Números de versículo com 11,6 px**, pequenos demais. Aceitação:
   legíveis em 375 px, sem alterar o alinhamento da leitura.

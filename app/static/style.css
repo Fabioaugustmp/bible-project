@@ -52,6 +52,19 @@ body {
 }
 .nav, .tools { display: flex; align-items: center; gap: 6px; }
 .tools { flex-wrap: wrap; }
+/* T117: os botões da barra em três blocos separados por um fio. */
+.tool-group { display: flex; align-items: center; gap: 6px; padding: 0 10px; border-left: 1px solid var(--line); }
+.tool-group:first-child { padding-left: 0; border-left: 0; }
+
+/* Botão de tema: sol no claro, lua no escuro (segue o sistema quando não há escolha salva). */
+#theme svg, #view svg, #smaller svg, #larger svg { display: block; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#theme .ico-moon { display: none; }
+:root[data-theme="dark"] #theme .ico-sun { display: none; }
+:root[data-theme="dark"] #theme .ico-moon { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #theme .ico-sun { display: none; }
+  :root:not([data-theme="light"]) #theme .ico-moon { display: block; }
+}
 .search { flex: 1 1 220px; min-width: 0; }
 select, input, button {
   font: inherit; color: inherit; background: var(--paper);
@@ -168,7 +181,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 }
 .fold[open] > summary::before { transform: rotate(90deg); }
 .fold > summary b { color: var(--accent); flex: none; }
-.fold > summary .range { color: var(--muted); flex: none; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* T115: o intervalo do plano quebra em linhas em vez de cortar o capítulo final. */
+.fold > summary .range { color: var(--muted); flex: 0 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .fold > summary .peek {
   flex: 1 1 0; min-width: 0; color: var(--muted); font: .95em var(--serif);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;

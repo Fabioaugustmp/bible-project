@@ -196,6 +196,11 @@ function saveLastRead() {
   store.set("ultimaLeitura", JSON.stringify({ module: state.module, book: state.book, chapter: state.chapter, verse: state.verse }));
 }
 
+// T121: uma só parada de tabulação entre os versículos (roving tabindex); setas ↑/↓ andam entre eles.
+function setRovingVerse(target) {
+  $("#text").querySelectorAll(".v").forEach((v) => { v.tabIndex = v === target ? 0 : -1; });
+}
+
 async function render() {
   const token = ++renderToken;
   if (location.hash) saveLastRead();   // a abertura sem endereço não apaga a última leitura
@@ -238,7 +243,7 @@ async function render() {
         v.heading ? el("h2", { class: "pericope", dir: "ltr" }, v.heading) : null,
         el("span", {
           class: "v" + (marks.notes[v.verse] ? " has-note" : "") + (marks.studies[v.verse] ? " has-study" : ""),
-          "data-verse": v.verse, role: "button", tabindex: "0",
+          "data-verse": v.verse, role: "button", tabindex: "-1",
           title: [marks.notes[v.verse] ? `${marks.notes[v.verse]} nota(s)` : null,
             marks.studies[v.verse] ? `em ${marks.studies[v.verse]} estudo(s)` : null].filter(Boolean).join(" · ") || null,
           onclick: (event) => {
@@ -255,6 +260,7 @@ async function render() {
         }, el("sup", {}, String(v.verse)), state.words && v.words ? wordsOf(v.words) : v.text),
         " ",
       ]).filter(Boolean));
+      setRovingVerse(text.querySelector(`.v[data-verse="${state.verse}"]`) || text.querySelector(".v"));
     }
     $("#hint").hidden = !verses.length;
     followReading();
@@ -1243,8 +1249,13 @@ async function showWord(strong, source = null, offset = 0, previous = null) {
     original ? el("p", { class: "lemma", lang: LANG[data.original_lang] }, original,
       el("span", { lang: "pt-BR" }, ` ${langLabel} · ${data.total} versículos` +
         (data.original[0] && data.original[0].count ? ` · ${data.original[0].count} palavras no texto original` : ""))) : null,
-    data.translations.por.length ? section("Como a Bíblia em português traduz", null, chips(data.translations.por, "pt-BR")) : null,
-    data.translations.eng.length ? section("Em inglês", null, chips(data.translations.eng, "en")) : null,
+    // T118: o número de cada chip é de palavras nas traduções (não de versículos nem do texto original).
+    data.translations.por.length ? section("Como a Bíblia em português traduz", null,
+      el("p", { class: "group-note" }, "Número = vezes que a palavra aparece nas traduções em português com Strong."),
+      chips(data.translations.por, "pt-BR")) : null,
+    data.translations.eng.length ? section("Em inglês", null,
+      el("p", { class: "group-note" }, "Número = vezes que a palavra aparece somando as traduções em inglês com Strong."),
+      chips(data.translations.eng, "en")) : null,
     typedSection(data.lexicons.map((e) => typeOf("dictionary", e.abbr)), "Léxicos", data.lexicons.length,
       data.lexicons.length ? data.lexicons.map(lexicon) : el("p", { class: "empty" }, "Nenhum léxico legível tem este número.")),
     section("Ocorrências", data.total, data.occurrences.map(occurrence), more));
@@ -1997,11 +2008,21 @@ async function init() {
     else { addRecentSearch(query); showSearch(query); }
   });
   $("#text").addEventListener("keydown", (e) => {
-    if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("v")) {
+    if (!e.target.classList.contains("v") || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       if (selection.on) { tapVerse(Number(e.target.dataset.verse)); return; }
       go({ verse: Number(e.target.dataset.verse) });
+    } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const all = [...$("#text").querySelectorAll(".v")];
+      const next = all[all.indexOf(e.target) + (e.key === "ArrowDown" ? 1 : -1)];
+      if (next) { setRovingVerse(next); next.focus(); }
     }
+  });
+  // T121: o versículo que recebe o foco (clique ou Tab) passa a ser a parada de tabulação.
+  $("#text").addEventListener("focusin", (e) => {
+    if (e.target.classList.contains("v")) setRovingVerse(e.target);
   });
   window.addEventListener("hashchange", () => { readHash(); render(); });
 
@@ -2270,13 +2291,18 @@ function startReview(queue, index) {
 
 // --- Notas por tópico (T87, D030) -------------------------------------------------
 
+// T116: resposta de um tópico que chega depois de outro clique não sobrescreve o painel.
 async function openTopicNotes() {
+  const mine = ++panelToken;
   const data = await api("user/topics");
+  if (mine !== panelToken) return;
   openPanel("topicos", "Notas por tópico", topicNotesListBody(data));
 }
 
 async function openTopicNote(id) {
+  const mine = ++panelToken;
   const topic = await api("user/topic", { id });
+  if (mine !== panelToken) return;
   openPanel("topico", topic.name, topicNoteBody(topic));
 }
 

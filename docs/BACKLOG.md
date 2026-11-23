@@ -743,15 +743,19 @@ média, baixa.
 
 ### Média
 
-- **T115 — Plano de leitura de hoje** corta o capítulo final no painel.
+- **T115 — Plano de leitura de hoje** corta o capítulo final no painel. Estado: concluída (ver nota abaixo).
   Estado: parcial. O corte não foi reproduzido: com um plano de 3 capítulos
   (Gn 1–3), o painel mostra "1 de 3", "Próximo: Gênesis 2" e os botões sem
   corte, em 480 px de largura. Pelo texto da tela ("Um capítulo por dia"), depois
   de marcar o dia aparece "Lido hoje ✓" e não se marca o seguinte. Corrigido:
   título padrão do plano usava a abreviação ("Gn 1 – Dt 34"); agora usa o nome
   completo ("Gênesis 1 – Deuteronômio 34"), como o resto da interface.
-  Pedido ao usuário: descrever onde o capítulo some (qual plano, qual
-  largura de tela) para reproduzir o corte.
+  Decisão do usuário (2026-11-23): seguir o que o mercado usa, sem cortar
+  texto. O intervalo do plano no resumo ("Gênesis 1 – Deuteronômio 34") agora
+  quebra em linhas (`.fold > summary .range`, sem reticências). Conferido com um
+  elemento de teste de 300 px: duas linhas, sem corte horizontal. O corte que o
+  agente viu não foi reproduzido; se voltar a aparecer, registrar o plano e a
+  largura.
 - **T116 — Respostas lentas sobrescrevem o painel atual**, e "voltar" leva a
   uma busca antiga. Aceitação: descartar respostas de consultas antigas
   (contador de requisição, como em D037).
@@ -760,28 +764,34 @@ média, baixa.
   mostram a resposta se ainda forem o último. Testado no navegador: palavra
   G1161 com resposta atrasada em 3 s, troca para João 1:1 antes; ao chegar, a
   palavra não aparece e o painel fica no versículo. 122 testes OK. Não coberto
-  por teste automatizado; os demais painéis (notas, tópicos) não receberam o
-  controle.
+  por teste automatizado. Tópicos (`openTopicNotes`, `openTopicNote`) também
+  recebem o controle; as notas do versículo já estavam cobertas por `showVerse`.
+  Tópicos não foram testados no navegador (só o código e a sintaxe).
 - **T117 — Barra do desktop com 15 botões de mesmo peso.** "Tópicos" e "Temas"
   se confundem; "Mapa" e "Linha do tempo" são notas do estudante, não um mapa.
   Aceitação: hierarquia clara e nomes que não criam expectativa errada.
-  Estado: parcial. Feito: "Temas" virou "Buscar tema", e o botão "Tema" (que
-  alterna claro e escuro) virou "Claro/Escuro", porque "Tema" e "Temas" se
-  confundiam. "Tópicos" continua com o título que a diferencia da busca por
-  tema. Não feito: a hierarquia dos 15 botões (agrupar ou mover para o menu),
-  que é decisão de desenho. "Mapa" e "Linha do tempo" não estão na barra; são
-  itens do menu "Mais", e não foram renomeados. Conferido na tela de desktop:
-  a barra quebra em duas linhas sem sobreposição.
+  Estado: concluída. "Temas" virou "Buscar tema", e o botão "Tema" (que alterna
+  claro e escuro) virou "Claro/Escuro". A barra tem três blocos com rótulo
+  próprio (decisão do usuário): **Texto** (A−, A+, Marcas, Selecionar, Paralelo,
+  Strong), **Estudo** (Estudos, Leitura, Diário, Memorizar, Tópicos, Buscar tema,
+  Dicionários) e **Tela** (Exibir e Claro/Escuro). Os botões A− e A+ e os de
+  Exibir e tema são só ícones, com nome acessível e dica. Separados por um fio. "Mapa" e
+  "Linha do tempo" continuam no menu "Exibir" (T93), sem renomear. Conferido em 800 px de largura (a barra quebra em duas linhas
+  sem sobreposição) e em 375 px (barra oculta, sem rolagem horizontal).
 - **T118 — Estudo de palavra com dados inconsistentes.** A contagem de
   ocorrências não bate com os chips, o título vem sem acentos e as fontes estão
   só em inglês. Aceitação: contagem igual à dos chips; título com acentos.
   Estado: parcial. Causa da contagem: o cabeçalho mostrava só os versículos
   (2.482 para δέ) e as palavras do texto original (2.794) não apareciam, então
   parecia não bater com os chips. Agora o cabeçalho mostra as duas, com nomes
-  diferentes. Não reproduzi o título sem acentos: δέ sai com acento. Não
-  verificado: se os números dos chips ("e 474", "but 1689") estão na mesma
-  unidade. Fontes: os léxicos de δέ são em inglês (Dodson, MLSJ, LSJ); um léxico
-  em português depende de T107 (Strong-PT, uso pessoal, T52).
+  diferentes. Unidade dos chips conferida no banco (G1161): os chips somam as
+  palavras das traduções inglesas com Strong (BSBRevINT 1.801 + KJV 2.711, com
+  4.413 após normalização), e não batem com os 2.794 do texto original nem com
+  os 2.482 versículos. Cada seção agora diz a unidade ("Número = vezes que a
+  palavra aparece somando as traduções em inglês com Strong"). Não reproduzi o
+  título sem acentos: δέ sai com acento. Fontes: os léxicos de δέ são em inglês
+  (Dodson, MLSJ, LSJ); um léxico em português depende de T107 (Strong-PT, uso
+  pessoal, T52). Pendente só essa dependência.
 - **T119 — Aba "Por sentido" fora do ar** mostra mensagem técnica. Aceitação:
   texto em português simples, com o que o usuário pode fazer.
   Estado: concluída. A mensagem tinha o comando de terminal ("Inicie-o com
@@ -798,14 +808,16 @@ média, baixa.
   foi de João 3 para 4; dentro da busca não mudou.
 - **T121 — Falta atalho "pular para o texto"**, e os versículos são controles
   de tabulação.
-  Estado: parcial. Feito: link "Pular para o texto" como primeiro foco da
-  página (aparece só com Tab); ao usá-lo, o foco vai ao texto sem mudar o
-  endereço. Testado no navegador com Tab e Enter. Pendente: os versículos
-  continuam todos com tabulação (um capítulo tem até dezenas de paradas). Isso
-  pede "tabindex" móvel (uma parada por bloco, setas entre versículos), que
-  mexe no clique e na seleção; fica para tarefa própria.
+  Estado: concluída. Link "Pular para o texto" como primeiro foco da página
+  (aparece só com Tab); ao usá-lo, o foco vai ao texto sem mudar o endereço.
+  Versículos com "roving tabindex" (`setRovingVerse` em app.js): uma só parada
+  de Tab, que acompanha o foco e o versículo aberto; ↑/↓ andam entre os
+  versículos; Enter e Espaço abrem o versículo. Testado no navegador em
+  João 3 (KJV): parada inicial em 16; ↓ foi para 17 e a parada passou para 17.
+  Clique, seleção e troca de capítulo não mudaram. Não coberto por teste
+  automatizado.
 - **T122 — Números de versículo com 11,6 px**, pequenos demais. Aceitação:
   legíveis em 375 px, sem alterar o alinhamento da leitura.
   Estado: concluída. Tamanho de .58em para .7em do texto (14 px com a leitura
   em 20 px). Conferido no desktop: números legíveis, sem sobreposição com o
-  texto. Não conferido em 375 px.
+  texto. Conferido em 375 px: 14 px, sem rolagem horizontal (João 3, KJV).

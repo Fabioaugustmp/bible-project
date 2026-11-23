@@ -536,6 +536,53 @@ Tradução local sob demanda, léxico breve em português, perguntas com respost
 citada: ver [IDEIAS.md](IDEIAS.md) (B04, B05, B19). Dependem de P3 e P4.
 
 
+## M9 — Fontes MySword (análise de 2026-11-23, `docs/ANALISE-MYSWORD.md`)
+
+Pasta do Drive com 55 módulos MySword distintos (formato SQLite). Nenhum foi
+importado ainda. Antes de T104, conferir a licença na origem (ver o relatório).
+
+### T104 — Leitor de módulos MySword (Bíblia e dicionário)
+- **Fazer:** `importer/mysword.py` lê `Details`, `Bible` e `dictionary`, com a
+  mesma marcação GBF do theWord (reaproveitar `importer/theword.py`). Módulos
+  com `encryption` diferente de zero são pulados sem abrir (D008).
+- **Aceite:** o leitor abre `web.bbl.mybible` (31.102 versículos) e
+  `strong.dct.mybible` (14.696 verbetes) sem erro; procedência por módulo e
+  chave preservadas; `verify.py` continua passando.
+- **Tamanho:** M.
+
+### T105 — Dicionário Strong completo (BDB, Thayer, Strong)
+- **Fazer:** importar `strong.dct.mybible` (versão 2.2, 2025-09-01) como
+  dicionário de origem `MySword`. Substitui Dodson e AHLB como fonte do painel
+  Strong quando houver número coberto.
+- **Aceite:** G26 e H430 mostram original, transliteração e definição do
+  léxico completo; a fonte aparece no painel; o texto do AHLB deixa de ser
+  servido se o novo cobrir o mesmo número. Decidir a regra de precedência em
+  DECISOES.
+- **Licença:** domínio público indicado no módulo; formatação de Timothy Morton
+  (Bible Analyzer) "courtesy". Conferir na origem antes de servir no site.
+- **Tamanho:** M. Depende de T104.
+
+### T106 — Bíblia Livre (BLIVRE) como texto de demonstração pública
+- **Fazer:** importar `biblialivre.bbl.mybible` (31.102 versículos, 5 vazios
+  a conferir). Crédito "BLIVRE" e data da versão na tela de créditos (T52).
+- **Aceite:** 5 versículos vazios conferidos na fonte ou sinalizados; aparece
+  no seletor de versões; é a única versão servida sem código de acesso
+  na demonstração (a decidir com T52).
+- **Licença:** CC BY 3.0 BR, conferida no GitHub da BLIVRE em 2026-11-23:
+  uso comercial permitido, atribuição obrigatória, sem compartilhamento
+  obrigatório.
+- **Tamanho:** P. Depende de T104 e de T52.
+
+### T107 — Strong em português (SBB), só uso pessoal
+- **Fazer:** importar `Strongs_BR.dct.mybible` marcado como uso pessoal. A
+  palavra original vem corrompida (G26 em letras hebraicas; H430 com escape
+  RTF): usar a palavra original do `strong.dct` pelo mesmo número.
+- **Aceite:** nunca servido pelo site público (teste automatizado de
+  `/api/strong` com a base de demonstração); aparece só na base local.
+- **Licença:** © 2002 Sociedade Bíblica do Brasil; "uso pessoal, venda
+  proibida" no próprio módulo. Não servir publicamente.
+- **Tamanho:** P. Depende de T104 e T105.
+
 ### Ideias da pesquisa em background (2026-11-18)
 
 Marcadas como **necessária** (lacuna real frente aos programas) ou **criativa**

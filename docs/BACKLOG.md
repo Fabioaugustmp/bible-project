@@ -765,6 +765,13 @@ média, baixa.
 - **T117 — Barra do desktop com 15 botões de mesmo peso.** "Tópicos" e "Temas"
   se confundem; "Mapa" e "Linha do tempo" são notas do estudante, não um mapa.
   Aceitação: hierarquia clara e nomes que não criam expectativa errada.
+  Estado: parcial. Feito: "Temas" virou "Buscar tema", e o botão "Tema" (que
+  alterna claro e escuro) virou "Claro/Escuro", porque "Tema" e "Temas" se
+  confundiam. "Tópicos" continua com o título que a diferencia da busca por
+  tema. Não feito: a hierarquia dos 15 botões (agrupar ou mover para o menu),
+  que é decisão de desenho. "Mapa" e "Linha do tempo" não estão na barra; são
+  itens do menu "Mais", e não foram renomeados. Conferido na tela de desktop:
+  a barra quebra em duas linhas sem sobreposição.
 - **T118 — Estudo de palavra com dados inconsistentes.** A contagem de
   ocorrências não bate com os chips, o título vem sem acentos e as fontes estão
   só em inglês. Aceitação: contagem igual à dos chips; título com acentos.

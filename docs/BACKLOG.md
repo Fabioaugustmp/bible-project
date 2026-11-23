@@ -784,6 +784,11 @@ média, baixa.
   em português depende de T107 (Strong-PT, uso pessoal, T52).
 - **T119 — Aba "Por sentido" fora do ar** mostra mensagem técnica. Aceitação:
   texto em português simples, com o que o usuário pode fazer.
+  Estado: concluída. A mensagem tinha o comando de terminal ("Inicie-o com
+  .venv-bench\Scripts\python.exe ..."); agora diz "A busca por sentido está
+  indisponível agora. A busca por palavra funciona normalmente; tente de novo
+  em instantes." O comando fica no campo `detail` da resposta. Conferido no
+  servidor ao vivo com o serviço parado.
 
 ### Baixa
 

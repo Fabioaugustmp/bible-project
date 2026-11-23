@@ -719,6 +719,12 @@ média, baixa.
   "Parecidas") são feitas em sequência; "Parecidas" espera até 2 s pelo serviço
   parado. Aceitação: consultas em paralelo; serviço indisponível lembrado e
   não repetido a cada versículo.
+  Estado: concluída (branch `ux-correcoes-t110`). Consultas do versículo em
+  `Promise.all` (app.js); `api_similar` lembra a falha por 30 s
+  (`SIMILAR_DOWN_SECONDS`). Medido no servidor ao vivo: 1ª consulta de
+  `/api/similar` 2.075 ms (serviço parado), seguintes 9 a 10 ms; versículo
+  abre com o texto visível em cerca de 1,2 s. Não coberto por teste
+  automatizado. A primeira consulta a cada 30 s ainda espera os 2 s.
 - **T113 — Versão em inglês na busca.** Sem versículos, sem explicação, com
   botões de copiar e adicionar visíveis. Aceitação: aviso claro de que a versão
   não tem versículos buscáveis, e botões que não se aplicam ficam ocultos.

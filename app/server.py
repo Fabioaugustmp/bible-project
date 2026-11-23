@@ -12,6 +12,7 @@ import re
 import secrets
 import socket
 import sqlite3
+import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -584,6 +585,10 @@ def api_search(con, q):
 
 SIMILAR_URL = EMBED_BASE + "/similar"
 SIMILAR_K = 10
+# T112: sem o serviço, a conexão recusada leva cerca de 2 s no Windows. Depois de uma falha,
+# não se tenta de novo por este tempo; as consultas seguintes respondem na hora.
+SIMILAR_DOWN_SECONDS = 30
+_similar_down_until = 0.0
 
 
 def api_similar(con, q):
@@ -598,6 +603,10 @@ def api_similar(con, q):
         (book, chapter, verse)).fetchone()
     if not row:
         return {"available": True, "verses": []}
+    down = {"available": False, "verses": [], "reason": "O serviço de busca por sentido não está rodando."}
+    global _similar_down_until
+    if time.monotonic() < _similar_down_until:
+        return down
     body = json.dumps({"kind": "verse", "item_id": row[0], "k": SIMILAR_K}).encode("utf-8")
     request = urllib.request.Request(SIMILAR_URL, data=body, headers={"Content-Type": "application/json"})
     try:
@@ -606,8 +615,8 @@ def api_similar(con, q):
     except urllib.error.HTTPError:
         return {"available": True, "verses": []}
     except (urllib.error.URLError, OSError, ValueError, KeyError):
-        return {"available": False, "verses": [],
-                "reason": "O serviço de busca por sentido não está rodando."}
+        _similar_down_until = time.monotonic() + SIMILAR_DOWN_SECONDS
+        return down
     if not results:
         return {"available": True, "verses": []}
     scores = {r["item_id"]: r["score"] for r in results}

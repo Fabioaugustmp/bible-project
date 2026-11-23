@@ -1043,10 +1043,13 @@ async function showVerse(ref = null) {
   const verseKey = `${book}.${chapter}.${verse}`;
   if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; xrefBook = null; versionsOpen = false; }
   if (pendingTab) { verseTab = pendingTab; pendingTab = null; }
-  const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook });
-  const similar = await api("similar", { book, chapter, verse }).catch(() => ({ available: false, verses: [] }));
-  const notesData = await api("user/notes", { book, chapter, verse }).catch(() => ({ notes: [] }));
-  const backlinks = await api("user/backlinks", { book, chapter, verse }).catch(() => ({ notes: [] }));
+  // T112: as consultas saem juntas; a de "Parecidas" não deixa as demais esperando.
+  const [data, similar, notesData, backlinks] = await Promise.all([
+    api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook }),
+    api("similar", { book, chapter, verse }).catch(() => ({ available: false, verses: [] })),
+    api("user/notes", { book, chapter, verse }).catch(() => ({ notes: [] })),
+    api("user/backlinks", { book, chapter, verse }).catch(() => ({ notes: [] })),
+  ]);
   refreshCommentaryPins({ book, chapter, verse });
   const bookCounts = data.xrefs_total || xrefBook ? (await api("xref-books", { book, chapter, verse })).books : null;
   if (!ref && (book !== state.book || chapter !== state.chapter || verse !== state.verse)) return;

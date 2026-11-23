@@ -93,7 +93,7 @@ body.selecting .v { cursor: pointer; }
 .selbar[hidden] { display: none; }
 .selbar-label { font: 600 .9rem var(--sans); color: var(--ink); margin-right: auto; }
 .v sup {
-  font: 600 .58em var(--sans); color: var(--accent); margin-right: .3em;
+  font: 600 .7em var(--sans); color: var(--accent); margin-right: .3em;
   vertical-align: .55em; line-height: 0; user-select: none;
 }
 .hint { margin-top: 40px; color: var(--muted); font-size: 13px; }

@@ -806,3 +806,6 @@ média, baixa.
   mexe no clique e na seleção; fica para tarefa própria.
 - **T122 — Números de versículo com 11,6 px**, pequenos demais. Aceitação:
   legíveis em 375 px, sem alterar o alinhamento da leitura.
+  Estado: concluída. Tamanho de .58em para .7em do texto (14 px com a leitura
+  em 20 px). Conferido no desktop: números legíveis, sem sobreposição com o
+  texto. Não conferido em 375 px.

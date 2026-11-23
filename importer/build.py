@@ -1,4 +1,4 @@
-"""Converte módulos do e-Sword e do theWord em uma base SQLite única.
+"""Converte módulos do e-Sword, do theWord e do MySword em uma base SQLite única.
 
 Uso:
     python importer/build.py --out data/library.db PASTA [PASTA ...]
@@ -22,12 +22,14 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import db  # noqa: E402
 import esword  # noqa: E402
+import mysword  # noqa: E402
 import theword  # noqa: E402
 from refs import verses_of  # noqa: E402
 from tokens import normalize_term, strip_accents  # noqa: E402
 
 READERS = {**{ext: ("esword", fn) for ext, fn in esword.READERS.items()},
-           **{ext: ("theword", fn) for ext, fn in theword.READERS.items()}}
+           **{ext: ("theword", fn) for ext, fn in theword.READERS.items()},
+           **{ext: ("mysword", fn) for ext, fn in mysword.READERS.items()}}
 
 
 def now() -> str:

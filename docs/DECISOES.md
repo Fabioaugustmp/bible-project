@@ -648,3 +648,31 @@ segundos; antes, a tela ficava em "Buscando…" até a resposta mais lenta.
 **Limites:** o tempo limite é só no cliente: a requisição do servidor continua até terminar, e o
 resultado é descartado. O aquecimento faz o servidor carregar o modelo a cada abertura da página
 quando ele ainda não estiver na memória. Sem o serviço de sentido, o aviso aparece sem espera.
+
+
+## D038 — Strong completo (MySword) entra ao lado de Dodson e AHLB, sem substituí-los · 2026-11-23
+
+**Decisão (do usuário):** o léxico `strong.a.dct.mybible` (versão 2.2, 14.700 verbetes, 14.696 com
+chave Strong) é importado como dicionário de origem `MySword` (abreviatura `Strong`) e **não
+substitui** Dodson, AHLB nem os outros léxicos. O painel Strong já lista um bloco por módulo; o novo
+aparece como mais uma fonte, depois das atuais (a ordem fixa `LEXICON_ORDER` não o inclui, então ele
+cai no fim). Nenhum verbete de Dodson ou AHLB é alterado ou escondido. Isso substitui a frase de
+T105 ("substitui Dodson e AHLB") e dispensa a regra de precedência que a tarefa pedia: sem
+substituição, não há precedência a decidir.
+
+**Motivo:** o léxico completo tem domínio público indicado no módulo e formatação de Timothy Morton
+(Bible Analyzer, "courtesy"), mas Dodson e AHLB trazem glosas e a etimologia hebraica próprias, que
+o usuário quer manter para comparar.
+
+**Limites:** a licença do Strong completo ainda precisa ser conferida na origem antes de servi-lo no
+site público (T52). A ordem das fontes no painel é a de `LEXICON_ORDER`; mudá-la é decisão de
+interface, não de dados.
+
+## D039 — Strong (MySword) é o primeiro léxico no painel de cada número · 2026-11-23
+
+**Decisão:** em `LEXICON_ORDER` (`app/server.py`), o léxico "Strong" vem antes de Dodson, AHLB e os demais. Os léxicos continuam separados (D038); só a ordem muda.
+
+**Motivo:** é o léxico mais completo da biblioteca para grego e hebraico (BDB, Thayer e Strong, com original, transliteração e ocorrências na KJV, conforme ANALISE-MYSWORD.md). Colocá-lo no fim, como estava, fazia a fonte mais útil aparecer por último.
+
+**Limites:** a ordem vale só para o painel Strong. Se o usuário preferir outra ordem, basta mudar a lista; os testes em `tests/test_mysword.py` acompanham a escolha.
+

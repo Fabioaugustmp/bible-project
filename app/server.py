@@ -12,6 +12,7 @@ import re
 import secrets
 import socket
 import sqlite3
+import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -216,7 +217,7 @@ def api_chapter(con, q):
 
 
 # Ordem de exibição dos léxicos no painel "Palavra" (os demais vêm depois, por sigla).
-LEXICON_ORDER = ["Dodson", "AHLB", "MLSJ", "LSJ", "KJC", "LXXHebGreek"]
+LEXICON_ORDER = ["Strong", "Dodson", "AHLB", "MLSJ", "LSJ", "KJC", "LXXHebGreek"]
 _LINK_STUB = re.compile(r"^meta=_twmgc_\s+type=link\s+id=(\d+)\s*$")
 _STRONG_CODE = re.compile(r"^[GH][1-9][0-9]{0,4}$")
 
@@ -487,8 +488,9 @@ def api_semantic(con, q):
         with urllib.request.urlopen(request, timeout=20) as response:
             results = json.loads(response.read().decode("utf-8"))["results"]
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
-        return {"available": False, "reason": "O serviço de busca por sentido não está rodando. "
-                "Inicie-o com .venv-bench\\Scripts\\python.exe app\\embed_service.py", "detail": str(error)}
+        # T119: texto para quem usa; o comando para iniciar o serviço fica no detalhe (log).
+        return {"available": False, "reason": DOWN_REASON,
+                "detail": f"Inicie o serviço com .venv-bench\\Scripts\\python.exe app\\embed_service.py ({error})"}
     verse_ids = [r["item_id"] for r in results.get("verse", [])]
     comment_ids = [r["item_id"] for r in results.get("comment", [])]
     scores = {("verse", r["item_id"]): r["score"] for r in results.get("verse", [])}
@@ -584,6 +586,12 @@ def api_search(con, q):
 
 SIMILAR_URL = EMBED_BASE + "/similar"
 SIMILAR_K = 10
+# T112: sem o serviço, a conexão recusada leva cerca de 2 s no Windows. Depois de uma falha,
+# não se tenta de novo por este tempo; as consultas seguintes respondem na hora.
+SIMILAR_DOWN_SECONDS = 30
+# T119: mensagem da busca por sentido quando o serviço não responde (sem termos técnicos).
+DOWN_REASON = "A busca por sentido está indisponível agora. A busca por palavra funciona normalmente; tente de novo em instantes."
+_similar_down_until = 0.0
 
 
 def api_similar(con, q):
@@ -598,6 +606,10 @@ def api_similar(con, q):
         (book, chapter, verse)).fetchone()
     if not row:
         return {"available": True, "verses": []}
+    down = {"available": False, "verses": [], "reason": DOWN_REASON}
+    global _similar_down_until
+    if time.monotonic() < _similar_down_until:
+        return down
     body = json.dumps({"kind": "verse", "item_id": row[0], "k": SIMILAR_K}).encode("utf-8")
     request = urllib.request.Request(SIMILAR_URL, data=body, headers={"Content-Type": "application/json"})
     try:
@@ -606,8 +618,8 @@ def api_similar(con, q):
     except urllib.error.HTTPError:
         return {"available": True, "verses": []}
     except (urllib.error.URLError, OSError, ValueError, KeyError):
-        return {"available": False, "verses": [],
-                "reason": "O serviço de busca por sentido não está rodando."}
+        _similar_down_until = time.monotonic() + SIMILAR_DOWN_SECONDS
+        return down
     if not results:
         return {"available": True, "verses": []}
     scores = {r["item_id"]: r["score"] for r in results}

@@ -185,6 +185,9 @@ Marcar aqui ao concluir, com o commit: `pendente`, `em andamento`, `concluída (
 | T93 | concluída (D033): menu Exibir → "Mapa de estudo e linha do tempo": mapa com passagens (40 mais estudadas), tópicos e estudos ligados pelas notas e blocos, layout do grafo de referências, clique abre a passagem; linha do tempo por dia com notas, tópicos, diário, estudos, memorização, conjuntos e leituras, lida das datas já guardadas (sem tabela nova); `app/studymap.py`; 4 testes em `tests/test_studymap.py` (98 no total, OK); testado no navegador com um tópico de três passagens (3 ligações, linha do tempo por dia) e 375 px sem rolagem horizontal. Pendente: instantâneos históricos, filtro por período |
 | T101 | parcial (D034): publicação em https://biblia.famptech.com.br pelo túnel da Cloudflare; `BIBLE_PUBLIC_ORIGIN` e `BIBLE_ACCESS_TOKEN` exigem código em todo pedido (`app/server.py`, `gate`); origem https aceita só no host público (`userdata.check_origin`); web entra na rede `general-network` do túnel existente (`cloudflared-default`, rota para `http://biblioteca-web:8377`); código gravado no log como `***`; 7 testes em `tests/test_publico.py` (111 no total, OK); testado no contêiner com Host e Origin do domínio: sem código 403, código 302 com cookie Secure, escrita https 200, escrita http 403. Pendente: rota criada no painel e teste no servidor; Cloudflare Access; decisão de licença (T52) |
 | T103 | concluída (D037): indicador de carregamento na busca, com busca por palavra primeiro, contador, tempo limite de 20 s, aquecimento ao abrir a página e descarte de respostas antigas; testado no navegador (desktop e 375 px) com atraso simulado de 8 s, 25 s e troca de busca; 111 testes OK. Nota: "fe" e "fé" dão zero resultados por palavra (termo de duas letras), fora deste escopo. Antigo plano: Problema: `showSearch` (app/static/app.js) espera busca por palavra, busca por sentido e Strong juntas (`Promise.all`); a primeira busca por sentido carrega o modelo no servidor (dezenas de segundos em CPU), e o usuário vê só "Buscando…" sem fim. Mudanças: (1) mostrar a busca por palavra assim que chegar, em bloco separado; (2) bloco "Buscando por sentido…" com contador de segundos e aviso de primeira vez; (3) tempo limite de 20 s no cliente, com a mensagem "o modelo ainda está carregando, tente em instantes", mantendo os resultados por palavra; (4) aquecimento: ao abrir a página, uma consulta em segundo plano (ex.: "aquecimento") para carregar o modelo antes da primeira busca; (5) indicador visual (spinner CSS, `role="status"`, respeitando `prefers-reduced-motion`); (6) opcional: endpoint de situação do serviço (modelo carregado ou não) para trocar o contador por "carregando modelo". Riscos: resultados chegando fora de ordem (usar contador de requisição para descartar respostas antigas); cuidar do celular, que já tem "Buscando…" (D036). Testes: navegador no desktop e no celular com serviço parado, lento e normal; 111 testes OK. |
+| T104 | concluída: `importer/mysword.py` lê Bíblias (`Bible`) e dicionários (`dictionary`, HTML → texto, links `#bL.C.V` viram citações em `refs`) e a tabela `Details`; protegidos (`encryption`/`compressed` ≠ 0) pulados só com `Details` lida (D008); `build.py` aceita `.mybible` (`source = 'mysword'`), sem mudar o esquema nem a versão do importador. Conferido nos 53 `.mybible` da pasta do Drive: 0 erros, 42 importados, 2 protegidos e 5 livros ignorados, 6 cópias unidas. WEB: 31.103 linhas (a análise dizia 31.102: Rm 14:24-26 a mais, Rm 16:26-27 a menos), 31.098 gravadas (5 só com nota); Jo 3:16 confere. Strong v2.2 (`strong.a`, 35,3 MB): 14.700 verbetes, 14.696 com chave Strong (confere com a análise) + 4 prefixos hebraicos; 349.504 citações; G26 e H430 conferem. Cópia `data/library-candidata.db` + WEB + Strong pela incremental: 114 arquivos pulados, 8 relidos, 144 s, 75 módulos; `verify.py` passa (não promovida). 120 testes OK (9 novos em `tests/test_mysword.py`). OpenGNT é lido, mas o texto leva transliteração e glosa (T108) |
+| T106 | parcial na candidata: `biblialivre.bbl.mybible` importada como `BLivre` (Bíblia Livre, por, origem `MySword`, sha256 gravado): 31.097 versículos gravados (a fonte tem 31.102 linhas; 5 vazios não gravados e sinalizados no `import_log` com a referência: 15:3:6, 19:108:13, 47:13:14, 64:1:14, 66:12:17; nenhum texto inventado); Jo 3:16 confere. O aviso agora lista as referências (`importer/mysword.py`). `verify.py` passa; 121 testes OK (1 novo, em `tests/test_mysword.py`). Falta T52: crédito "BLIVRE", tela de créditos e decidir o acesso sem código na demonstração (nada do site foi mudado) |
+| T105 | concluída na candidata (D038): `strong.a.dct.mybible` (v2.2) importado como dicionário `Strong`, origem `MySword`, **ao lado** de Dodson e AHLB (não substitui). Candidata: 14.700 verbetes, 14.696 com chave Strong (confere); G26 mostra Dodson, MLSJ, LSJ, KJC, LXXHebGreek e Strong; H430 mostra AHLB, KJC, LXXHebGreek e Strong. Dodson e AHLB intactos. Teste novo `MyswordStrongAoLadoTest`; `verify.py` passa; 122 testes OK. Não promovida; licença a conferir antes do site (T52) |
 | T102 | parcial (D036): navegação do celular (até 560 px) pela Alternativa 1 de `docs/UX-MOBILE-S23.md`: cabeçalho de uma linha ("João 1 ▾" e versão) que some ao descer; barra inferior fixa ‹ Buscar Estudo Aa ⋯ ›; busca em tela própria; folhas Estudo (Leitura de hoje primeiro), Texto e tema (Claro, Escuro, Sistema) e Mais (Ler, Ferramentas, Preferências); seletor de passagem em grade; folha a 60% com o versículo aberto acima dela e botão para quase tela cheia; abas do versículo em duas linhas; faixa "Continuar" em uma linha; `interactive-widget=resizes-content` e barra inferior oculta com campo em foco; "Toque" e sem "Esc" em tela de toque. Medido em 412 × 915: barra superior 265 → 57 px, texto começa em y 599 → 218, 9 → 18 linhas na primeira dobra; desktop 1280 × 800 sem mudança nas medidas. Pendente: "voltar" do Android fechando folhas (item 10), rolagem do documento inteiro (item 9), teste em aparelho real com teclado virtual; reorganização do desktop (item 13) |
 | T50–T52 (M5) | pendente |
 
@@ -539,7 +542,7 @@ citada: ver [IDEIAS.md](IDEIAS.md) (B04, B05, B19). Dependem de P3 e P4.
 ## M9 — Fontes MySword (análise de 2026-11-23, `docs/ANALISE-MYSWORD.md`)
 
 Pasta do Drive com 55 módulos MySword distintos (formato SQLite). Nenhum foi
-importado ainda. Antes de T104, conferir a licença na origem (ver o relatório).
+importado na base em uso; o leitor existe desde T104. Conferir a licença na origem antes de importar cada um (ver o relatório).
 
 ### T104 — Leitor de módulos MySword (Bíblia e dicionário)
 - **Fazer:** `importer/mysword.py` lê `Details`, `Bible` e `dictionary`, com a
@@ -549,6 +552,10 @@ importado ainda. Antes de T104, conferir a licença na origem (ver o relatório)
   `strong.dct.mybible` (14.696 verbetes) sem erro; procedência por módulo e
   chave preservadas; `verify.py` continua passando.
 - **Tamanho:** M.
+- **Estado:** concluída (ver "Estado das tarefas"). Formato verificado em
+  FORMATOS.md, seção MySword. Nada foi importado em `data/library.db`: quais
+  módulos entram é T105–T108. Os 53 arquivos estão numa pasta temporária fora
+  do projeto (D007).
 
 ### T105 — Dicionário Strong completo (BDB, Thayer, Strong)
 - **Fazer:** importar `strong.dct.mybible` (versão 2.2, 2025-09-01) como
@@ -560,6 +567,8 @@ importado ainda. Antes de T104, conferir a licença na origem (ver o relatório)
   DECISOES.
 - **Licença:** domínio público indicado no módulo; formatação de Timothy Morton
   (Bible Analyzer) "courtesy". Conferir na origem antes de servir no site.
+- **Estado (2026-11-23):** decisão do usuário: **não substitui** (D038); as fontes ficam
+  separadas no painel. Importada na candidata (ver "Estado das tarefas").
 - **Tamanho:** M. Depende de T104.
 
 ### T106 — Bíblia Livre (BLIVRE) como texto de demonstração pública
@@ -571,6 +580,8 @@ importado ainda. Antes de T104, conferir a licença na origem (ver o relatório)
 - **Licença:** CC BY 3.0 BR, conferida no GitHub da BLIVRE em 2026-11-23:
   uso comercial permitido, atribuição obrigatória, sem compartilhamento
   obrigatório.
+- **Estado (2026-11-23):** importada na candidata; aviso dos vazios com as referências. Falta a
+  parte de T52 (créditos e acesso sem código).
 - **Tamanho:** P. Depende de T104 e de T52.
 
 ### T107 — Strong em português (SBB), só uso pessoal
@@ -582,6 +593,23 @@ importado ainda. Antes de T104, conferir a licença na origem (ver o relatório)
 - **Licença:** © 2002 Sociedade Bíblica do Brasil; "uso pessoal, venda
   proibida" no próprio módulo. Não servir publicamente.
 - **Tamanho:** P. Depende de T104 e T105.
+
+### T108 — Grego do Novo Testamento (OpenGNT), para estudo
+- **Fazer:** importar a variante `OpenGNT.bbl.mybible` (27 livros, 7.941
+  versículos, Strong e morfologia), como texto grego de estudo. Não importar
+  `OpenGNTnet` (texto NET, só não comercial com crédito) nem `OpenGNTbe`
+  (tradução Berean, "all rights reserved") até confirmar a permissão.
+- **Aceite:** Jo 1:1 mostra as palavras gregas com Strong ligado ao painel;
+  procedência por módulo; a tela de créditos (T52) registra CC BY-SA 4.0 e a
+  atribuição "Open Greek New Testament Project by Eliran Wong".
+- **Licença:** texto base CC BY-SA 4.0, conferido no README do GitHub em
+  2026-11-23. Uso declarado: estudo pessoal, não comercial. Compartilhamento
+  pela mesma licença se o módulo ou derivados forem redistribuídos; isso
+  inclui publicar no site (decisão em T52 e na outra conversa jurídica).
+  Camadas Berean e Mounce: termos não conferidos.
+- **Cobertura:** 7.941 versículos; o NT padrão tem cerca de 7.957. Conferir
+  a diferença antes de usar como referência.
+- **Tamanho:** M. Depende de T104 (concluída; o leitor genérico ainda grava transliteração e glosa no texto do OpenGNT).
 
 ### Ideias da pesquisa em background (2026-11-18)
 
@@ -665,3 +693,119 @@ aceitação própria antes de entrar em execução.
   explícito.
 - **T89** Diário de estudo separado das notas por versículo. Referência: Journal
   Notes do e-Sword. Pode ser uma coleção de notas sem passagem em `user.db`.
+
+## M10 — Correções de UX (relatório do agente de navegação, 2026-11-23)
+
+Origem: agente com navegador no desktop e no celular, sem alterar arquivos nem
+gravar dados. Cada item tem aceitação própria: testar no navegador (desktop e
+375 px) e rodar `python -m unittest discover -s tests`. Prioridade: alta,
+média, baixa.
+
+### Alta
+
+- **T110 — Botão "← João 1:1" do painel Palavra.** `onclick: showVerse` recebe
+  o evento como referência e o servidor responde 400. Aceitação: o botão volta
+  ao versículo sem erro, em desktop e celular. Estado: concluída (branch
+  `ux-correcoes-t110`, ver `git log`). Testado no navegador: João 3:16 em KJV,
+  Palavra G1161, "← João 3:16" volta ao versículo sem erro; 122 testes OK.
+  Celular não testado.
+- **T111 — Mensagem de erro enganosa.** A mensagem manda verificar o servidor
+  mesmo quando ele está no ar. Aceitação: a mensagem diz a causa real (falha
+  de rede, tempo esgotado, erro do servidor) e não culpa o servidor sem motivo.
+  Estado: concluída (branch `ux-correcoes-t110`). Falha de rede (`TypeError` de
+  fetch) diz "Não foi possível conectar ao servidor..."; demais erros mostram
+  a causa. Testado no navegador com as duas falhas simuladas; 122 testes OK.
+- **T112 — Versículo abre em cerca de 3 s.** As consultas (versão, comentários,
+  "Parecidas") são feitas em sequência; "Parecidas" espera até 2 s pelo serviço
+  parado. Aceitação: consultas em paralelo; serviço indisponível lembrado e
+  não repetido a cada versículo.
+  Estado: concluída (branch `ux-correcoes-t110`). Consultas do versículo em
+  `Promise.all` (app.js); `api_similar` lembra a falha por 30 s
+  (`SIMILAR_DOWN_SECONDS`). Medido no servidor ao vivo: 1ª consulta de
+  `/api/similar` 2.075 ms (serviço parado), seguintes 9 a 10 ms; versículo
+  abre com o texto visível em cerca de 1,2 s. Não coberto por teste
+  automatizado. A primeira consulta a cada 30 s ainda espera os 2 s.
+- **T113 — Versão em inglês na busca.** Sem versículos, sem explicação, com
+  botões de copiar e adicionar visíveis. Aceitação: aviso claro de que a versão
+  não tem versículos buscáveis, e botões que não se aplicam ficam ocultos.
+  Estado: concluída (branch `ux-correcoes-t110`). Com versão em inglês aberta
+  e nenhum versículo, aviso "Nenhum versículo da versão aberta (KJV, em
+  inglês) contém ..." com botão "Buscar em todas as versões"; "Copiar" e
+  "Adicionar" só aparecem com versículos. Testado no navegador com "amor" em
+  KJV: sem versículos, a nota e os botões certos; ao buscar em todas as
+  versões, 3.098 versículos e os dois botões aparecem. 122 testes OK.
+- **T114 — Celular: opções ocupam a busca.** A primeira tela de busca abre com
+  as opções expandidas e os resultados fora da tela. Estado: concluída por
+  commit 558a430 (opções recolhidas no celular). Conferido em 375 px com "amor":
+  opções fechadas, primeiro resultado a 498 px da borda (tela de 812), sem
+  rolagem horizontal. Aceitação: opções
+  recolhidas por padrão; os primeiros resultados aparecem sem rolagem em 375 px.
+
+### Média
+
+- **T115 — Plano de leitura de hoje** corta o capítulo final no painel.
+  Estado: parcial. O corte não foi reproduzido: com um plano de 3 capítulos
+  (Gn 1–3), o painel mostra "1 de 3", "Próximo: Gênesis 2" e os botões sem
+  corte, em 480 px de largura. Pelo texto da tela ("Um capítulo por dia"), depois
+  de marcar o dia aparece "Lido hoje ✓" e não se marca o seguinte. Corrigido:
+  título padrão do plano usava a abreviação ("Gn 1 – Dt 34"); agora usa o nome
+  completo ("Gênesis 1 – Deuteronômio 34"), como o resto da interface.
+  Pedido ao usuário: descrever onde o capítulo some (qual plano, qual
+  largura de tela) para reproduzir o corte.
+- **T116 — Respostas lentas sobrescrevem o painel atual**, e "voltar" leva a
+  uma busca antiga. Aceitação: descartar respostas de consultas antigas
+  (contador de requisição, como em D037).
+  Estado: concluída (branch `ux-correcoes-t110`). `panelToken` em app.js: o
+  versículo, a palavra, o item e a busca recebem um número ao começar e só
+  mostram a resposta se ainda forem o último. Testado no navegador: palavra
+  G1161 com resposta atrasada em 3 s, troca para João 1:1 antes; ao chegar, a
+  palavra não aparece e o painel fica no versículo. 122 testes OK. Não coberto
+  por teste automatizado; os demais painéis (notas, tópicos) não receberam o
+  controle.
+- **T117 — Barra do desktop com 15 botões de mesmo peso.** "Tópicos" e "Temas"
+  se confundem; "Mapa" e "Linha do tempo" são notas do estudante, não um mapa.
+  Aceitação: hierarquia clara e nomes que não criam expectativa errada.
+  Estado: parcial. Feito: "Temas" virou "Buscar tema", e o botão "Tema" (que
+  alterna claro e escuro) virou "Claro/Escuro", porque "Tema" e "Temas" se
+  confundiam. "Tópicos" continua com o título que a diferencia da busca por
+  tema. Não feito: a hierarquia dos 15 botões (agrupar ou mover para o menu),
+  que é decisão de desenho. "Mapa" e "Linha do tempo" não estão na barra; são
+  itens do menu "Mais", e não foram renomeados. Conferido na tela de desktop:
+  a barra quebra em duas linhas sem sobreposição.
+- **T118 — Estudo de palavra com dados inconsistentes.** A contagem de
+  ocorrências não bate com os chips, o título vem sem acentos e as fontes estão
+  só em inglês. Aceitação: contagem igual à dos chips; título com acentos.
+  Estado: parcial. Causa da contagem: o cabeçalho mostrava só os versículos
+  (2.482 para δέ) e as palavras do texto original (2.794) não apareciam, então
+  parecia não bater com os chips. Agora o cabeçalho mostra as duas, com nomes
+  diferentes. Não reproduzi o título sem acentos: δέ sai com acento. Não
+  verificado: se os números dos chips ("e 474", "but 1689") estão na mesma
+  unidade. Fontes: os léxicos de δέ são em inglês (Dodson, MLSJ, LSJ); um léxico
+  em português depende de T107 (Strong-PT, uso pessoal, T52).
+- **T119 — Aba "Por sentido" fora do ar** mostra mensagem técnica. Aceitação:
+  texto em português simples, com o que o usuário pode fazer.
+  Estado: concluída. A mensagem tinha o comando de terminal ("Inicie-o com
+  .venv-bench\Scripts\python.exe ..."); agora diz "A busca por sentido está
+  indisponível agora. A busca por palavra funciona normalmente; tente de novo
+  em instantes." O comando fica no campo `detail` da resposta. Conferido no
+  servidor ao vivo com o serviço parado.
+
+### Baixa
+
+- **T120 — Setas não trocam de capítulo.** Estado: concluída. Os botões ‹ e ›
+  já trocavam; faltavam as setas do teclado. Agora ←/→ trocam de capítulo fora
+  de campos de texto e sem modificadores. Testado no navegador: a seta direita
+  foi de João 3 para 4; dentro da busca não mudou.
+- **T121 — Falta atalho "pular para o texto"**, e os versículos são controles
+  de tabulação.
+  Estado: parcial. Feito: link "Pular para o texto" como primeiro foco da
+  página (aparece só com Tab); ao usá-lo, o foco vai ao texto sem mudar o
+  endereço. Testado no navegador com Tab e Enter. Pendente: os versículos
+  continuam todos com tabulação (um capítulo tem até dezenas de paradas). Isso
+  pede "tabindex" móvel (uma parada por bloco, setas entre versículos), que
+  mexe no clique e na seleção; fica para tarefa própria.
+- **T122 — Números de versículo com 11,6 px**, pequenos demais. Aceitação:
+  legíveis em 375 px, sem alterar o alinhamento da leitura.
+  Estado: concluída. Tamanho de .58em para .7em do texto (14 px com a leitura
+  em 20 px). Conferido no desktop: números legíveis, sem sobreposição com o
+  texto. Não conferido em 375 px.

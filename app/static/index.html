@@ -15,6 +15,7 @@
   </script>
 </head>
 <body>
+  <a class="skip-link" href="#text">Pular para o texto</a>
   <header class="bar">
     <nav class="nav" aria-label="Passagem">
       <button id="passage" class="passage-btn" aria-haspopup="dialog" aria-label="Escolher livro e capítulo"></button>
@@ -38,12 +39,12 @@
     <button id="journal" class="icon label" title="Diário de estudo: reflexões com data, sem passagem">Diário</button>
     <button id="memo" class="icon label" title="Memorização: versículos revisados com intervalos crescentes (SM-2)">Memorizar</button>
     <button id="topics-notes" class="icon label" title="Notas por tópico: um assunto com notas de várias passagens (não é a busca por tema)">Tópicos</button>
-    <button id="topics" class="icon label" title="Pesquisar um tema na Bíblia">Temas</button>
+    <button id="topics" class="icon label" title="Pesquisar um tema na Bíblia">Buscar tema</button>
     <button id="browse" class="icon label" title="Folhear dicionários e livros">Dicionários</button>
       <button id="view" class="icon label" aria-haspopup="dialog" title="Exibir: paralelo, marcas, seleção, tema e atalhos, com as teclas">Exibir</button>
       <button id="parallel" class="icon label" aria-pressed="false" title="Versões em paralelo (atalho: p)">Paralelo</button>
       <button id="words" class="icon" aria-pressed="false" title="Palavras originais: clique em uma palavra para ver o termo grego ou hebraico" hidden>Strong</button>
-      <button id="theme" class="icon label" aria-label="Alternar tema claro e escuro" title="Alternar tema claro e escuro">Tema</button>
+      <button id="theme" class="icon label" aria-label="Alternar tema claro e escuro" title="Alternar tema claro e escuro">Claro/Escuro</button>
     </div>
   </header>
 
@@ -52,7 +53,7 @@
       <div id="resume" class="resume" role="region" aria-label="Continuar de onde parou" hidden></div>
       <p class="kicker" id="kicker"></p>
       <h1 id="title"></h1>
-      <div id="text" class="text"></div>
+      <div id="text" class="text" tabindex="-1"></div>
       <p id="hint" class="hint"><span class="tap-word">Clique</span> em um versículo para ver versões, comentários e citações.</p>
       <div id="selbar" class="selbar" role="toolbar" aria-label="Ações da seleção" hidden></div>
     </main>

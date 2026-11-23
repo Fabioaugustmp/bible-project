@@ -583,6 +583,8 @@ let panelMode = null; // 'verse' | 'search' | 'item'
 // `pendingView` antes de chamar openPanel.
 let currentView = null;
 let pendingView = null;
+// T116: cada painel que carrega dados recebe um número; resposta de um número antigo é descartada.
+let panelToken = 0;
 // Quando definido, openPanel escreve num item fixado em vez do painel (restauração).
 let renderTarget = null;
 
@@ -1040,15 +1042,20 @@ function bookStrip(counts) {
 
 async function showVerse(ref = null) {
   const { book, chapter, verse } = ref || state;
+  const mine = ++panelToken;
   const verseKey = `${book}.${chapter}.${verse}`;
   if (verseKey !== xrefVerse) { xrefVerse = verseKey; xrefLimit = 12; xrefBook = null; versionsOpen = false; }
   if (pendingTab) { verseTab = pendingTab; pendingTab = null; }
-  const data = await api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook });
-  const similar = await api("similar", { book, chapter, verse }).catch(() => ({ available: false, verses: [] }));
-  const notesData = await api("user/notes", { book, chapter, verse }).catch(() => ({ notes: [] }));
-  const backlinks = await api("user/backlinks", { book, chapter, verse }).catch(() => ({ notes: [] }));
+  // T112: as consultas saem juntas; a de "Parecidas" não deixa as demais esperando.
+  const [data, similar, notesData, backlinks] = await Promise.all([
+    api("verse", { book, chapter, verse, module: state.module, xrefs: xrefLimit, xbook: xrefBook }),
+    api("similar", { book, chapter, verse }).catch(() => ({ available: false, verses: [] })),
+    api("user/notes", { book, chapter, verse }).catch(() => ({ notes: [] })),
+    api("user/backlinks", { book, chapter, verse }).catch(() => ({ notes: [] })),
+  ]);
   refreshCommentaryPins({ book, chapter, verse });
   const bookCounts = data.xrefs_total || xrefBook ? (await api("xref-books", { book, chapter, verse })).books : null;
+  if (mine !== panelToken) return;
   if (!ref && (book !== state.book || chapter !== state.chapter || verse !== state.verse)) return;
   pendingView = { type: "verse", book, chapter, verse };
 
@@ -1161,12 +1168,14 @@ async function showVerse(ref = null) {
 }
 
 async function showItem(kind, id) {
+  const mine = ++panelToken;
   const item = await api("item", { kind, id });
+  if (mine !== panelToken) return;
   pendingView = { type: "item", kind, id };
   if (!item) return;
   const title = kind === "entry" ? item.label : `${item.abbr} · ${rangeLabel(item.book, item.ref_start, item.ref_end)}`;
   const backVerse = state.verse
-    ? el("button", { class: "link back", onclick: showVerse }, `← ${refLabel(state.book, state.chapter, state.verse)}`)
+    ? el("button", { class: "link back", onclick: () => showVerse() }, `← ${refLabel(state.book, state.chapter, state.verse)}`)
     : null;
   openPanel("item", title,
     backVerse, backToSearch(),
@@ -1181,7 +1190,9 @@ async function showItem(kind, id) {
 async function showWord(strong, source = null, offset = 0, previous = null) {
   document.querySelectorAll(".w.picked").forEach((node) => node.classList.remove("picked"));
   source?.classList.add("picked");
+  const mine = ++panelToken;
   const data = await api("word", { strong, module: state.module, offset });
+  if (mine !== panelToken) return;
   pendingView = { type: "word", strong };
   if (previous) data.occurrences = previous.concat(data.occurrences);
   const original = data.original[0]?.term;
@@ -1225,12 +1236,13 @@ async function showWord(strong, source = null, offset = 0, previous = null) {
     : null;
 
   const backVerse = state.verse
-    ? el("button", { class: "link back", onclick: showVerse }, `← ${refLabel(state.book, state.chapter, state.verse)}`)
+    ? el("button", { class: "link back", onclick: () => showVerse() }, `← ${refLabel(state.book, state.chapter, state.verse)}`)
     : null;
   openPanel("word", `${strong}${original ? " · " + original : ""}`,
     backVerse, backToSearch(),
     original ? el("p", { class: "lemma", lang: LANG[data.original_lang] }, original,
-      el("span", { lang: "pt-BR" }, ` ${langLabel} · ${data.total} versículos`)) : null,
+      el("span", { lang: "pt-BR" }, ` ${langLabel} · ${data.total} versículos` +
+        (data.original[0] && data.original[0].count ? ` · ${data.original[0].count} palavras no texto original` : ""))) : null,
     data.translations.por.length ? section("Como a Bíblia em português traduz", null, chips(data.translations.por, "pt-BR")) : null,
     data.translations.eng.length ? section("Em inglês", null, chips(data.translations.eng, "en")) : null,
     typedSection(data.lexicons.map((e) => typeOf("dictionary", e.abbr)), "Léxicos", data.lexicons.length,
@@ -1435,8 +1447,12 @@ function searchOptions(filterRow = null) {
   const configBox = el("details", { class: "search-config", open: state.searchConfigOpen, ontoggle: (event) => { state.searchConfigOpen = event.target.open; } },
     el("summary", {}, "Opções de busca"),
     el("div", { class: "search-opts" }, ...config));
-  children.push(el("button", { class: "link", onclick: copySearchResults }, "Copiar versículos"));
-  children.push(el("button", { class: "link", onclick: addSearchToStudy }, "Adicionar versículos ao estudo"));
+  // T113: copiar e adicionar só fazem sentido com versículos encontrados.
+  const hasVerses = ((state.lastSearch && state.lastSearch.data && state.lastSearch.data.verses) || []).length > 0;
+  if (hasVerses) {
+    children.push(el("button", { class: "link", onclick: copySearchResults }, "Copiar versículos"));
+    children.push(el("button", { class: "link", onclick: addSearchToStudy }, "Adicionar versículos ao estudo"));
+  }
   children.push(el("button", { class: "link", onclick: saveCurrentSearch }, "Salvar busca"));
   return el("div", { class: "search-opts-wrap" }, configBox, el("div", { class: "search-opts search-actions" }, ...children));
 }
@@ -1519,6 +1535,7 @@ function renderSearch(keepScroll = false) {
        el("p", { class: "group-note" }, "Versículos e comentários que contêm os termos digitados."),
        searchOptions(filterRow),
        bridgeNote(query, data),
+       englishVersionNote(query, data, module),
        keyword ? null : suggestionBlock(state.lastSearch.suggest),
        show("verses") ? searchSection("verses", `Bíblia · ${module.abbr}`) : null,
        show("comments") ? searchSection("comments", "Comentários") : null,
@@ -1579,6 +1596,15 @@ function openSearchScreen() {
 }
 
 // Explica o que a ponte por Strong acrescentou à busca e permite desligá-la.
+// T113: versão aberta em inglês e nenhum versículo: explica por que e oferece buscar em todas as versões.
+function englishVersionNote(query, data, module) {
+  if (state.searchStrong || !module || module.lang === "por" || (data.totals.verses || 0) > 0) return null;
+  if (state.searchScope === "todas") return null;
+  return el("div", { class: "bridge" },
+    `Nenhum versículo da versão aberta (${module.abbr}, em inglês) contém "${query}". `,
+    el("button", { class: "link", onclick: () => { state.searchScope = "todas"; showSearch(query); } }, "Buscar em todas as versões"));
+}
+
 function bridgeNote(query, data) {
   if (!data.bridge) return null;
   const toggle = (on, label) => el("button", {
@@ -1656,6 +1682,7 @@ function semanticTimedOut(query) {
 
 async function showSearch(query) {
   const token = ++searchToken;
+  const mine = ++panelToken;  // T116
   const semanticStart = Date.now();
   const semanticP = api("semantic", { q: query }).catch(() => ({ available: false, reason: "Não foi possível consultar a busca por sentido." }));
   const [data, strong] = await Promise.all([
@@ -1669,10 +1696,10 @@ async function showSearch(query) {
     }),
     state.searchStrong ? api("strong", { code: state.searchStrong }).catch(() => ({ error: "Não foi possível buscar este número Strong. Use G ou H seguido de números." })) : null,
   ]);
-  if (token !== searchToken) return;
+  if (token !== searchToken || mine !== panelToken) return;
   const nothing = !Object.values(data.totals || {}).some((n) => n);
   const suggest = nothing && !state.searchStrong ? await api("suggest", { q: query }).catch(() => null) : null;
-  if (token !== searchToken) return;
+  if (token !== searchToken || mine !== panelToken) return;
   const startedAt = semanticStart;
   state.lastSearch = { query, data, semantic: null, semanticState: "loading", startedAt, strong, suggest };
   renderSearch();
@@ -1929,6 +1956,8 @@ async function init() {
   $("#smaller").addEventListener("click", () => { fontSize = setFontSize(fontSize - 1); });
   $("#larger").addEventListener("click", () => { fontSize = setFontSize(fontSize + 1); });
   $("#theme").addEventListener("click", toggleTheme);
+  // T121: "Pular para o texto" foca o texto sem mudar o endereço (o #text viraria uma passagem).
+  document.querySelector(".skip-link").addEventListener("click", (event) => { event.preventDefault(); $("#text").focus(); });
   $("#browse").addEventListener("click", () => {
     if (browseState.module) showBrowse(); else browseHome();
   });
@@ -2796,6 +2825,9 @@ document.addEventListener("keydown", (event) => {
     "/": () => $("#q").focus(),
     "[": () => step(-1),
     "]": () => step(1),
+    // T120: setas de lado trocam de capítulo, como os botões ‹ e › (fora dos campos de texto).
+    ArrowLeft: () => step(-1),
+    ArrowRight: () => step(1),
     j: () => moveVerse(1),
     k: () => moveVerse(-1),
     p: () => $("#parallel").click(),
@@ -2809,8 +2841,13 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("unhandledrejection", (event) => {
-  console.error(event.reason);
-  showToast("Não foi possível concluir a ação. Verifique se o servidor da biblioteca está rodando.");
+  const reason = event.reason;
+  console.error(reason);
+  // Falha de rede do navegador (fetch não chegou ao servidor) é diferente de erro do servidor ou do código.
+  const network = reason instanceof TypeError && /fetch|NetworkError|Load failed/i.test(reason.message || "");
+  showToast(network
+    ? "Não foi possível conectar ao servidor da biblioteca. Verifique se ele está rodando."
+    : `Não foi possível concluir a ação${reason && reason.message ? `: ${reason.message}` : "."}`);
 });
 
 init().catch((error) => {

@@ -743,15 +743,19 @@ média, baixa.
 
 ### Média
 
-- **T115 — Plano de leitura de hoje** corta o capítulo final no painel.
+- **T115 — Plano de leitura de hoje** corta o capítulo final no painel. Estado: concluída (ver nota abaixo).
   Estado: parcial. O corte não foi reproduzido: com um plano de 3 capítulos
   (Gn 1–3), o painel mostra "1 de 3", "Próximo: Gênesis 2" e os botões sem
   corte, em 480 px de largura. Pelo texto da tela ("Um capítulo por dia"), depois
   de marcar o dia aparece "Lido hoje ✓" e não se marca o seguinte. Corrigido:
   título padrão do plano usava a abreviação ("Gn 1 – Dt 34"); agora usa o nome
   completo ("Gênesis 1 – Deuteronômio 34"), como o resto da interface.
-  Pedido ao usuário: descrever onde o capítulo some (qual plano, qual
-  largura de tela) para reproduzir o corte.
+  Decisão do usuário (2026-11-23): seguir o que o mercado usa, sem cortar
+  texto. O intervalo do plano no resumo ("Gênesis 1 – Deuteronômio 34") agora
+  quebra em linhas (`.fold > summary .range`, sem reticências). Conferido com um
+  elemento de teste de 300 px: duas linhas, sem corte horizontal. O corte que o
+  agente viu não foi reproduzido; se voltar a aparecer, registrar o plano e a
+  largura.
 - **T116 — Respostas lentas sobrescrevem o painel atual**, e "voltar" leva a
   uma busca antiga. Aceitação: descartar respostas de consultas antigas
   (contador de requisição, como em D037).

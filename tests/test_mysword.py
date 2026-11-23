@@ -119,6 +119,7 @@ class MyswordBibleTest(unittest.TestCase):
         messages = " | ".join(message for level, message in add.logs if level == "aviso")
         self.assertIn("1 versículos de livros fora do cânon", messages)
         self.assertIn("1 versículos vazios", messages)
+        self.assertIn("1:1:2", messages)
 
     def test_modulo_protegido_nao_e_lido(self):
         # D008: com encryption ou compressed diferente de zero, só a tabela Details é consultada.
@@ -208,6 +209,39 @@ class MyswordBuildTest(unittest.TestCase):
         self.assertEqual(verse_key, "1.1.1")
         self.assertEqual(entry_key, "dictionary:1")
         self.assertEqual(links, [("entry", 43, 3, 16)])
+
+
+class MyswordBibliaLivreTest(unittest.TestCase):
+    """T106: procedência da Bíblia Livre (CC BY 3.0 BR) e aviso dos versículos vazios, com base sintética."""
+
+    def test_procedencia_e_aviso_dos_vazios_com_referencias(self):
+        verses = [(1, 1, 1, "No princípio."), (15, 3, 6, ""), (19, 108, 13, ""), (66, 12, 17, ""),
+                  (43, 3, 16, "Porque Deus amou o mundo.")]
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "mods"
+            folder.mkdir()
+            make_bible(folder, verses, {"Description": "Bíblia Livre", "Abbreviation": "BLivre", "Language": "por"},
+                       name="biblialivre.bbl.mybible")
+            out = Path(tmp) / "out.db"
+            proc = subprocess.run([sys.executable, str(ROOT / "importer" / "build.py"), "--out", str(out),
+                                   str(folder)], capture_output=True, text=True, encoding="utf-8", cwd=ROOT)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            con = sqlite3.connect(out)
+            try:
+                module = con.execute("select source, kind, abbr, lang, items, origin_path, length(origin_sha256)"
+                                     " from modules").fetchone()
+                stored = con.execute("select count(*) from verses").fetchone()[0]
+                empty_stored = con.execute("select count(*) from verses where trim(text) = ''").fetchone()[0]
+                warning = con.execute("select level, message from import_log where level = 'aviso'").fetchone()
+            finally:
+                con.close()
+        self.assertEqual(module[:5], ("mysword", "bible", "BLivre", "por", 2))
+        self.assertTrue(module[5].endswith("biblialivre.bbl.mybible"))
+        self.assertEqual(module[6], 64)
+        self.assertEqual((stored, empty_stored), (2, 0))
+        self.assertIn("3 versículos vazios", warning[1])
+        for ref in ("15:3:6", "19:108:13", "66:12:17"):
+            self.assertIn(ref, warning[1])
 
 
 if __name__ == "__main__":

@@ -98,7 +98,7 @@ def _unescape_word(word):
 
 def read_bible(src, path, details, add):
     meta = _meta(details, path, "bible") | {"has_strongs": 0}
-    rows, words, xrefs, outside, empty = [], [], [], 0, 0
+    rows, words, xrefs, outside, empty = [], [], [], 0, []
     for book, chapter, verse, raw in src.execute(
         "select Book, Chapter, Verse, cast(Scripture as blob) from Bible order by Book, Chapter, Verse"
     ):
@@ -110,7 +110,7 @@ def read_bible(src, path, details, add):
         heading, text, tagged, verse_words = _clean_verse(line)
         text = html.unescape(text)
         if not text:
-            empty += 1
+            empty.append(f"{book}:{chapter}:{verse}")
             continue
         if tagged:
             meta["has_strongs"] = 1
@@ -133,7 +133,8 @@ def read_bible(src, path, details, add):
     if outside:
         add.log("aviso", f"{outside} versículos de livros fora do cânon de 66 foram ignorados")
     if empty:
-        add.log("aviso", f"{empty} versículos vazios no módulo não foram gravados")
+        add.log("aviso", f"{len(empty)} versículos vazios no módulo não foram gravados"
+                f" (livro:capítulo:versículo): {', '.join(empty[:20])}")
     return len(rows)
 
 

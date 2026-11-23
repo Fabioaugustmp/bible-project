@@ -735,7 +735,10 @@ média, baixa.
   KJV: sem versículos, a nota e os botões certos; ao buscar em todas as
   versões, 3.098 versículos e os dois botões aparecem. 122 testes OK.
 - **T114 — Celular: opções ocupam a busca.** A primeira tela de busca abre com
-  as opções expandidas e os resultados fora da tela. Aceitação: opções
+  as opções expandidas e os resultados fora da tela. Estado: concluída por
+  commit 558a430 (opções recolhidas no celular). Conferido em 375 px com "amor":
+  opções fechadas, primeiro resultado a 498 px da borda (tela de 812), sem
+  rolagem horizontal. Aceitação: opções
   recolhidas por padrão; os primeiros resultados aparecem sem rolagem em 375 px.
 
 ### Média

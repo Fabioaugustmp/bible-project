@@ -30,21 +30,28 @@
              aria-label="Buscar ou ir para referência">
     </form>
     <div class="tools">
-      <button id="smaller" class="icon" aria-label="Diminuir fonte" title="Diminuir fonte">A−</button>
-      <button id="larger" class="icon" aria-label="Aumentar fonte" title="Aumentar fonte">A+</button>
-      <button id="marks" class="icon label" aria-pressed="true" title="Mostrar no texto os versículos com notas ou em estudos">Marcas</button>
-      <button id="select" class="icon label" aria-pressed="false" title="Selecionar versículos: toque no primeiro e no último (Esc sai)">Selecionar</button>
-    <button id="studies" class="icon label" title="Meus estudos">Estudos</button>
-    <button id="reading" class="icon label" title="Leitura de hoje: planos de capítulos, marcados como lidos">Leitura</button>
-    <button id="journal" class="icon label" title="Diário de estudo: reflexões com data, sem passagem">Diário</button>
-    <button id="memo" class="icon label" title="Memorização: versículos revisados com intervalos crescentes (SM-2)">Memorizar</button>
-    <button id="topics-notes" class="icon label" title="Notas por tópico: um assunto com notas de várias passagens (não é a busca por tema)">Tópicos</button>
-    <button id="topics" class="icon label" title="Pesquisar um tema na Bíblia">Buscar tema</button>
-    <button id="browse" class="icon label" title="Folhear dicionários e livros">Dicionários</button>
-      <button id="view" class="icon label" aria-haspopup="dialog" title="Exibir: paralelo, marcas, seleção, tema e atalhos, com as teclas">Exibir</button>
-      <button id="parallel" class="icon label" aria-pressed="false" title="Versões em paralelo (atalho: p)">Paralelo</button>
-      <button id="words" class="icon" aria-pressed="false" title="Palavras originais: clique em uma palavra para ver o termo grego ou hebraico" hidden>Strong</button>
-      <button id="theme" class="icon label" aria-label="Alternar tema claro e escuro" title="Alternar tema claro e escuro">Claro/Escuro</button>
+      <!-- T117: três blocos. Texto: tamanho, marcas e leitura; Estudo: o que se consulta e anota; Tela: exibir e tema. -->
+      <div class="tool-group" role="group" aria-label="Texto">
+        <button id="smaller" class="icon" aria-label="Diminuir fonte" title="Diminuir fonte">A−</button>
+        <button id="larger" class="icon" aria-label="Aumentar fonte" title="Aumentar fonte">A+</button>
+        <button id="marks" class="icon label" aria-pressed="true" title="Mostrar no texto os versículos com notas ou em estudos">Marcas</button>
+        <button id="select" class="icon label" aria-pressed="false" title="Selecionar versículos: toque no primeiro e no último (Esc sai)">Selecionar</button>
+        <button id="parallel" class="icon label" aria-pressed="false" title="Versões em paralelo (atalho: p)">Paralelo</button>
+        <button id="words" class="icon" aria-pressed="false" title="Palavras originais: clique em uma palavra para ver o termo grego ou hebraico" hidden>Strong</button>
+      </div>
+      <div class="tool-group" role="group" aria-label="Estudo">
+        <button id="studies" class="icon label" title="Meus estudos">Estudos</button>
+        <button id="reading" class="icon label" title="Leitura de hoje: planos de capítulos, marcados como lidos">Leitura</button>
+        <button id="journal" class="icon label" title="Diário de estudo: reflexões com data, sem passagem">Diário</button>
+        <button id="memo" class="icon label" title="Memorização: versículos revisados com intervalos crescentes (SM-2)">Memorizar</button>
+        <button id="topics-notes" class="icon label" title="Notas por tópico: um assunto com notas de várias passagens (não é a busca por tema)">Tópicos</button>
+        <button id="topics" class="icon label" title="Pesquisar um tema na Bíblia">Buscar tema</button>
+        <button id="browse" class="icon label" title="Folhear dicionários e livros">Dicionários</button>
+      </div>
+      <div class="tool-group" role="group" aria-label="Tela">
+        <button id="view" class="icon label" aria-haspopup="dialog" title="Exibir: paralelo, marcas, seleção, tema e atalhos, com as teclas">Exibir</button>
+        <button id="theme" class="icon label" aria-label="Alternar tema claro e escuro" title="Alternar tema claro e escuro">Claro/Escuro</button>
+      </div>
     </div>
   </header>
 

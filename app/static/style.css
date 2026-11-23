@@ -52,6 +52,9 @@ body {
 }
 .nav, .tools { display: flex; align-items: center; gap: 6px; }
 .tools { flex-wrap: wrap; }
+/* T117: os botões da barra em três blocos separados por um fio. */
+.tool-group { display: flex; align-items: center; gap: 6px; padding: 0 10px; border-left: 1px solid var(--line); }
+.tool-group:first-child { padding-left: 0; border-left: 0; }
 .search { flex: 1 1 220px; min-width: 0; }
 select, input, button {
   font: inherit; color: inherit; background: var(--paper);

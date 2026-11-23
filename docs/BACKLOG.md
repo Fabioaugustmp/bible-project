@@ -774,7 +774,8 @@ média, baixa.
   claro e escuro) virou "Claro/Escuro". A barra tem três blocos com rótulo
   próprio (decisão do usuário): **Texto** (A−, A+, Marcas, Selecionar, Paralelo,
   Strong), **Estudo** (Estudos, Leitura, Diário, Memorizar, Tópicos, Buscar tema,
-  Dicionários) e **Tela** (Exibir, Claro/Escuro). Separados por um fio. "Mapa" e
+  Dicionários) e **Tela** (Exibir e Claro/Escuro, ambos só com ícone: controles
+  e sol/lua, com nome acessível e dica). Separados por um fio. "Mapa" e
   "Linha do tempo" continuam no menu "Exibir" (T93), sem renomear. Conferido em 800 px de largura (a barra quebra em duas linhas
   sem sobreposição) e em 375 px (barra oculta, sem rolagem horizontal).
 - **T118 — Estudo de palavra com dados inconsistentes.** A contagem de

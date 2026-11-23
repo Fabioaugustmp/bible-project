@@ -775,6 +775,13 @@ média, baixa.
 - **T118 — Estudo de palavra com dados inconsistentes.** A contagem de
   ocorrências não bate com os chips, o título vem sem acentos e as fontes estão
   só em inglês. Aceitação: contagem igual à dos chips; título com acentos.
+  Estado: parcial. Causa da contagem: o cabeçalho mostrava só os versículos
+  (2.482 para δέ) e as palavras do texto original (2.794) não apareciam, então
+  parecia não bater com os chips. Agora o cabeçalho mostra as duas, com nomes
+  diferentes. Não reproduzi o título sem acentos: δέ sai com acento. Não
+  verificado: se os números dos chips ("e 474", "but 1689") estão na mesma
+  unidade. Fontes: os léxicos de δέ são em inglês (Dodson, MLSJ, LSJ); um léxico
+  em português depende de T107 (Strong-PT, uso pessoal, T52).
 - **T119 — Aba "Por sentido" fora do ar** mostra mensagem técnica. Aceitação:
   texto em português simples, com o que o usuário pode fazer.
 

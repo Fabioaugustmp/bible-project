@@ -1241,7 +1241,8 @@ async function showWord(strong, source = null, offset = 0, previous = null) {
   openPanel("word", `${strong}${original ? " · " + original : ""}`,
     backVerse, backToSearch(),
     original ? el("p", { class: "lemma", lang: LANG[data.original_lang] }, original,
-      el("span", { lang: "pt-BR" }, ` ${langLabel} · ${data.total} versículos`)) : null,
+      el("span", { lang: "pt-BR" }, ` ${langLabel} · ${data.total} versículos` +
+        (data.original[0] && data.original[0].count ? ` · ${data.original[0].count} palavras no texto original` : ""))) : null,
     data.translations.por.length ? section("Como a Bíblia em português traduz", null, chips(data.translations.por, "pt-BR")) : null,
     data.translations.eng.length ? section("Em inglês", null, chips(data.translations.eng, "en")) : null,
     typedSection(data.lexicons.map((e) => typeOf("dictionary", e.abbr)), "Léxicos", data.lexicons.length,
